@@ -17,7 +17,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             "placeholder:text-neutral-400",
             "transition-all duration-150",
             "focus:outline-none focus:-translate-x-0.5 focus:-translate-y-0.5 focus:shadow-[3px_3px_0_0_#000]",
-            error && "border-[#FF6B57]",
+            error && "border-brand",
             className,
           )}
           {...props}

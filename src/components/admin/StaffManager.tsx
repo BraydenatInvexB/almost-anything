@@ -116,7 +116,7 @@ export function StaffManager({
                     </span>
                   )}
                 </Td>
-                <Td className="text-neutral-600">{m.title ?? m.department ?? "—"}</Td>
+                <Td className="text-neutral-600">{m.title ?? m.department ?? "N/A"}</Td>
                 <Td>
                   {canManage && m.role !== "super_admin" ? (
                     <button
@@ -138,7 +138,7 @@ export function StaffManager({
                         month: "short",
                         day: "numeric",
                       })
-                    : "—"}
+                    : "N/A"}
                 </Td>
               </tr>
             ))}
@@ -258,7 +258,7 @@ function InviteModal({
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
-                  {ROLE_META[r].label} — {ROLE_META[r].description}
+                  {ROLE_META[r].label}: {ROLE_META[r].description}
                 </option>
               ))}
             </select>

@@ -19,7 +19,7 @@ export default function CartPage() {
   const total = Math.round((subtotal + shipping + tax) * 100) / 100;
 
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 sm:px-6">

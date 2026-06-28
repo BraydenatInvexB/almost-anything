@@ -5,7 +5,6 @@ import {
   secureErrorResponse,
   getClientIp,
   logApiRequest,
-  quoteRequestSchema,
 } from "@/lib/security/api";
 import { sourcingRequestSchema } from "@/lib/validation/checkout";
 import { generateQuoteOptions } from "@/lib/ai/quote-generator";

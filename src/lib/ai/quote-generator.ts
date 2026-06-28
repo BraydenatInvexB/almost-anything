@@ -3,7 +3,6 @@ import { calculateMarkup } from "@/lib/markup/engine";
 import {
   QUOTE_TIER_DESCRIPTIONS,
   QUOTE_TIER_LABELS,
-  SITE_CONFIG,
 } from "@/config/site";
 import type { QuoteTier } from "@/types/database";
 

@@ -27,7 +27,7 @@ export function OurTeamCard() {
       </div>
       <CardDescription className="mt-3 leading-relaxed">
         Our design and sourcing team finds products you won&apos;t see
-        anywhere else — at prices that make sense.
+        anywhere else, at prices that make sense.
       </CardDescription>
     </Card>
   );
@@ -38,7 +38,7 @@ export function CommunityCard() {
     <Card variant="elevated" padding="md" className="bg-neutral-900 text-white">
       <CardTitle className="text-white">Join Our Community</CardTitle>
       <CardDescription className="mt-2 text-neutral-400">
-        Share your sourcing wins, request hard-to-find items, and get early access
+        Share your sourcing wins, request hard to find items, and get early access
         to exclusive deals our team discovers.
       </CardDescription>
     </Card>

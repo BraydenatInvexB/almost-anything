@@ -54,7 +54,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       : activeCat?.label ?? "All Products";
 
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader activeCategory={params.category} searchQuery={params.q} />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">

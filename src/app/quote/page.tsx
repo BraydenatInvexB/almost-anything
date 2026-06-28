@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -31,7 +31,7 @@ const TIER_ICONS = {
 
 export default function QuotePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F4EEE1]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
       <QuotePageContent />
     </Suspense>
   );
@@ -44,11 +44,6 @@ function QuotePageContent() {
   const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    const q = searchParams.get("q");
-    if (q) setQuery(q);
-  }, [searchParams]);
 
   async function handleGenerateQuote(e: React.FormEvent) {
     e.preventDefault();
@@ -83,7 +78,7 @@ function QuotePageContent() {
   }
 
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-10 sm:px-6">

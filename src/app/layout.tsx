@@ -12,11 +12,15 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE_CONFIG.name} — The Store for Almost Anything`,
+    default: `${SITE_CONFIG.name} | The Store for Almost Anything`,
     template: `%s | ${SITE_CONFIG.name}`,
   },
   description: SITE_CONFIG.description,
   keywords: ["online store", "e-commerce", "shopping", "product finder", "best price", "almost anything"],
+  icons: {
+    icon: SITE_CONFIG.logo,
+    apple: SITE_CONFIG.logo,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

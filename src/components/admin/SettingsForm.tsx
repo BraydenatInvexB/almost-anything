@@ -124,7 +124,7 @@ export function SettingsForm({
               className="input disabled:opacity-60"
             />
           </Field>
-          <Field label="Tax rate (0–1)">
+          <Field label="Tax rate (0 to 1)">
             <input
               type="number"
               step="0.01"

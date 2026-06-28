@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -8,7 +8,6 @@ import { Search, MapPin, CalendarClock, Truck, PackageSearch } from "lucide-reac
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { TrackTimeline } from "@/components/orders/TrackTimeline";
 import { findDemoOrder, type TrackedOrder } from "@/lib/orders/demo-track";
 import { formatCurrency } from "@/lib/utils/cn";
@@ -23,9 +22,14 @@ function formatDate(iso: string) {
 
 function TrackInner() {
   const params = useSearchParams();
-  const [input, setInput] = useState("");
-  const [order, setOrder] = useState<TrackedOrder | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const orderParam = params.get("order") ?? "";
+  const [input, setInput] = useState(orderParam);
+  const [order, setOrder] = useState<TrackedOrder | null>(() =>
+    orderParam ? (findDemoOrder(orderParam) ?? null) : null,
+  );
+  const [notFound, setNotFound] = useState(
+    () => Boolean(orderParam && !findDemoOrder(orderParam)),
+  );
 
   function lookup(value: string) {
     const found = findDemoOrder(value);
@@ -33,19 +37,11 @@ function TrackInner() {
     setNotFound(!found && value.trim().length > 0);
   }
 
-  useEffect(() => {
-    const q = params.get("order");
-    if (q) {
-      setInput(q);
-      lookup(q);
-    }
-  }, [params]);
-
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
       <div className="text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 text-xs font-medium text-neutral-600">
-          <Truck className="h-3.5 w-3.5 text-[#FF6B57]" />
+          <Truck className="h-3.5 w-3.5 text-brand" />
           Order tracking
         </span>
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-neutral-900">
@@ -106,7 +102,7 @@ function TrackInner() {
                 </p>
               </div>
               <div className="flex items-center gap-2 rounded-full bg-neutral-50 px-3.5 py-2 text-xs">
-                <CalendarClock className="h-4 w-4 text-[#FF6B57]" />
+                <CalendarClock className="h-4 w-4 text-brand" />
                 <span className="text-neutral-500">Arriving by</span>
                 <span className="font-semibold text-neutral-900">
                   {formatDate(order.estimatedDelivery)}
@@ -178,7 +174,7 @@ function TrackInner() {
 
 export default function TrackPage() {
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
       <Suspense fallback={<div className="flex-1" />}>
         <TrackInner />

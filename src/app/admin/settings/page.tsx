@@ -20,7 +20,7 @@ export default async function AdminSettingsPage() {
 
       {!isAdminLiveMode() && (
         <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Demo mode — Supabase isn&apos;t configured, so changes won&apos;t persist. Add your Supabase
+          Demo mode: Supabase isn&apos;t configured, so changes won&apos;t persist. Add your Supabase
           keys to <code className="font-mono text-xs">.env.local</code> and run the migrations to go live.
         </div>
       )}

@@ -216,7 +216,7 @@ export const DEMO_TICKET_MESSAGES: Record<string, TicketMessage[]> = {
     { id: "msg-1", ticket_id: "tkt-001", author_type: "customer", author_id: null, author_name: "Gabriela Christiansen", body: "Hi, I placed order #AA-83920 five days ago and it still shows 'processing'. Can you tell me when it will ship?", is_internal: false, created_at: iso(0, 5) },
     { id: "msg-2", ticket_id: "tkt-001", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Hi Gabriela! Thanks for reaching out. Let me check on that order for you right away.", is_internal: false, created_at: iso(0, 4) },
     { id: "msg-3", ticket_id: "tkt-001", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Supplier confirmed dispatch is delayed by 1 day. Offering free express upgrade.", is_internal: true, created_at: iso(0, 3) },
-    { id: "msg-4", ticket_id: "tkt-001", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Good news — your order ships tomorrow and we've upgraded you to free express delivery at no charge. You'll have it within 2 days!", is_internal: false, created_at: iso(0, 2) },
+    { id: "msg-4", ticket_id: "tkt-001", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Good news, your order ships tomorrow and we've upgraded you to free express delivery at no charge. You'll have it within 2 days!", is_internal: false, created_at: iso(0, 2) },
   ],
 };
 

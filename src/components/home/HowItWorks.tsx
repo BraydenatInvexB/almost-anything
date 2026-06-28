@@ -4,7 +4,7 @@ const STEPS = [
   {
     icon: Search,
     title: "Search for anything",
-    body: "From everyday essentials to the hard-to-find. If you can name it, you can get it here.",
+    body: "From everyday essentials to the hard to find. If you can name it, you can get it here.",
   },
   {
     icon: Tag,
@@ -39,7 +39,7 @@ export function HowItWorks() {
             <span className="absolute right-5 top-5 text-sm font-bold text-neutral-300">
               0{i + 1}
             </span>
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#CDFF00]">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand">
               <step.icon className="h-5 w-5 text-neutral-900" />
             </span>
             <h3 className="mt-4 text-lg font-bold text-neutral-900">{step.title}</h3>

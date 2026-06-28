@@ -12,7 +12,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   return (
     <div className="flex min-h-dvh flex-col">
       {/* Full-bleed light dashboard surface */}
-      <main className="flex-1 bg-[#F4EEE1] p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 bg-white p-4 sm:p-6 lg:p-8">
         {/* Embedded header */}
         <SiteHeader
           variant="home"

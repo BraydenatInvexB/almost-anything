@@ -21,7 +21,7 @@ export function TrackTimeline({ status }: { status: OrderStatus }) {
     <div>
       <p className="mb-6 text-sm text-neutral-500">
         Current status:{" "}
-        <span className="font-semibold text-neutral-900">{label}</span>
+        <span className="font-semibold text-white">{label}</span>
       </p>
 
       {/* Desktop: horizontal stepper */}
@@ -35,14 +35,14 @@ export function TrackTimeline({ status }: { status: OrderStatus }) {
               {i < TRACK_STEPS.length - 1 && (
                 <span
                   className={`absolute left-1/2 top-5 h-0.5 w-full ${
-                    i < step ? "bg-[#CDFF00]" : "bg-neutral-200"
+                    i < step ? "bg-brand" : "bg-neutral-200"
                   }`}
                 />
               )}
               <span
                 className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
                   done
-                    ? "border-[#CDFF00] bg-[#CDFF00] text-neutral-900"
+                    ? "border-brand bg-brand text-white"
                     : active
                       ? "border-neutral-900 bg-neutral-900 text-white"
                       : "border-neutral-200 bg-white text-neutral-300"
@@ -52,7 +52,7 @@ export function TrackTimeline({ status }: { status: OrderStatus }) {
               </span>
               <span
                 className={`mt-2 text-xs font-medium ${
-                  i <= step ? "text-neutral-900" : "text-neutral-400"
+                  i <= step ? "text-white" : "text-neutral-400"
                 }`}
               >
                 {s}
@@ -74,7 +74,7 @@ export function TrackTimeline({ status }: { status: OrderStatus }) {
                 <span
                   className={`flex h-9 w-9 items-center justify-center rounded-full border-2 ${
                     done
-                      ? "border-[#CDFF00] bg-[#CDFF00] text-neutral-900"
+                      ? "border-brand bg-brand text-white"
                       : active
                         ? "border-neutral-900 bg-neutral-900 text-white"
                         : "border-neutral-200 bg-white text-neutral-300"
@@ -83,10 +83,10 @@ export function TrackTimeline({ status }: { status: OrderStatus }) {
                   {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                 </span>
                 {i < TRACK_STEPS.length - 1 && (
-                  <span className={`my-1 h-8 w-0.5 ${i < step ? "bg-[#CDFF00]" : "bg-neutral-200"}`} />
+                  <span className={`my-1 h-8 w-0.5 ${i < step ? "bg-brand" : "bg-neutral-200"}`} />
                 )}
               </div>
-              <span className={`pt-2 text-sm font-medium ${i <= step ? "text-neutral-900" : "text-neutral-400"}`}>
+              <span className={`pt-2 text-sm font-medium ${i <= step ? "text-white" : "text-neutral-400"}`}>
                 {s}
               </span>
             </li>

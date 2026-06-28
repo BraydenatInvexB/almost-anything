@@ -9,14 +9,14 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles = {
   primary:
-    "border-2 border-black bg-black text-white shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-[#CDFF00] hover:text-black hover:shadow-[5px_5px_0_0_#000]",
+    "border-2 border-black bg-black text-white shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white hover:shadow-[5px_5px_0_0_#000]",
   secondary:
-    "border-2 border-black bg-white text-black shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-[#CDFF00] hover:shadow-[5px_5px_0_0_#000]",
+    "border-2 border-black bg-white text-black shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white hover:shadow-[5px_5px_0_0_#000]",
   ghost: "border-2 border-transparent bg-transparent text-black hover:bg-black/5",
   outline:
-    "border-2 border-black bg-white text-black shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-[#CDFF00] hover:shadow-[5px_5px_0_0_#000]",
+    "border-2 border-black bg-white text-black shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white hover:shadow-[5px_5px_0_0_#000]",
   danger:
-    "border-2 border-black bg-[#FF6B57] text-black shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_#000]",
+    "border-2 border-black bg-brand text-white shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_#000]",
 };
 
 const sizeStyles = {

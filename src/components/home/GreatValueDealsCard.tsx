@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Star, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { formatRating } from "@/lib/utils/cn";
@@ -22,7 +22,7 @@ export function GreatValueDealsCard({ product }: GreatValueDealsCardProps) {
             Great Value Deals
           </h2>
           <p className="mt-1 text-sm text-neutral-500">
-            Find Items On Sale With 50 – 75%
+            Find Items On Sale With 50 to 75%
           </p>
         </div>
 

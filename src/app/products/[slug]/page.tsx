@@ -25,7 +25,7 @@ interface ProductPageProps {
 
 const TRUST = [
   { icon: Truck, label: "Fast delivery" },
-  { icon: RotateCcw, label: "30-day returns" },
+  { icon: RotateCcw, label: "30 day returns" },
   { icon: ShieldCheck, label: "1-year warranty" },
   { icon: Lock, label: "Secure checkout" },
 ];
@@ -45,7 +45,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       : null;
 
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader activeCategory={product.category} />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">

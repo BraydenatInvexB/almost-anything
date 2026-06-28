@@ -28,7 +28,7 @@ export default function CheckoutSuccessContent() {
   }, [orderNumber]);
 
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-16 sm:px-6">

@@ -16,7 +16,7 @@ export function LiveTicker({ items }: LiveTickerProps) {
       <div className="flex w-max animate-marquee items-center gap-8 pr-8">
         {loop.map((item, i) => (
           <span key={i} className="flex shrink-0 items-center gap-3 text-sm font-medium text-neutral-700">
-            <span className="h-1.5 w-1.5 rotate-45 bg-[#CDFF00]" />
+            <span className="h-1.5 w-1.5 rotate-45 bg-brand" />
             {item}
           </span>
         ))}

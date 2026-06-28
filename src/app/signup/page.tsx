@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils/cn";
 
 const PERKS = [
   { icon: Truck, label: "Fast, tracked delivery on every order" },
-  { icon: Tag, label: "Member-only deals across all categories" },
-  { icon: ShieldCheck, label: "Secure checkout & easy 30-day returns" },
+  { icon: Tag, label: "Member only deals across all categories" },
+  { icon: ShieldCheck, label: "Secure checkout & easy 30 day returns" },
 ];
 
 export default function SignupPage() {
@@ -56,7 +56,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-dvh flex-col bg-white">
       <SiteHeader />
 
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-12">
@@ -65,7 +65,7 @@ export default function SignupPage() {
           <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-neutral-200 bg-linear-to-br from-neutral-50 to-[#eef3df] p-10 lg:flex">
             <div
               className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full"
-              style={{ background: "radial-gradient(circle, #CDFF00 0%, transparent 70%)", opacity: 0.18 }}
+              style={{ background: "radial-gradient(circle, var(--brand) 0%, transparent 70%)", opacity: 0.18 }}
             />
             <div
               className="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full"
@@ -74,7 +74,7 @@ export default function SignupPage() {
 
             <div className="relative">
               <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#CDFF00]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-brand" />
                 Almost Anything
               </span>
               <h2 className="mt-8 text-3xl font-extrabold leading-tight text-neutral-900">
@@ -90,8 +90,8 @@ export default function SignupPage() {
               <ul className="mt-8 flex flex-col gap-3">
                 {PERKS.map(({ icon: Icon, label }) => (
                   <li key={label} className="flex items-center gap-3 text-sm text-neutral-700">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#CDFF00]/15">
-                      <Icon className="h-4 w-4 text-[#FF6B57]" />
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/15">
+                      <Icon className="h-4 w-4 text-brand" />
                     </span>
                     {label}
                   </li>
@@ -258,7 +258,7 @@ export default function SignupPage() {
 
                 {!isConfigured && (
                   <p className="text-center text-xs text-neutral-400">
-                    Connect Supabase in <code className="font-mono">.env.local</code> to enable sign-up.
+                    Connect Supabase in <code className="font-mono">.env.local</code> to enable sign up.
                   </p>
                 )}
 

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, ShoppingBag, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/context/CartProvider";
 import { useFavorites } from "@/context/FavoritesProvider";
+import { WishlistPicker } from "@/components/products/WishlistPicker";
 import { cn } from "@/lib/utils/cn";
 
 interface ProductActionsProps {
@@ -27,8 +28,45 @@ export function ProductActions({
   rating,
 }: ProductActionsProps) {
   const { addItem, isInCart } = useCart();
-  const { toggleFavorite, isFavorite } = useFavorites();
-  const [added, setAdded] = useState(false);
+  const { isFavorite } = useFavorites();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
+  const [heartAnimating, setHeartAnimating] = useState(false);
+  const heartRef = useRef<HTMLButtonElement>(null);
+  const wasFavorited = useRef(isFavorite(slug));
+  const timerRef = useRef<number | undefined>(undefined);
+
+  const item = {
+    id: productId,
+    slug,
+    name,
+    price,
+    currency,
+    imageUrl,
+    rating,
+  };
+
+  const inCart = isInCart(slug);
+  const favorited = isFavorite(slug);
+  const showCartSuccess = justAdded || inCart;
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!favorited || wasFavorited.current === favorited) {
+      wasFavorited.current = favorited;
+      return;
+    }
+    wasFavorited.current = favorited;
+    setHeartAnimating(true);
+    const t = window.setTimeout(() => setHeartAnimating(false), 440);
+    return () => window.clearTimeout(t);
+  }, [favorited]);
 
   function handleAddToCart() {
     addItem({
@@ -40,50 +78,62 @@ export function ProductActions({
       currency,
       imageUrl,
     });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    setJustAdded(true);
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => setJustAdded(false), 1400);
   }
-
-  function handleToggleFavorite() {
-    toggleFavorite({ id: productId, slug, name, price, currency, imageUrl, rating });
-  }
-
-  const inCart = isInCart(slug);
-  const favorited = isFavorite(slug);
 
   return (
     <div className="mt-8 flex gap-3">
       <Button
         size="lg"
-        className="flex-1 rounded-full"
+        className={cn(
+          "flex-1 rounded-full",
+          showCartSuccess && "border-brand bg-brand hover:bg-brand",
+          justAdded && "animate-action-success",
+        )}
         onClick={handleAddToCart}
       >
-        {added || inCart ? (
+        {showCartSuccess ? (
           <>
-            <Check className="h-4 w-4" />
-            {added ? "Added!" : "In Cart"}
+            <Check className="h-4 w-4" strokeWidth={3} />
+            {justAdded ? "Added" : "In cart"}
           </>
         ) : (
           <>
             <ShoppingBag className="h-4 w-4" />
-            Add to Cart
+            Add to cart
           </>
         )}
       </Button>
       <Button
+        ref={heartRef}
         variant="secondary"
         size="icon"
-        className={cn("rounded-full", favorited && "bg-red-50")}
-        onClick={handleToggleFavorite}
-        aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
+        className={cn(
+          "rounded-full",
+          favorited && "border-brand bg-brand/10",
+          pickerOpen && "ring-2 ring-brand ring-offset-2",
+        )}
+        onClick={() => setPickerOpen(true)}
+        aria-label={favorited ? "Manage wishlist lists" : "Save to wishlist"}
+        aria-expanded={pickerOpen}
+        aria-haspopup="dialog"
       >
         <Heart
           className={cn(
-            "h-4 w-4",
-            favorited ? "fill-red-500 text-red-500" : "text-neutral-600",
+            "h-4 w-4 transition-colors duration-200",
+            favorited ? "fill-brand text-brand" : "text-neutral-600",
+            heartAnimating && "animate-heart-save",
           )}
         />
       </Button>
+      <WishlistPicker
+        product={item}
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        anchorRef={heartRef}
+      />
     </div>
   );
 }

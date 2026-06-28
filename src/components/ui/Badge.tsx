@@ -10,7 +10,7 @@ const variantStyles = {
   default: "bg-white text-black",
   exclusive: "bg-[#C7A8FF] text-black uppercase tracking-wider text-[10px]",
   rating: "bg-white text-black",
-  deal: "bg-[#FF6B57] text-white",
+  deal: "bg-brand text-white",
 };
 
 export function Badge({

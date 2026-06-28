@@ -2,11 +2,13 @@
 
 :root {
   --bg-outer: #c9cdd4;
-  --bg-page: #e8eaed;
+  --bg-page: #ffffff;
   --foreground: #0a0a0a;
   --card: #ffffff;
   --muted: #6b7280;
-  --lime: #CDFF00;
+  --brand: #e30613;
+  --brand-foreground: #ffffff;
+  --lime: var(--brand);
   --radius-card: 28px;
 }
 
@@ -15,7 +17,9 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-muted: var(--muted);
-  --color-lime: var(--lime);
+  --color-brand: #e30613;
+  --color-brand-foreground: #ffffff;
+  --color-lime: #e30613;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -36,7 +40,7 @@
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-    background: #f4eee1;
+    background: #ffffff;
     color: var(--foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -45,7 +49,7 @@
 }
 
 ::selection {
-  background: #0a0a0a;
+  background: var(--brand);
   color: #ffffff;
 }
 
@@ -162,6 +166,59 @@ input[type="number"] {
 }
 .animate-page-in { animation: page-in 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
 
+/* Cart / wishlist action feedback */
+@keyframes action-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.14); }
+  70% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+.animate-action-pop {
+  animation: action-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes badge-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+.animate-badge-pop {
+  animation: badge-pop 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes heart-save {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.32); }
+  60% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.animate-heart-save {
+  animation: heart-save 0.44s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes action-success {
+  0% { background-color: #0a0a0a; }
+  40% { background-color: #e30613; }
+  100% { background-color: #0a0a0a; }
+}
+.animate-action-success {
+  animation: action-success 0.55s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-toast-in {
+  animation: toast-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .animate-marquee-fast,
@@ -175,7 +232,12 @@ input[type="number"] {
   .animate-float,
   .animate-float-slow,
   .animate-float-delay,
-  .animate-page-in {
+  .animate-page-in,
+  .animate-action-pop,
+  .animate-badge-pop,
+  .animate-heart-save,
+  .animate-action-success,
+  .animate-toast-in {
     animation: none !important;
   }
 }

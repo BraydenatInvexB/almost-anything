@@ -51,7 +51,7 @@ export default function RequestPage() {
   }
 
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
@@ -70,7 +70,7 @@ export default function RequestPage() {
 
         {submitted ? (
           <Card variant="elevated" className="mt-10 bg-white p-10 text-center">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#CDFF00]">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand">
               <Check className="h-7 w-7 text-neutral-900" />
             </span>
             <h2 className="mt-5 text-xl font-bold text-neutral-900">

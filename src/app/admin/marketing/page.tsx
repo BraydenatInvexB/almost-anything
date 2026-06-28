@@ -8,8 +8,8 @@ import { formatCurrency } from "@/lib/utils/cn";
 
 const CAMPAIGNS = [
   { name: "Summer Clearance", channel: "Email + Banner", status: "Live", reach: "12,480", ctr: "4.8%" },
-  { name: "New Arrivals Drop", channel: "Email", status: "Scheduled", reach: "—", ctr: "—" },
-  { name: "VIP Early Access", channel: "Push + Email", status: "Draft", reach: "—", ctr: "—" },
+  { name: "New Arrivals Drop", channel: "Email", status: "Scheduled", reach: "N/A", ctr: "N/A" },
+  { name: "VIP Early Access", channel: "Push + Email", status: "Draft", reach: "N/A", ctr: "N/A" },
 ];
 
 export default async function AdminMarketingPage() {

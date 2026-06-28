@@ -3,8 +3,6 @@ import type { Json } from "@/types/database";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-const LOCAL_ORDERS_KEY = "aa_orders";
-
 interface DbOrderItem {
   id: string;
   name: string;

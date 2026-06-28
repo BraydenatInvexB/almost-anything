@@ -19,7 +19,7 @@ export function CategoryConstellation() {
       {/* faint accent glow */}
       <div
         className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full blur-3xl"
-        style={{ background: "radial-gradient(circle, rgba(205,255,0,0.25), transparent 70%)" }}
+        style={{ background: "radial-gradient(circle, rgba(227,6,19,0.25), transparent 70%)" }}
       />
 
       <div className="relative flex flex-col gap-1.5">
@@ -48,7 +48,7 @@ export function CategoryConstellation() {
 
         <Link
           href="/products"
-          className="group flex items-center gap-2 rounded-full bg-[#CDFF00] px-5 py-2.5 text-sm font-bold text-neutral-900 transition-all hover:scale-[1.03] hover:shadow-[0_0_24px_-6px_rgba(205,255,0,0.8)]"
+          className="group flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-bold text-white transition-all hover:scale-[1.03] hover:shadow-[0_0_24px_-6px_rgba(227,6,19,0.8)]"
         >
           Browse all
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

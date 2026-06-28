@@ -24,6 +24,19 @@ export interface FavoriteItem {
   rating: number;
 }
 
+export interface WishlistList {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface WishlistsState {
+  lists: WishlistList[];
+  items: Record<string, FavoriteItem>;
+  membership: Record<string, string[]>;
+  defaultListId: string;
+}
+
 export interface ShippingAddress {
   fullName: string;
   email: string;

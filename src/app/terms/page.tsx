@@ -6,7 +6,7 @@ import { SITE_CONFIG } from "@/config/site";
 
 export default function TermsPage() {
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
         <h1 className="text-3xl font-bold text-neutral-900">Terms of Service</h1>

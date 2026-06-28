@@ -3,6 +3,9 @@ import { getCurrentStaff } from "@/services/admin-service";
 import { can } from "@/config/rbac";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { Database, Json } from "@/types/database";
+
+type OrderUpdate = Database["public"]["Tables"]["orders"]["Update"];
 
 interface UpdateBody {
   id?: string;
@@ -46,14 +49,19 @@ export async function PATCH(request: Request) {
   if (isSupabaseConfigured()) {
     try {
       const supabase = await createClient();
-      const update: Record<string, unknown> = {};
+      const update: OrderUpdate = {};
       if (body.status) update.status = body.status;
       if (body.carrier || body.trackingNumber) {
-        update.tracking = {
-          carrier: body.carrier ?? null,
-          trackingNumber: body.trackingNumber ?? null,
-          updatedAt: new Date().toISOString(),
-        };
+        update.metadata = {
+          tracking: {
+            carrier: body.carrier ?? null,
+            trackingNumber: body.trackingNumber ?? null,
+            updatedAt: new Date().toISOString(),
+          },
+        } satisfies Json;
+      }
+      if (Object.keys(update).length === 0) {
+        return NextResponse.json({ ok: true });
       }
       const { error } = await supabase
         .from("orders")

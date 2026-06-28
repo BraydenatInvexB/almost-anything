@@ -16,23 +16,22 @@ import { customerStatus } from "@/lib/orders/status";
 export default function OrdersPage() {
   const { user, isConfigured } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fetched, setFetched] = useState(false);
 
   useEffect(() => {
-    if (!user || !isConfigured) {
-      setLoading(false);
-      return;
-    }
+    if (!user || !isConfigured) return;
 
     fetch("/api/orders")
       .then((r) => r.json())
       .then((data) => setOrders(data.orders ?? []))
       .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
+      .finally(() => setFetched(true));
   }, [user, isConfigured]);
 
+  const loading = Boolean(user && isConfigured && !fetched);
+
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 sm:px-6">

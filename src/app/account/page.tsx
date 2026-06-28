@@ -15,7 +15,7 @@ import { useCart } from "@/context/CartProvider";
 export default function AccountPage() {
   const router = useRouter();
   const { user, signOut, loading, isConfigured } = useAuth();
-  const { favorites } = useFavorites();
+  const { favoriteCount } = useFavorites();
   const { itemCount } = useCart();
 
   async function handleSignOut() {
@@ -24,7 +24,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 sm:px-6">
@@ -101,7 +101,7 @@ export default function AccountPage() {
                   <Heart className="h-8 w-8 fill-red-500 text-red-500" />
                   <h3 className="mt-3 font-semibold">Favorites</h3>
                   <p className="mt-1 text-sm text-neutral-500">
-                    {favorites.length} saved items
+                    {favoriteCount} saved items
                   </p>
                 </Card>
               </Link>

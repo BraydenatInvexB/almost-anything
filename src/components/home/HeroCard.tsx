@@ -30,7 +30,7 @@ const SOCIAL_ICONS = [
 ];
 
 const FEATURES = [
-  { num: "01", title: "Almost Everything", desc: "Thousands of products across home, tech, and more — all in one store." },
+  { num: "01", title: "Almost Everything", desc: "Thousands of products across home, tech, and more, all in one store." },
   { num: "02", title: "Great Prices, Fast Delivery", desc: "Fair prices on every item, shipped quickly to your door." },
 ];
 
@@ -79,16 +79,16 @@ export function HeroCard({ product }: HeroCardProps) {
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link
               href="/products"
-              className="group flex items-center gap-2 rounded-full bg-[#CDFF00] px-5 py-2.5 text-sm font-semibold text-neutral-900 transition-all hover:scale-[1.03] hover:shadow-md"
+              className="group flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-all hover:scale-[1.03] hover:shadow-md"
             >
               Browse Products
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 transition-transform group-hover:rotate-45">
-                <ArrowUpRight className="h-3 w-3 text-[#CDFF00]" />
+                <ArrowUpRight className="h-3 w-3 text-brand" />
               </span>
             </Link>
             <Link
               href="/products?sort=featured"
-              className="rounded-full border border-neutral-200 px-5 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:text-neutral-900"
+              className="rounded-full border border-neutral-200 px-5 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-400 hover:text-white"
             >
               Today&apos;s Deals
             </Link>
@@ -104,7 +104,7 @@ export function HeroCard({ product }: HeroCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={s.label}
-                className="text-neutral-400 transition-colors hover:text-neutral-900"
+                className="text-neutral-400 transition-colors hover:text-white"
               >
                 <svg viewBox="0 0 24 24" fill={s.isStroke ? "none" : "currentColor"} stroke={s.isStroke ? "currentColor" : "none"} strokeWidth={s.isStroke ? 2 : 0} className="h-4 w-4">
                   <path d={s.path} />
@@ -117,10 +117,10 @@ export function HeroCard({ product }: HeroCardProps) {
         {/* Product image with floating dots */}
         <div className="relative hidden flex-1 items-center justify-center lg:flex">
           {/* Floating decoration dots */}
-          <div className="animate-float-slow absolute left-4 top-8 h-4 w-4 rounded-full bg-[#CDFF00]" />
+          <div className="animate-float-slow absolute left-4 top-8 h-4 w-4 rounded-full bg-brand" />
           <div className="animate-float absolute right-10 top-2 h-3 w-3 rounded-full bg-neutral-900" />
           <div className="animate-float-delay absolute bottom-12 left-8 h-2.5 w-2.5 rounded-full bg-neutral-300" />
-          <div className="animate-float absolute bottom-4 right-4 h-3.5 w-3.5 rounded-full bg-[#CDFF00]/60" />
+          <div className="animate-float absolute bottom-4 right-4 h-3.5 w-3.5 rounded-full bg-brand/60" />
           <div className="animate-float-slow absolute right-0 top-1/3 h-2 w-2 rounded-full bg-neutral-900/40" />
 
           {product.imageUrl ? (

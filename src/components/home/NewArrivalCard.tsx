@@ -16,7 +16,7 @@ export function NewArrivalCard({ product }: NewArrivalCardProps) {
         <div className="mb-3 flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold text-neutral-500">New Arrival</p>
-            <p className="mt-0.5 text-[15px] font-bold leading-tight text-neutral-900">
+            <p className="mt-0.5 text-[15px] font-bold leading-tight text-white">
               {product.name.split(" ").slice(0, 3).join(" ")}
             </p>
           </div>
@@ -42,12 +42,12 @@ export function NewArrivalCard({ product }: NewArrivalCardProps) {
 
         {/* Price */}
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-sm font-bold text-neutral-900">
+          <span className="text-sm font-bold text-white">
             {formatCurrency(product.price, product.currency)}
           </span>
           {product.dealDiscountPercent && product.dealDiscountPercent > 0 && (
-            <span className="rounded-full bg-[#CDFF00] px-2 py-0.5 text-[10px] font-bold text-neutral-900">
-              -{product.dealDiscountPercent}%
+            <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-white">
+              {product.dealDiscountPercent}% off
             </span>
           )}
         </div>

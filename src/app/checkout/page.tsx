@@ -75,7 +75,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+      <div className="flex min-h-full flex-col bg-white">
         <SiteHeader />
         <main className="mx-auto max-w-lg flex-1 px-4 py-20 text-center">
           <p className="text-neutral-500">Your cart is empty.</p>
@@ -89,7 +89,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 sm:px-6">

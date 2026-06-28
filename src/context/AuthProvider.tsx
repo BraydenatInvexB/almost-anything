@@ -36,20 +36,17 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const isConfigured = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
       !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project"),
   );
 
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(isConfigured);
+
   useEffect(() => {
-    if (!isConfigured) {
-      setLoading(false);
-      return;
-    }
+    if (!isConfigured) return;
 
     const supabase = createClient();
 

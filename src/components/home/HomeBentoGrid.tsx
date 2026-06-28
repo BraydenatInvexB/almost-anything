@@ -42,7 +42,7 @@ export async function HomeBentoGrid({ category, query }: HomeBentoGridProps) {
       <div className="mt-4">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-2 rounded-2xl border-[3px] border-black bg-white px-5 py-4 shadow-[5px_5px_0_0_#000]">
           <h2 className="text-2xl font-black uppercase tracking-tight text-black sm:text-3xl">{title}</h2>
-          <span className="rounded-full border-2 border-black bg-[#CDFF00] px-3 py-1 text-xs font-extrabold uppercase">
+          <span className="rounded-full border-2 border-black bg-brand px-3 py-1 text-xs font-extrabold uppercase text-white">
             {pool.length} items
           </span>
         </div>

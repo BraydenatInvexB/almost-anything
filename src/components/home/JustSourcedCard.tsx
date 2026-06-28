@@ -14,7 +14,7 @@ export function JustSourcedCard({ product }: JustSourcedCardProps) {
       <div className="relative overflow-hidden rounded-[28px] bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
         {/* Badge + arrow */}
         <div className="mb-3 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#CDFF00] px-2.5 py-1 text-[10px] font-bold text-neutral-900">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-2.5 py-1 text-[10px] font-bold text-white">
             <span className="h-1.5 w-1.5 rounded-full bg-neutral-900" />
             Popular
           </span>
@@ -39,9 +39,9 @@ export function JustSourcedCard({ product }: JustSourcedCardProps) {
 
         {/* Name + price */}
         <div className="mt-3">
-          <p className="line-clamp-1 text-sm font-bold text-neutral-900">{product.name}</p>
+          <p className="line-clamp-1 text-sm font-bold text-white">{product.name}</p>
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-xs font-semibold text-neutral-900">
+            <span className="text-xs font-semibold text-white">
               {formatCurrency(product.price, product.currency)}
             </span>
             {product.rating && (

@@ -33,7 +33,7 @@ export default async function AdminSupportPage({
   const unassigned = tickets.filter((t) => !t.assigned_to).length;
 
   const agentName = (id: string | null) =>
-    id ? (team.find((s) => s.id === id)?.full_name ?? "—") : "Unassigned";
+    id ? (team.find((s) => s.id === id)?.full_name ?? "N/A") : "Unassigned";
 
   return (
     <>

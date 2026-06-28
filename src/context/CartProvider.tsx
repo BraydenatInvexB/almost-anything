@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { CartItem } from "@/types/cart";
 import { generateRequestId } from "@/lib/utils/cn";
+import { useFeedback } from "@/context/FeedbackProvider";
 
 const STORAGE_KEY = "aa_cart";
 
@@ -41,12 +42,15 @@ function saveCart(items: CartItem[]) {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { pulseCart } = useFeedback();
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrate cart from localStorage after mount */
     setItems(loadCart());
     setHydrated(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   useEffect(() => {
@@ -79,8 +83,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           },
         ];
       });
+      pulseCart();
     },
-    [],
+    [pulseCart],
   );
 
   const removeItem = useCallback((id: string) => {

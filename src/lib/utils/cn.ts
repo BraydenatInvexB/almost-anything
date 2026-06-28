@@ -7,7 +7,6 @@ export function cn(...inputs: ClassValue[]): string {
 
 export function formatCurrency(
   amount: number,
-  _currency: string = "ZAR",
   locale: string = "en-US",
 ): string {
   // The store operates in South African Rand. We render the "R" symbol with

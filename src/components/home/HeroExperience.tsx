@@ -14,14 +14,14 @@ export function HeroExperience({ showcase }: { showcase: ProductCardData[] }) {
         {/* ── Left: copy + search ── */}
         <div className="relative flex flex-col justify-center px-6 py-12 sm:px-10 sm:py-16">
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3.5 py-1.5 text-xs font-medium text-neutral-600">
-            <Sparkles className="h-3.5 w-3.5 text-[#6f8a00]" />
+            <Sparkles className="h-3.5 w-3.5 text-brand" />
             Fresh stock added every week
           </span>
 
           <h1 className="mt-6 text-4xl font-extrabold leading-[1.05] tracking-tight text-neutral-900 sm:text-6xl">
             Almost anything,
             <br />
-            <span className="text-[#7a9600]">all in one store.</span>
+            <span className="text-brand">all in one store.</span>
           </h1>
 
           <p className="mt-5 max-w-md text-base leading-relaxed text-neutral-500">
@@ -48,7 +48,7 @@ export function HeroExperience({ showcase }: { showcase: ProductCardData[] }) {
 
         {/* ── Right: visual showcase ── */}
         <div className="relative min-h-[260px] overflow-hidden bg-linear-to-br from-[#eef3df] via-neutral-50 to-[#e8eef6] p-5 sm:min-h-[420px] sm:p-7">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[#9bbf00]/25 blur-3xl" />
+          <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-brand/15 blur-3xl" />
 
           <div className="relative grid h-full grid-cols-2 grid-rows-2 gap-3">
             {pics[0] && <HeroPic product={pics[0]} className="row-span-2" sizes="(max-width:1024px) 50vw, 25vw" tag="Trending" />}
@@ -58,7 +58,7 @@ export function HeroExperience({ showcase }: { showcase: ProductCardData[] }) {
 
           {/* Floating accent chip */}
           <div className="absolute bottom-9 left-3 hidden items-center gap-2 rounded-2xl bg-white/90 px-3.5 py-2.5 shadow-lg backdrop-blur sm:flex">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#9bbf00] text-sm font-bold text-neutral-900">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white">
               %
             </span>
             <div className="leading-tight">
