@@ -33,6 +33,8 @@ export type StaffRole =
   | "support_agent"
   | "marketing"
   | "fulfillment"
+  | "finance"
+  | "hr"
   | "analyst";
 
 export type StaffStatus = "invited" | "active" | "suspended";
@@ -346,6 +348,8 @@ export interface Database {
           last_active_at: string | null;
           created_at: string;
           updated_at: string;
+          extra_permissions?: Json;
+          denied_permissions?: Json;
         };
         Insert: {
           id?: string;
@@ -363,6 +367,8 @@ export interface Database {
           last_active_at?: string | null;
           created_at?: string;
           updated_at?: string;
+          extra_permissions?: Json;
+          denied_permissions?: Json;
         };
         Update: Partial<Database["public"]["Tables"]["staff_members"]["Insert"]>;
         Relationships: [];
@@ -383,6 +389,7 @@ export interface Database {
           maintenance_mode: boolean;
           updated_by: string | null;
           updated_at: string;
+          extended_config?: Json;
         };
         Insert: Partial<Database["public"]["Tables"]["platform_settings"]["Row"]>;
         Update: Partial<Database["public"]["Tables"]["platform_settings"]["Row"]>;

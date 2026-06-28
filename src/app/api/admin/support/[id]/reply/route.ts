@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { can, staffCan } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 
 const schema = z.object({
@@ -15,7 +15,7 @@ export async function POST(
 ) {
   const staff = await getCurrentStaff();
   if (!staff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!can(staff.role, "support.manage")) {
+  if (!staffCan(staff, "support.manage")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

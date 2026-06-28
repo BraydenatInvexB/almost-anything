@@ -4,16 +4,30 @@ import { useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { Panel } from "@/components/admin/ui";
 import { cn } from "@/lib/utils/cn";
+import { COURIERS } from "@/config/couriers";
 import type { PlatformSettings } from "@/types/database";
 
 export function SettingsForm({
   settings,
   canManage,
+  extendedConfig,
 }: {
   settings: PlatformSettings;
   canManage: boolean;
+  extendedConfig?: {
+    embedShippingInPrice: boolean;
+    defaultCourierId: string;
+    enabledCourierIds: string[];
+  };
 }) {
   const [form, setForm] = useState(settings);
+  const [extConfig, setExtConfig] = useState(
+    extendedConfig ?? {
+      embedShippingInPrice: true,
+      defaultCourierId: "aramex",
+      enabledCourierIds: ["courier_guy", "fastway", "aramex"],
+    },
+  );
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
 
   function update<K extends keyof PlatformSettings>(key: K, value: PlatformSettings[K]) {
@@ -38,6 +52,8 @@ export function SettingsForm({
           tax_rate: Number(form.tax_rate),
           auto_publish_sourced: form.auto_publish_sourced,
           maintenance_mode: form.maintenance_mode,
+          currency: form.currency,
+          extendedConfig: extConfig,
         }),
       });
     } catch {
@@ -106,33 +122,63 @@ export function SettingsForm({
 
       <Panel title="Shipping & Tax">
         <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-3">
-          <Field label="Free shipping over ($)">
-            <input
-              type="number"
-              disabled={disabled}
-              value={form.free_shipping_threshold}
-              onChange={(e) => update("free_shipping_threshold", Number(e.target.value))}
-              className="input disabled:opacity-60"
-            />
+          <Field label="Currency">
+            <input disabled={disabled} value={form.currency} onChange={(e) => update("currency", e.target.value)} className="input disabled:opacity-60" />
           </Field>
-          <Field label="Flat shipping fee ($)">
-            <input
-              type="number"
-              disabled={disabled}
-              value={form.flat_shipping_fee}
-              onChange={(e) => update("flat_shipping_fee", Number(e.target.value))}
-              className="input disabled:opacity-60"
-            />
+          <Field label="Free shipping over (ZAR)" hint="Above this, customer sees free delivery.">
+            <input type="number" disabled={disabled} value={form.free_shipping_threshold} onChange={(e) => update("free_shipping_threshold", Number(e.target.value))} className="input disabled:opacity-60" />
+          </Field>
+          <Field label="Flat shipping fee (ZAR)" hint="Internal fallback if not embedded in price.">
+            <input type="number" disabled={disabled} value={form.flat_shipping_fee} onChange={(e) => update("flat_shipping_fee", Number(e.target.value))} className="input disabled:opacity-60" />
           </Field>
           <Field label="Tax rate (0 to 1)">
-            <input
-              type="number"
-              step="0.01"
+            <input type="number" step="0.01" disabled={disabled} value={form.tax_rate} onChange={(e) => update("tax_rate", Number(e.target.value))} className="input disabled:opacity-60" />
+          </Field>
+        </div>
+        <Toggle
+          label="Embed delivery in product prices"
+          description="Customers always see FREE delivery at checkout. Courier cost is built into retail pricing so margin covers logistics."
+          checked={extConfig.embedShippingInPrice}
+          disabled={disabled}
+          onChange={(v) => setExtConfig((c) => ({ ...c, embedShippingInPrice: v }))}
+        />
+      </Panel>
+
+      <Panel title="Couriers">
+        <div className="space-y-3 p-5">
+          <p className="text-sm text-neutral-500">Enable couriers available at checkout. The Courier Guy, Fastway, and Aramex.</p>
+          {COURIERS.map((c) => (
+            <label key={c.id} className="flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3">
+              <div>
+                <p className="font-medium text-neutral-900">{c.name}</p>
+                <p className="text-xs text-neutral-500">{c.etaLabel} · Internal cost {c.baseCost} ZAR</p>
+              </div>
+              <input
+                type="checkbox"
+                disabled={disabled}
+                checked={extConfig.enabledCourierIds.includes(c.id)}
+                onChange={(e) => {
+                  setExtConfig((cfg) => ({
+                    ...cfg,
+                    enabledCourierIds: e.target.checked
+                      ? [...cfg.enabledCourierIds, c.id]
+                      : cfg.enabledCourierIds.filter((id) => id !== c.id),
+                  }));
+                }}
+              />
+            </label>
+          ))}
+          <Field label="Default courier">
+            <select
               disabled={disabled}
-              value={form.tax_rate}
-              onChange={(e) => update("tax_rate", Number(e.target.value))}
+              value={extConfig.defaultCourierId}
+              onChange={(e) => setExtConfig((c) => ({ ...c, defaultCourierId: e.target.value }))}
               className="input disabled:opacity-60"
-            />
+            >
+              {COURIERS.filter((c) => extConfig.enabledCourierIds.includes(c.id)).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </Field>
         </div>
       </Panel>

@@ -1,21 +1,26 @@
-import { getCurrentStaff, getSettings, isAdminLiveMode } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { getCurrentStaff, getSettings, getPlatformExtendedConfig, isAdminLiveMode } from "@/services/admin-service";
+import { can, staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader } from "@/components/admin/ui";
-import { SettingsForm } from "@/components/admin/SettingsForm";
+import { SettingsConsole } from "@/components/admin/SettingsConsole";
 
 export default async function AdminSettingsPage() {
   const staff = await getCurrentStaff();
-  if (!staff || !can(staff.role, "settings.view")) return <AccessDenied feature="settings" />;
+  if (!staff || !staffCan(staff, "settings.view")) return <AccessDenied feature="settings" />;
 
   const settings = await getSettings();
-  const canManage = can(staff.role, "settings.manage");
+  const extendedConfig = await getPlatformExtendedConfig();
+  const canManage = staffCan(staff, "settings.manage");
 
   return (
     <>
       <PageHeader
         title="Platform Settings"
-        subtitle="Control pricing, markup, shipping, and store-wide automation."
+        subtitle="Configure store identity, pricing, tax, courier partners, and automation."
+        breadcrumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Settings" },
+        ]}
       />
 
       {!isAdminLiveMode() && (
@@ -25,7 +30,7 @@ export default async function AdminSettingsPage() {
         </div>
       )}
 
-      <SettingsForm settings={settings} canManage={canManage} />
+      <SettingsConsole settings={settings} canManage={canManage} extendedConfig={extendedConfig} />
     </>
   );
 }

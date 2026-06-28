@@ -1,12 +1,15 @@
+import Link from "next/link";
 import {
   DollarSign,
   ShoppingCart,
   Users,
   LifeBuoy,
   Package,
+  Truck,
+  BarChart3,
 } from "lucide-react";
-import { getCurrentStaff, getDashboardStats } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { getCurrentStaff, getDashboardStats, getFulfillmentQueue, listTickets } from "@/services/admin-service";
+import { can, staffCan } from "@/config/rbac";
 import { ROLE_META } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import {
@@ -17,75 +20,111 @@ import {
   Table,
   Th,
   Td,
+  WorkflowCard,
+  BtnSecondary,
 } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
 
 export default async function AdminDashboardPage() {
   const staff = await getCurrentStaff();
-  if (!staff || !can(staff.role, "dashboard.view")) return <AccessDenied feature="the dashboard" />;
+  if (!staff || !staffCan(staff, "dashboard.view")) return <AccessDenied feature="the dashboard" />;
 
   const stats = await getDashboardStats();
-  const maxRevenue = Math.max(...stats.revenueSeries.map((d) => d.value));
+  const fulfillment = await getFulfillmentQueue();
+  const tickets = await listTickets();
+  const urgentTickets = tickets.filter((t) => t.priority === "urgent" && t.status !== "closed").length;
+  const maxRevenue = Math.max(...stats.revenueSeries.map((d) => d.value), 1);
 
   return (
     <>
       <PageHeader
-        title={`Welcome back, ${staff.full_name.split(" ")[0]}`}
-        subtitle={`${ROLE_META[staff.role].label} · Here's how Almost Anything is performing today.`}
+        title={`Operations overview`}
+        subtitle={`${ROLE_META[staff.role].label} · ${staff.full_name.split(" ")[0]}, here is what needs your attention today.`}
+        action={<BtnSecondary href="/admin/reports">Full reports</BtnSecondary>}
       />
+
+      {/* Workflow queues */}
+      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <WorkflowCard
+          title="Fulfillment queue"
+          count={fulfillment.length}
+          description="Orders paid or purchased that need warehouse action."
+          href="/admin/fulfillment"
+          urgent={fulfillment.length > 0}
+        />
+        <WorkflowCard
+          title="Open support"
+          count={stats.openTickets}
+          description="Customer tickets waiting for a response."
+          href="/admin/support"
+          urgent={stats.openTickets > 3}
+        />
+        <WorkflowCard
+          title="Low / out of stock"
+          count={stats.lowStock}
+          description="Catalog items that may block new orders."
+          href="/admin/products"
+          urgent={stats.lowStock > 0}
+        />
+        <WorkflowCard
+          title="Urgent tickets"
+          count={urgentTickets}
+          description="High-priority support cases requiring immediate attention."
+          href="/admin/support"
+          urgent={urgentTickets > 0}
+        />
+      </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Revenue (30d)"
-          value={formatCurrency(stats.revenue, "USD")}
+          value={formatCurrency(stats.revenue, "ZAR")}
           change={stats.revenueChange}
           icon={<DollarSign className="h-4 w-4" />}
-          accent="bg-emerald-500"
+          accent="bg-brand"
         />
         <StatCard
           label="Orders"
           value={String(stats.orders)}
           change={stats.ordersChange}
           icon={<ShoppingCart className="h-4 w-4" />}
-          accent="bg-blue-500"
+          accent="bg-neutral-950"
         />
         <StatCard
           label="Customers"
           value={String(stats.customers)}
           change={stats.customersChange}
           icon={<Users className="h-4 w-4" />}
-          accent="bg-violet-500"
+          accent="bg-blue-600"
         />
         <StatCard
           label="Avg. order value"
-          value={formatCurrency(stats.avgOrderValue, "USD")}
+          value={formatCurrency(stats.avgOrderValue, "ZAR")}
           icon={<Package className="h-4 w-4" />}
-          accent="bg-neutral-900"
+          accent="bg-emerald-600"
         />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Revenue chart */}
         <Panel title="Revenue this week" className="lg:col-span-2">
-          <div className="flex h-56 gap-3 px-5 py-6">
+          <div className="flex h-56 gap-2 px-5 py-6">
             {stats.revenueSeries.map((d) => (
               <div key={d.label} className="flex flex-1 flex-col items-center gap-2">
                 <div className="flex w-full flex-1 items-end">
                   <div
-                    className="w-full rounded-t-lg bg-neutral-900 transition-all hover:bg-neutral-700"
+                    className="w-full rounded-t-md bg-neutral-950 transition-all hover:bg-brand"
                     style={{ height: `${Math.max(4, (d.value / maxRevenue) * 100)}%` }}
-                    title={formatCurrency(d.value, "USD")}
+                    title={formatCurrency(d.value, "ZAR")}
                   />
                 </div>
-                <span className="text-[11px] text-neutral-400">{d.label}</span>
+                <span className="text-[10px] font-medium text-neutral-400">{d.label}</span>
               </div>
             ))}
           </div>
         </Panel>
 
-        {/* Quick health */}
-        <Panel title="Operations">
+        <Panel title="Team & systems">
           <div className="flex flex-col divide-y divide-neutral-100">
             <HealthRow
               icon={<LifeBuoy className="h-4 w-4 text-amber-600" />}
@@ -94,13 +133,19 @@ export default async function AdminDashboardPage() {
               href="/admin/support"
             />
             <HealthRow
+              icon={<Truck className="h-4 w-4 text-brand" />}
+              label="Fulfillment backlog"
+              value={String(fulfillment.length)}
+              href="/admin/fulfillment"
+            />
+            <HealthRow
               icon={<Package className="h-4 w-4 text-red-500" />}
-              label="Low / out of stock"
+              label="Stock alerts"
               value={String(stats.lowStock)}
               href="/admin/products"
             />
             <HealthRow
-              icon={<Users className="h-4 w-4 text-blue-500" />}
+              icon={<BarChart3 className="h-4 w-4 text-blue-600" />}
               label="Active staff"
               value={String(stats.activeStaff)}
               href="/admin/staff"
@@ -110,8 +155,15 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Recent orders */}
-        <Panel title="Recent orders" className="lg:col-span-2">
+        <Panel
+          title="Recent orders"
+          className="lg:col-span-2"
+          action={
+            <Link href="/admin/orders" className="text-xs font-semibold text-brand hover:underline">
+              View all
+            </Link>
+          }
+        >
           <Table>
             <thead>
               <tr className="border-b border-neutral-100">
@@ -123,8 +175,15 @@ export default async function AdminDashboardPage() {
             </thead>
             <tbody className="divide-y divide-neutral-50">
               {stats.recentOrders.map((o) => (
-                <tr key={o.id} className="hover:bg-neutral-50">
-                  <Td className="font-medium">{o.orderNumber}</Td>
+                <tr key={o.id} className="hover:bg-neutral-50/80">
+                  <Td>
+                    <Link
+                      href={`/admin/orders/${o.id}`}
+                      className="font-semibold text-neutral-950 hover:text-brand"
+                    >
+                      {o.orderNumber}
+                    </Link>
+                  </Td>
                   <Td className="text-neutral-600">{o.customerName}</Td>
                   <Td>
                     <StatusBadge status={o.status} />
@@ -138,19 +197,20 @@ export default async function AdminDashboardPage() {
           </Table>
         </Panel>
 
-        {/* Top products */}
         <Panel title="Top products">
           <div className="flex flex-col gap-3 p-5">
             {stats.topProducts.map((p, i) => (
               <div key={p.name} className="flex items-center gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-xs font-bold text-neutral-500">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-xs font-bold text-neutral-500">
                   {i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-neutral-900">{p.name}</p>
+                  <p className="truncate text-sm font-medium text-neutral-950">{p.name}</p>
                   <p className="text-xs text-neutral-400">{p.sold} sold</p>
                 </div>
-                <span className="text-sm font-semibold">{formatCurrency(p.revenue, "USD")}</span>
+                <span className="text-sm font-semibold tabular-nums">
+                  {formatCurrency(p.revenue, "ZAR")}
+                </span>
               </div>
             ))}
           </div>
@@ -172,10 +232,10 @@ function HealthRow({
   href: string;
 }) {
   return (
-    <a href={href} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-neutral-50">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-100">{icon}</span>
+    <Link href={href} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-neutral-50/80">
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100">{icon}</span>
       <span className="flex-1 text-sm text-neutral-600">{label}</span>
-      <span className="text-lg font-bold">{value}</span>
-    </a>
+      <span className="text-lg font-bold tabular-nums">{value}</span>
+    </Link>
   );
 }

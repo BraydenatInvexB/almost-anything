@@ -1,5 +1,5 @@
 import { getCurrentStaff, listStaff } from "@/services/admin-service";
-import { can, ROLE_META } from "@/config/rbac";
+import { can, staffCan, ROLE_META } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader, StatCard } from "@/components/admin/ui";
 import { StaffManager } from "@/components/admin/StaffManager";
@@ -7,10 +7,10 @@ import type { StaffRole } from "@/types/database";
 
 export default async function AdminStaffPage() {
   const staff = await getCurrentStaff();
-  if (!staff || !can(staff.role, "staff.view")) return <AccessDenied feature="staff management" />;
+  if (!staff || !staffCan(staff, "staff.view")) return <AccessDenied feature="staff management" />;
 
   const members = await listStaff();
-  const canManage = can(staff.role, "staff.manage");
+  const canManage = staffCan(staff, "staff.manage");
 
   const active = members.filter((m) => m.status === "active").length;
   const departments = new Set(members.map((m) => m.department).filter(Boolean)).size;

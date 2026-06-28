@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { can, staffCan } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { updateExtendedConfig } from "@/lib/admin/operations-store";
+import { mergeExtendedConfig } from "@/lib/admin/extended-config-defaults";
+import type { Database, Json } from "@/types/database";
+
+type SettingsUpdate = Database["public"]["Tables"]["platform_settings"]["Update"];
 
 const schema = z.object({
   store_name: z.string().min(1).optional(),
   support_email: z.string().email().optional(),
+  currency: z.string().optional(),
   default_markup_percent: z.number().min(0).max(500).optional(),
   min_markup_percent: z.number().min(0).max(500).optional(),
   max_markup_percent: z.number().min(0).max(500).optional(),
@@ -15,12 +21,30 @@ const schema = z.object({
   tax_rate: z.number().min(0).max(1).optional(),
   auto_publish_sourced: z.boolean().optional(),
   maintenance_mode: z.boolean().optional(),
+  extendedConfig: z
+    .object({
+      embedShippingInPrice: z.boolean(),
+      defaultCourierId: z.string(),
+      enabledCourierIds: z.array(z.string()),
+      couriers: z
+        .array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            baseCost: z.number(),
+            etaLabel: z.string(),
+            regions: z.array(z.string()),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
 });
 
 export async function PATCH(request: Request) {
   const staff = await getCurrentStaff();
   if (!staff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!can(staff.role, "settings.manage")) {
+  if (!staffCan(staff, "settings.manage")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -30,14 +54,26 @@ export async function PATCH(request: Request) {
   }
 
   if (!isSupabaseConfigured()) {
-    return NextResponse.json({ ok: true, demo: true, settings: parsed.data });
+    if (parsed.data.extendedConfig) updateExtendedConfig(parsed.data.extendedConfig);
+    const { extendedConfig: _ext, ...platform } = parsed.data;
+    return NextResponse.json({ ok: true, demo: true, settings: platform });
   }
 
   try {
     const supabase = createServiceClient();
+    const { extendedConfig, ...platform } = parsed.data;
+    const updatePayload: SettingsUpdate = {
+      ...platform,
+      updated_by: staff.id,
+      updated_at: new Date().toISOString(),
+    };
+    if (extendedConfig) {
+      updatePayload.extended_config = mergeExtendedConfig(extendedConfig) as unknown as Json;
+      updateExtendedConfig(extendedConfig);
+    }
     const { data, error } = await supabase
       .from("platform_settings")
-      .update({ ...parsed.data, updated_by: staff.id, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq("id", 1)
       .select()
       .single();

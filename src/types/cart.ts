@@ -87,5 +87,9 @@ export type OrderStatus =
 export interface CheckoutPayload {
   items: CartItem[];
   shippingAddress: ShippingAddress;
-  paymentMethod: "card" | "demo";
+  paymentMethod: "card" | "eft" | "demo";
+  courierId?: string;
+  courierName?: string;
+  shippingInternalCost?: number;
+  customerShippingCharge?: number;
 }

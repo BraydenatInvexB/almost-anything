@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentStaff } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { can, staffCan } from "@/config/rbac";
+import { updateCheckoutOrder } from "@/lib/admin/operations-store";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
@@ -26,7 +27,7 @@ const ALLOWED_STATUSES = new Set([
 
 export async function PATCH(request: Request) {
   const staff = await getCurrentStaff();
-  if (!staff || !can(staff.role, "orders.manage")) {
+  if (!staff || !staffCan(staff, "orders.manage")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -73,6 +74,12 @@ export async function PATCH(request: Request) {
     } catch {
       return NextResponse.json({ error: "Update failed" }, { status: 500 });
     }
+  } else {
+    updateCheckoutOrder(body.id, {
+      status: body.status,
+      carrier: body.carrier,
+      trackingNumber: body.trackingNumber,
+    });
   }
 
   return NextResponse.json({ ok: true });

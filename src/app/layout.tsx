@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { SITE_CONFIG } from "@/config/site";
 import { AppProviders } from "@/context/AppProviders";
+import { VisitTracker } from "@/components/analytics/VisitTracker";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geist.variable} h-full`}>
       <body className="font-sans antialiased">
-        <AppProviders>{children}</AppProviders>
+        <AppProviders>
+          <VisitTracker />
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCurrentStaff, listTickets, listStaff } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { can, staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import {
   PageHeader,
@@ -22,7 +22,7 @@ export default async function AdminSupportPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const staff = await getCurrentStaff();
-  if (!staff || !can(staff.role, "support.view")) return <AccessDenied feature="support" />;
+  if (!staff || !staffCan(staff, "support.view")) return <AccessDenied feature="support" />;
 
   const { status = "all" } = await searchParams;
   const [tickets, team] = await Promise.all([listTickets(), listStaff()]);

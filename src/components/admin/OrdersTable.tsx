@@ -1,9 +1,12 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import Link from "next/link";
 import { Table, Th, Td, EmptyState } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { AdminOrderSummary } from "@/services/admin-service";
+import { resolveFulfillment } from "@/lib/orders/fulfillment";
+import { cn } from "@/lib/utils/cn";
 
 const STATUS_OPTIONS = [
   "pending",
@@ -85,7 +88,10 @@ export function OrdersTable({
           <Th>Customer</Th>
           <Th>Date</Th>
           <Th>Items</Th>
+          <Th>Fulfillment</Th>
           <Th>Status</Th>
+          <Th>Courier</Th>
+          <Th>Payment</Th>
           <Th className="text-right">Total</Th>
           {canManage && <Th className="text-right">Tracking</Th>}
         </tr>
@@ -95,8 +101,15 @@ export function OrdersTable({
           const row = rows[o.id];
           return (
             <Fragment key={o.id}>
-              <tr className="hover:bg-neutral-50">
-                <Td className="font-semibold">{o.orderNumber}</Td>
+              <tr className="hover:bg-neutral-50/80">
+                <Td>
+                  <Link
+                    href={`/admin/orders/${o.id}`}
+                    className="font-semibold text-neutral-950 hover:text-brand"
+                  >
+                    {o.orderNumber}
+                  </Link>
+                </Td>
                 <Td>
                   <p className="font-medium text-neutral-900">{o.customerName}</p>
                   <p className="text-xs text-neutral-400">{o.customerEmail}</p>
@@ -109,6 +122,9 @@ export function OrdersTable({
                   })}
                 </Td>
                 <Td className="text-neutral-600">{o.itemCount}</Td>
+                <Td>
+                  <FulfillmentBadge order={o} />
+                </Td>
                 <Td>
                   {canManage ? (
                     <select
@@ -130,6 +146,8 @@ export function OrdersTable({
                     </span>
                   )}
                 </Td>
+                <Td className="text-neutral-600">{o.courierName ?? "—"}</Td>
+                <Td className="text-neutral-600">{o.paymentMethod ?? "—"}</Td>
                 <Td className="text-right font-semibold">{formatCurrency(o.total, o.currency)}</Td>
                 {canManage && (
                   <Td className="text-right">
@@ -144,7 +162,7 @@ export function OrdersTable({
               </tr>
               {canManage && row.open && (
                 <tr className="bg-neutral-50/60">
-                  <td colSpan={7} className="px-4 py-4">
+                  <td colSpan={10} className="px-4 py-4">
                     <div className="flex flex-wrap items-end gap-3">
                       <label className="flex flex-col gap-1 text-xs text-neutral-500">
                         Carrier
@@ -167,7 +185,7 @@ export function OrdersTable({
                       <button
                         onClick={() => save(o)}
                         disabled={row.saving}
-                        className="h-9 rounded-full bg-neutral-900 px-5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
+                        className="h-9 rounded-lg bg-brand px-5 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50"
                       >
                         {row.saving ? "Saving..." : "Save update"}
                       </button>
@@ -183,5 +201,17 @@ export function OrdersTable({
         })}
       </tbody>
     </Table>
+  );
+}
+
+function FulfillmentBadge({ order }: { order: AdminOrderSummary }) {
+  const info = resolveFulfillment({
+    stockOrigin: order.stockOrigin,
+    shippingCountry: order.shippingCountry,
+  });
+  return (
+    <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold", info.badgeClass)}>
+      {info.label}
+    </span>
   );
 }

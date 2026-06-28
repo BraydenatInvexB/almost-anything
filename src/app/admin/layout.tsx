@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { getCurrentStaff, isAdminLiveMode } from "@/services/admin-service";
+import { getCurrentStaff, listStaff, isAdminLiveMode, listTickets } from "@/services/admin-service";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { DemoStaffSwitcher } from "@/components/admin/DemoStaffSwitcher";
 
 export const metadata = {
   title: "Admin Console",
@@ -23,5 +24,19 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  return <AdminShell staff={staff}>{children}</AdminShell>;
+  const tickets = await listTickets();
+  const alerts = tickets.filter(
+    (t) => (t.status === "open" || t.status === "pending") && t.priority === "urgent",
+  ).length;
+
+  const allStaff = !isAdminLiveMode() ? await listStaff() : [];
+
+  return (
+    <AdminShell staff={staff} alerts={alerts}>
+      {!isAdminLiveMode() && allStaff.length > 0 && (
+        <DemoStaffSwitcher staff={staff} allStaff={allStaff} />
+      )}
+      {children}
+    </AdminShell>
+  );
 }

@@ -1,6 +1,7 @@
+import Link from "next/link";
 import Image from "next/image";
 import { getCurrentStaff, listCustomers } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { can, staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import {
   PageHeader,
@@ -16,10 +17,10 @@ import { formatCurrency } from "@/lib/utils/cn";
 
 export default async function AdminCustomersPage() {
   const staff = await getCurrentStaff();
-  if (!staff || !can(staff.role, "customers.view")) return <AccessDenied feature="customers" />;
+  if (!staff || !staffCan(staff, "customers.view")) return <AccessDenied feature="customers" />;
 
   const customers = await listCustomers();
-  const canReset = can(staff.role, "customers.reset_password");
+  const canReset = staffCan(staff, "customers.reset_password");
 
   const totalRevenue = customers.reduce((s, c) => s + c.total_spent, 0);
   const vips = customers.filter((c) => c.status === "vip").length;
@@ -53,9 +54,9 @@ export default async function AdminCustomersPage() {
           </thead>
           <tbody className="divide-y divide-neutral-50">
             {customers.map((c) => (
-              <tr key={c.id} className="hover:bg-neutral-50">
+              <tr key={c.id} className="hover:bg-neutral-50/80">
                 <Td>
-                  <div className="flex items-center gap-3">
+                  <Link href={`/admin/customers/${c.id}`} className="flex items-center gap-3">
                     {c.avatar_url ? (
                       <Image
                         src={c.avatar_url}
@@ -73,7 +74,7 @@ export default async function AdminCustomersPage() {
                       <p className="font-medium text-neutral-900">{c.full_name}</p>
                       <p className="text-xs text-neutral-400">{c.email}</p>
                     </div>
-                  </div>
+                  </Link>
                 </Td>
                 <Td>
                   <StatusBadge status={c.status} />

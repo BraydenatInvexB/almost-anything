@@ -3,16 +3,20 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, Shield, X } from "lucide-react";
 import { ROLE_META } from "@/config/rbac";
 import { StatusBadge, Table, Th, Td } from "@/components/admin/ui";
+import { StaffPermissionsModal } from "@/components/admin/StaffPermissionsModal";
 import { cn } from "@/lib/utils/cn";
-import type { StaffMember, StaffRole } from "@/types/database";
+import type { StaffProfile } from "@/types/staff-access";
+import type { StaffRole } from "@/types/database";
 
 const ROLES: StaffRole[] = [
   "super_admin",
   "admin",
   "manager",
+  "finance",
+  "hr",
   "support_agent",
   "marketing",
   "fulfillment",
@@ -23,14 +27,15 @@ export function StaffManager({
   staff,
   canManage,
 }: {
-  staff: StaffMember[];
+  staff: StaffProfile[];
   canManage: boolean;
 }) {
   const router = useRouter();
   const [members, setMembers] = useState(staff);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [permissionsFor, setPermissionsFor] = useState<StaffProfile | null>(null);
 
-  async function updateMember(id: string, updates: Partial<StaffMember>) {
+  async function updateMember(id: string, updates: Partial<StaffProfile>) {
     setMembers((m) => m.map((s) => (s.id === id ? { ...s, ...updates } : s)));
     try {
       await fetch("/api/admin/staff", {
@@ -38,6 +43,7 @@ export function StaffManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, ...updates }),
       });
+      router.refresh();
     } catch {
       /* demo tolerant */
     }
@@ -66,6 +72,7 @@ export function StaffManager({
               <Th>Department</Th>
               <Th>Status</Th>
               <Th>Last active</Th>
+              {canManage && <Th>Access</Th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-50">
@@ -140,11 +147,38 @@ export function StaffManager({
                       })
                     : "N/A"}
                 </Td>
+                {canManage && (
+                  <Td>
+                    {m.role !== "super_admin" ? (
+                      <button
+                        type="button"
+                        onClick={() => setPermissionsFor(m)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                      >
+                        <Shield className="h-3 w-3" />
+                        Modules
+                      </button>
+                    ) : (
+                      <span className="text-xs text-neutral-400">Full access</span>
+                    )}
+                  </Td>
+                )}
               </tr>
             ))}
           </tbody>
         </Table>
       </div>
+
+      {permissionsFor && (
+        <StaffPermissionsModal
+          member={permissionsFor}
+          onClose={() => setPermissionsFor(null)}
+          onSaved={(updated) => {
+            setMembers((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+            setPermissionsFor(null);
+          }}
+        />
+      )}
 
       {inviteOpen && (
         <InviteModal
@@ -165,7 +199,7 @@ function InviteModal({
   onInvited,
 }: {
   onClose: () => void;
-  onInvited: (m: StaffMember) => void;
+  onInvited: (m: StaffProfile) => void;
 }) {
   const [form, setForm] = useState({
     full_name: "",
@@ -208,6 +242,8 @@ function InviteModal({
         last_active_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        extra_permissions: [],
+        denied_permissions: [],
       });
     } catch {
       setError("Network error");

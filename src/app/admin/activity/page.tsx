@@ -1,11 +1,11 @@
 import { getCurrentStaff, listActivity } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { can, staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader, Panel } from "@/components/admin/ui";
 
 export default async function AdminActivityPage() {
   const staff = await getCurrentStaff();
-  if (!staff || !can(staff.role, "activity.view")) return <AccessDenied feature="the activity log" />;
+  if (!staff || !staffCan(staff, "activity.view")) return <AccessDenied feature="the activity log" />;
 
   const activity = await listActivity();
 

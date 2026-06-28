@@ -31,7 +31,11 @@ export const cartItemSchema = z.object({
 export const checkoutSchema = z.object({
   items: z.array(cartItemSchema).min(1, "Cart is empty"),
   shippingAddress: shippingAddressSchema,
-  paymentMethod: z.enum(["card", "demo"]).default("demo"),
+  paymentMethod: z.enum(["card", "eft", "demo"]).default("demo"),
+  courierId: z.string().optional(),
+  courierName: z.string().optional(),
+  shippingInternalCost: z.number().min(0).optional(),
+  customerShippingCharge: z.number().min(0).optional(),
 });
 
 export const selectQuoteSchema = z.object({

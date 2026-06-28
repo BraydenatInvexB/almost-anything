@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import {
   getCurrentStaff,
   listAdminProducts,
   getSettings,
 } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { can, staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader, StatCard } from "@/components/admin/ui";
 import { ProductsManager } from "@/components/admin/ProductsManager";
@@ -12,10 +13,11 @@ import { formatCurrency } from "@/lib/utils/cn";
 
 export default async function AdminProductsPage() {
   const staff = await getCurrentStaff();
-  if (!staff || !can(staff.role, "products.view")) return <AccessDenied feature="products" />;
+  if (!staff || !staffCan(staff, "products.view")) return <AccessDenied feature="products" />;
 
   const [products, settings] = await Promise.all([listAdminProducts(), getSettings()]);
-  const canEditMarkup = can(staff.role, "products.markup");
+  const canEditMarkup = staffCan(staff, "products.markup");
+  const canEdit = staffCan(staff, "products.edit");
 
   const totalRetail = products.reduce(
     (s, p) => s + p.base_price * (1 + Number(p.markup_percent) / 100),
@@ -31,11 +33,11 @@ export default async function AdminProductsPage() {
         title="Products"
         subtitle="Manage your catalog, pricing, and the markup applied to every item."
         action={
-          can(staff.role, "products.edit") ? (
-            <button className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white">
+          staffCan(staff, "products.edit") ? (
+            <Link href="/admin/products/new" className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90">
               <Plus className="h-4 w-4" />
               Add product
-            </button>
+            </Link>
           ) : undefined
         }
       />
@@ -53,6 +55,7 @@ export default async function AdminProductsPage() {
       <ProductsManager
         products={products}
         canEditMarkup={canEditMarkup}
+        canEdit={canEdit}
         minMarkup={Number(settings.min_markup_percent)}
         maxMarkup={Number(settings.max_markup_percent)}
       />

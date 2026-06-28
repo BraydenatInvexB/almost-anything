@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Lock } from "lucide-react";
 import { getCurrentStaff, getTicket, listStaff } from "@/services/admin-service";
-import { can } from "@/config/rbac";
+import { can, staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { Panel, StatusBadge } from "@/components/admin/ui";
 import { TicketReply } from "@/components/admin/TicketReply";
@@ -14,7 +14,7 @@ export default async function TicketDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const staff = await getCurrentStaff();
-  if (!staff || !can(staff.role, "support.view")) return <AccessDenied feature="support" />;
+  if (!staff || !staffCan(staff, "support.view")) return <AccessDenied feature="support" />;
 
   const { id } = await params;
   const result = await getTicket(id);
@@ -25,7 +25,7 @@ export default async function TicketDetailPage({
   const assignee = ticket.assigned_to
     ? team.find((s) => s.id === ticket.assigned_to)?.full_name
     : null;
-  const canReply = can(staff.role, "support.manage");
+  const canReply = staffCan(staff, "support.manage");
 
   return (
     <>

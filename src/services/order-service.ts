@@ -2,6 +2,8 @@ import type { CartItem, CheckoutPayload, Order, OrderItem, ShippingAddress } fro
 import type { Json } from "@/types/database";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { createCheckoutOrder } from "@/lib/admin/operations-store";
+import type { StockOrigin } from "@/lib/admin/operations-types";
 
 interface DbOrderItem {
   id: string;
@@ -81,13 +83,37 @@ function mapCartToOrderItems(items: CartItem[]): OrderItem[] {
   }));
 }
 
+function paymentLabel(method: string): string {
+  switch (method) {
+    case "card":
+      return "Credit / debit card";
+    case "eft":
+      return "Instant EFT";
+    case "demo":
+      return "Demo checkout";
+    default:
+      return method;
+  }
+}
+
+function inferStockOrigin(items: CartItem[]): StockOrigin {
+  const overseas = items.some((i) => i.type === "quote" || i.supplierName);
+  return overseas ? "overseas" : "sa_warehouse";
+}
+
 export async function createOrder(
   payload: CheckoutPayload,
   userId?: string | null,
 ): Promise<Order> {
-  const { subtotal, shipping, tax, total } = calculateTotals(payload.items);
+  const calculated = calculateTotals(payload.items);
+  const shipping =
+    payload.customerShippingCharge ?? calculated.shipping;
+  const subtotal = calculated.subtotal;
+  const tax = calculated.tax;
+  const total = Math.round((subtotal + shipping + tax) * 100) / 100;
   const orderNumber = generateOrderNumber();
   const orderItems = mapCartToOrderItems(payload.items);
+  const stockOrigin = inferStockOrigin(payload.items);
 
   const order: Order = {
     id: crypto.randomUUID(),
@@ -122,7 +148,13 @@ export async function createOrder(
           currency: "ZAR",
           payment_method: payload.paymentMethod,
           shipping_address: payload.shippingAddress as unknown as Json,
-          metadata: { source: "checkout" },
+          metadata: {
+            source: "checkout",
+            courierId: payload.courierId ?? null,
+            courierName: payload.courierName ?? null,
+            shippingInternalCost: payload.shippingInternalCost ?? null,
+            stockOrigin,
+          },
         })
         .select()
         .single();
@@ -161,6 +193,45 @@ export async function createOrder(
     } catch {
       // Fall through to local storage
     }
+  } else {
+    const live = createCheckoutOrder({
+      orderNumber,
+      customerName: payload.shippingAddress.fullName,
+      customerEmail: payload.shippingAddress.email,
+      status: payload.paymentMethod === "demo" ? "paid" : "pending",
+      total,
+      subtotal,
+      shippingCost: shipping,
+      shippingInternalCost: payload.shippingInternalCost ?? shipping,
+      tax,
+      currency: "ZAR",
+      itemCount: payload.items.reduce((n, i) => n + i.quantity, 0),
+      createdAt: order.createdAt,
+      paymentMethod: paymentLabel(payload.paymentMethod),
+      courierId: payload.courierId ?? "aramex",
+      courierName: payload.courierName ?? "Aramex",
+      stockOrigin,
+      shippingAddress: {
+        fullName: payload.shippingAddress.fullName,
+        email: payload.shippingAddress.email,
+        phone: payload.shippingAddress.phone,
+        line1: payload.shippingAddress.addressLine1,
+        line2: payload.shippingAddress.addressLine2,
+        city: payload.shippingAddress.city,
+        province: payload.shippingAddress.state,
+        postalCode: payload.shippingAddress.postalCode,
+        country: payload.shippingAddress.country,
+      },
+      lineItems: payload.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        imageUrl: item.imageUrl,
+        stockOrigin: item.type === "quote" ? "overseas" : stockOrigin,
+      })),
+    });
+    order.id = live.id;
   }
 
   return order;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -27,14 +27,30 @@ function TrackInner() {
   const [order, setOrder] = useState<TrackedOrder | null>(() =>
     orderParam ? (findDemoOrder(orderParam) ?? null) : null,
   );
-  const [notFound, setNotFound] = useState(
-    () => Boolean(orderParam && !findDemoOrder(orderParam)),
-  );
+  const [notFound, setNotFound] = useState(false);
 
-  function lookup(value: string) {
-    const found = findDemoOrder(value);
+  useEffect(() => {
+    if (orderParam) lookup(orderParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderParam]);
+
+  async function lookup(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    try {
+      const res = await fetch(`/api/orders/track?orderNumber=${encodeURIComponent(trimmed)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrder(data);
+        setNotFound(false);
+        return;
+      }
+    } catch {
+      /* fall through to demo */
+    }
+    const found = findDemoOrder(trimmed);
     setOrder(found ?? null);
-    setNotFound(!found && value.trim().length > 0);
+    setNotFound(!found && trimmed.length > 0);
   }
 
   return (

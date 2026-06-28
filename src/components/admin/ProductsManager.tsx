@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Check, Loader2, Search, Star } from "lucide-react";
 import { StatusBadge, Table, Th, Td } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
@@ -10,13 +11,14 @@ import type { Product } from "@/types/database";
 interface Props {
   products: Product[];
   canEditMarkup: boolean;
+  canEdit?: boolean;
   minMarkup: number;
   maxMarkup: number;
 }
 
 type SaveState = "idle" | "saving" | "saved";
 
-export function ProductsManager({ products, canEditMarkup, minMarkup, maxMarkup }: Props) {
+export function ProductsManager({ products, canEditMarkup, canEdit, minMarkup, maxMarkup }: Props) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [markups, setMarkups] = useState<Record<string, number>>(
@@ -92,7 +94,7 @@ export function ProductsManager({ products, canEditMarkup, minMarkup, maxMarkup 
             <Th>Retail</Th>
             <Th>Margin</Th>
             <Th>Stock</Th>
-            {canEditMarkup && <Th />}
+            {(canEditMarkup || canEdit) && <Th />}
           </tr>
         </thead>
         <tbody className="divide-y divide-neutral-50">
@@ -156,17 +158,29 @@ export function ProductsManager({ products, canEditMarkup, minMarkup, maxMarkup 
                 <Td>
                   <StatusBadge status={p.stock_status} />
                 </Td>
-                {canEditMarkup && (
+                {(canEditMarkup || canEdit) && (
                   <Td>
-                    <button
-                      disabled={!dirty || state === "saving"}
-                      onClick={() => save(p)}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-30"
-                    >
-                      {state === "saving" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                      {state === "saved" && <Check className="h-3.5 w-3.5" />}
-                      {state === "saved" ? "Saved" : "Save"}
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      {canEdit && (
+                        <Link
+                          href={`/admin/products/${p.id}/edit`}
+                          className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                        >
+                          Edit
+                        </Link>
+                      )}
+                      {canEditMarkup && (
+                        <button
+                          disabled={!dirty || state === "saving"}
+                          onClick={() => save(p)}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          {state === "saving" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                          {state === "saved" && <Check className="h-3.5 w-3.5" />}
+                          {state === "saved" ? "Saved" : "Save"}
+                        </button>
+                      )}
+                    </div>
                   </Td>
                 )}
               </tr>
