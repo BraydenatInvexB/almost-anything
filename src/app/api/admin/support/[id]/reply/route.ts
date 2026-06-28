@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
-import { can, staffCan } from "@/config/rbac";
+import { staffCan } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { addTicketMessage, updateSupportTicket } from "@/lib/admin/operations-store";
 
 const schema = z.object({
   body: z.string().min(1).max(5000),
   is_internal: z.boolean().default(false),
+  resolve: z.boolean().optional(),
 });
 
 export async function POST(
@@ -26,7 +28,20 @@ export async function POST(
   }
 
   if (!isSupabaseConfigured()) {
-    return NextResponse.json({ ok: true, demo: true });
+    const message = addTicketMessage(id, {
+      author_type: "staff",
+      author_id: staff.id,
+      author_name: staff.full_name,
+      body: parsed.data.body,
+      is_internal: parsed.data.is_internal,
+    });
+    if (!message) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    if (parsed.data.resolve && !parsed.data.is_internal) {
+      updateSupportTicket(id, { status: "resolved" });
+    }
+
+    return NextResponse.json({ ok: true, message });
   }
 
   try {
@@ -41,9 +56,23 @@ export async function POST(
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    const statusUpdate =
+      parsed.data.resolve && !parsed.data.is_internal
+        ? "resolved"
+        : parsed.data.is_internal
+          ? undefined
+          : "pending";
+
     await supabase
       .from("support_tickets")
-      .update({ last_reply_at: new Date().toISOString(), status: "pending" })
+      .update({
+        last_reply_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...(statusUpdate ? { status: statusUpdate } : {}),
+        ...(parsed.data.resolve && !parsed.data.is_internal
+          ? { resolved_at: new Date().toISOString() }
+          : {}),
+      })
       .eq("id", id);
 
     return NextResponse.json({ ok: true });

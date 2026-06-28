@@ -252,6 +252,11 @@ export const DEMO_TICKET_MESSAGES: Record<string, TicketMessage[]> = {
     { id: "msg-3", ticket_id: "tkt-001", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Supplier confirmed dispatch is delayed by 1 day. Offering free express upgrade.", is_internal: true, created_at: iso(0, 3) },
     { id: "msg-4", ticket_id: "tkt-001", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Good news, your order ships tomorrow and we've upgraded you to free express delivery at no charge. You'll have it within 2 days!", is_internal: false, created_at: iso(0, 2) },
   ],
+  "tkt-002": [
+    { id: "msg-5", ticket_id: "tkt-002", author_type: "customer", author_id: null, author_name: "Marcus Bennett", body: "The arc floor lamp arrived with a cracked shade. I'd like a refund or replacement please.", is_internal: false, created_at: iso(1) },
+    { id: "msg-6", ticket_id: "tkt-002", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Sorry to hear that, Marcus. Please send a photo of the damage and we'll arrange a return label.", is_internal: false, created_at: iso(0, 6) },
+    { id: "msg-7", ticket_id: "tkt-002", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Flagged for returns team — likely courier damage.", is_internal: true, created_at: iso(0, 5) },
+  ],
 };
 
 export const DEMO_ACTIVITY: StaffActivity[] = [

@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Lock } from "lucide-react";
+import { Mail, Package, ExternalLink } from "lucide-react";
 import { getCurrentStaff, getTicket, listStaff } from "@/services/admin-service";
-import { can, staffCan } from "@/config/rbac";
+import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
-import { Panel, StatusBadge } from "@/components/admin/ui";
+import { PageHeader, Panel, StatusBadge } from "@/components/admin/ui";
 import { TicketReply } from "@/components/admin/TicketReply";
+import { TicketActionsPanel } from "@/components/admin/TicketActionsPanel";
+import {
+  formatTicketAge,
+  getSlaLevel,
+  slaLabel,
+} from "@/lib/support/helpdesk";
 import { cn } from "@/lib/utils/cn";
 
 export default async function TicketDetailPage({
@@ -25,113 +31,184 @@ export default async function TicketDetailPage({
   const assignee = ticket.assigned_to
     ? team.find((s) => s.id === ticket.assigned_to)?.full_name
     : null;
-  const canReply = staffCan(staff, "support.manage");
+  const canManage = staffCan(staff, "support.manage");
+  const sla = getSlaLevel(ticket, messages);
+  const publicMessages = messages.filter((m) => !m.is_internal);
 
   return (
     <>
-      <Link
-        href="/admin/support"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-900"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to helpdesk
-      </Link>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Conversation */}
-        <div className="lg:col-span-2">
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-bold text-neutral-900">{ticket.subject}</h1>
+      <PageHeader
+        title={ticket.subject}
+        subtitle={`${ticket.ticket_number} · ${ticket.category} · opened ${formatTicketAge(ticket.created_at)}`}
+        breadcrumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Support", href: "/admin/support" },
+          { label: ticket.ticket_number },
+        ]}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={ticket.status} />
             <StatusBadge status={ticket.priority} />
-          </div>
-
-          <div className="mb-4 flex flex-col gap-3">
-            {messages.length === 0 && (
-              <p className="text-sm text-neutral-400">No messages yet.</p>
+            {(ticket.status === "open" || ticket.status === "pending") && (
+              <span
+                className={cn(
+                  "rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1",
+                  sla === "breach" && "bg-red-50 text-red-700 ring-red-100",
+                  sla === "warning" && "bg-amber-50 text-amber-700 ring-amber-100",
+                  sla === "ok" && "bg-emerald-50 text-emerald-700 ring-emerald-100",
+                )}
+              >
+                {slaLabel(sla)}
+              </span>
             )}
-            {messages.map((m) => {
-              const isStaff = m.author_type === "staff";
-              return (
-                <div
-                  key={m.id}
-                  className={cn(
-                    "rounded-2xl border p-4",
-                    m.is_internal
-                      ? "border-amber-200 bg-amber-50"
-                      : isStaff
-                        ? "border-neutral-200 bg-neutral-900 text-white"
-                        : "border-neutral-200 bg-white",
-                  )}
-                >
-                  <div className="mb-1.5 flex items-center gap-2">
-                    <span className={cn("text-sm font-semibold", isStaff && !m.is_internal ? "text-white" : "text-neutral-900")}>
-                      {m.author_name ?? (isStaff ? "Support" : "Customer")}
-                    </span>
-                    {m.is_internal && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
-                        <Lock className="h-2.5 w-2.5" /> Internal
-                      </span>
-                    )}
-                    <span
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-4">
+          <Panel
+            title="Conversation"
+            description={`${publicMessages.length} customer-visible message${publicMessages.length === 1 ? "" : "s"}`}
+          >
+            <div className="space-y-3 p-5">
+              {messages.length === 0 ? (
+                <p className="text-sm text-neutral-400">No messages yet.</p>
+              ) : (
+                messages.map((m) => {
+                  const isStaff = m.author_type === "staff";
+                  return (
+                    <div
+                      key={m.id}
                       className={cn(
-                        "ml-auto text-[11px]",
-                        isStaff && !m.is_internal ? "text-white/60" : "text-neutral-400",
+                        "rounded-xl border p-4",
+                        m.is_internal
+                          ? "border-amber-200 bg-amber-50/60"
+                          : isStaff
+                            ? "border-neutral-200 bg-neutral-900 text-white ml-4 sm:ml-8"
+                            : "border-neutral-200 bg-white mr-4 sm:mr-8",
                       )}
                     >
-                      {new Date(m.created_at).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                  <p
-                    className={cn(
-                      "text-sm leading-relaxed",
-                      isStaff && !m.is_internal ? "text-white/90" : "text-neutral-700",
-                    )}
-                  >
-                    {m.body}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span
+                          className={cn(
+                            "text-sm font-semibold",
+                            isStaff && !m.is_internal ? "text-white" : "text-neutral-900",
+                          )}
+                        >
+                          {m.author_name ?? (isStaff ? "Support" : "Customer")}
+                        </span>
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                            m.is_internal
+                              ? "bg-amber-200 text-amber-900"
+                              : isStaff
+                                ? "bg-white/15 text-white/90"
+                                : "bg-neutral-100 text-neutral-600",
+                          )}
+                        >
+                          {m.is_internal ? "Internal" : isStaff ? "Agent" : "Customer"}
+                        </span>
+                        <span
+                          className={cn(
+                            "ml-auto text-[11px]",
+                            isStaff && !m.is_internal ? "text-white/60" : "text-neutral-400",
+                          )}
+                        >
+                          {new Date(m.created_at).toLocaleString("en-ZA", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                      <p
+                        className={cn(
+                          "whitespace-pre-wrap text-sm leading-relaxed",
+                          isStaff && !m.is_internal ? "text-white/90" : "text-neutral-700",
+                        )}
+                      >
+                        {m.body}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Panel>
 
-          {canReply && <TicketReply ticketId={ticket.id} />}
+          {canManage ? (
+            <TicketReply ticketId={ticket.id} ticketStatus={ticket.status} />
+          ) : (
+            <Panel title="Read-only access">
+              <p className="p-5 text-sm text-neutral-500">
+                You can view this ticket but need support manage permission to reply or update it.
+              </p>
+            </Panel>
+          )}
         </div>
 
-        {/* Sidebar details */}
         <div className="flex flex-col gap-4">
           <Panel title="Customer">
             <div className="p-5">
               <p className="font-semibold text-neutral-900">{ticket.customer_name}</p>
-              <p className="text-sm text-neutral-500">{ticket.customer_email}</p>
-              <a
-                href={`mailto:${ticket.customer_email}`}
-                className="mt-3 inline-block rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
-              >
-                Email customer
-              </a>
+              <p className="mt-0.5 text-sm text-neutral-500">{ticket.customer_email}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <a
+                  href={`mailto:${ticket.customer_email}?subject=Re: ${ticket.ticket_number} — ${ticket.subject}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  Email customer
+                </a>
+                <Link
+                  href="/admin/customers"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  View in CRM
+                </Link>
+              </div>
             </div>
           </Panel>
 
-          <Panel title="Details">
-            <dl className="flex flex-col divide-y divide-neutral-100 text-sm">
-              <Row label="Ticket" value={ticket.ticket_number} />
-              <Row label="Category" value={ticket.category} />
-              <Row label="Priority" value={<StatusBadge status={ticket.priority} />} />
-              <Row label="Status" value={<StatusBadge status={ticket.status} />} />
+          {ticket.order_id ? (
+            <Panel title="Linked order">
+              <div className="flex items-center gap-3 p-5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-100">
+                  <Package className="h-5 w-5 text-neutral-600" />
+                </span>
+                <div>
+                  <p className="font-mono text-sm font-semibold">{ticket.order_id}</p>
+                  <Link
+                    href={`/admin/orders?q=${encodeURIComponent(ticket.order_id)}`}
+                    className="text-xs font-medium text-brand hover:underline"
+                  >
+                    Open in orders
+                  </Link>
+                </div>
+              </div>
+            </Panel>
+          ) : null}
+
+          <Panel title="Ticket operations">
+            <TicketActionsPanel ticket={ticket} agents={team} canManage={canManage} />
+          </Panel>
+
+          <Panel title="Timeline">
+            <dl className="divide-y divide-neutral-100 text-sm">
+              <Row label="Created" value={formatTicketAge(ticket.created_at)} />
+              <Row label="Last activity" value={formatTicketAge(ticket.updated_at)} />
               <Row label="Assigned to" value={assignee ?? "Unassigned"} />
               <Row
-                label="Created"
-                value={new Date(ticket.created_at).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
+                label="Resolved"
+                value={
+                  ticket.resolved_at
+                    ? new Date(ticket.resolved_at).toLocaleDateString("en-ZA")
+                    : "—"
+                }
               />
             </dl>
           </Panel>
@@ -145,7 +222,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between px-5 py-3">
       <dt className="text-neutral-400">{label}</dt>
-      <dd className="font-medium capitalize text-neutral-800">{value}</dd>
+      <dd className="font-medium text-neutral-800">{value}</dd>
     </div>
   );
 }

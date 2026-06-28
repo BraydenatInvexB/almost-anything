@@ -503,6 +503,68 @@ export function getOpsTicketMessages(ticketId: string) {
   return state.ticketMessages[ticketId] ?? [];
 }
 
+export function addTicketMessage(
+  ticketId: string,
+  input: {
+    author_type: "staff" | "customer";
+    author_id?: string | null;
+    author_name: string;
+    body: string;
+    is_internal?: boolean;
+  },
+) {
+  const idx = state.tickets.findIndex((t) => t.id === ticketId);
+  if (idx < 0) return null;
+
+  const now = new Date().toISOString();
+  const message: TicketMessage = {
+    id: `msg-${Date.now()}`,
+    ticket_id: ticketId,
+    author_type: input.author_type,
+    author_id: input.author_id ?? null,
+    author_name: input.author_name,
+    body: input.body,
+    is_internal: input.is_internal ?? false,
+    created_at: now,
+  };
+
+  if (!state.ticketMessages[ticketId]) state.ticketMessages[ticketId] = [];
+  state.ticketMessages[ticketId].push(message);
+
+  const ticket = state.tickets[idx];
+  ticket.last_reply_at = now;
+  ticket.updated_at = now;
+
+  if (input.author_type === "staff" && !input.is_internal && ticket.status === "open") {
+    ticket.status = "pending";
+  }
+
+  return message;
+}
+
+export function updateSupportTicket(
+  id: string,
+  patch: Partial<Pick<SupportTicket, "status" | "priority" | "assigned_to" | "category">>,
+) {
+  const idx = state.tickets.findIndex((t) => t.id === id);
+  if (idx < 0) return null;
+
+  const ticket = state.tickets[idx];
+  const now = new Date().toISOString();
+  state.tickets[idx] = {
+    ...ticket,
+    ...patch,
+    updated_at: now,
+    resolved_at:
+      patch.status === "resolved" || patch.status === "closed"
+        ? now
+        : patch.status === "open" || patch.status === "pending"
+          ? null
+          : ticket.resolved_at,
+  };
+  return state.tickets[idx];
+}
+
 export function createSupportTicket(input: {
   customer_email: string;
   customer_name: string;
