@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, Search } from "lucide-react";
+import { ArrowRight, Check, ImagePlus, Mic, MicOff, Search, X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/cn";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { readImageFile, storeSearchPhoto } from "@/lib/utils/search-photo";
 
 const IMG = (id: string) => `https://images.unsplash.com/${id}?w=600&h=600&fit=crop`;
 
@@ -25,9 +27,16 @@ const STICKERS = [
 
 export function BoldHero() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
   const [idx, setIdx] = useState(0);
   const [typed, setTyped] = useState("");
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoName, setPhotoName] = useState("");
+  const [photoError, setPhotoError] = useState("");
+  const [searchHint, setSearchHint] = useState("");
+  const { supported: voiceSupported, listening, error: voiceError, start, stop, clearError } =
+    useSpeechRecognition();
 
   useEffect(() => {
     const full = DESIRES[idx].q;
@@ -46,9 +55,57 @@ export function BoldHero() {
 
   const item = DESIRES[idx];
 
+  function clearPhoto() {
+    setPhotoPreview(null);
+    setPhotoName("");
+    setPhotoError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handlePhotoSelect(file: File | null) {
+    if (!file) return;
+    setPhotoError("");
+    try {
+      const dataUrl = await readImageFile(file);
+      setPhotoPreview(dataUrl);
+      setPhotoName(file.name);
+      setSearchHint("Photo attached — add a note or tap Find it to send.");
+    } catch (err) {
+      clearPhoto();
+      setPhotoError(err instanceof Error ? err.message : "Couldn't use that photo.");
+    }
+  }
+
+  function toggleVoice() {
+    clearError();
+    setSearchHint("");
+    if (listening) {
+      stop();
+      return;
+    }
+    setSearchHint("Listening… say what you're looking for.");
+    start((transcript, isFinal) => {
+      setValue(transcript);
+      if (isFinal && transcript) {
+        setSearchHint("");
+        stop();
+      }
+    });
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (value.trim()) router.push(`/products?q=${encodeURIComponent(value.trim())}`);
+    const trimmed = value.trim();
+
+    if (photoPreview) {
+      storeSearchPhoto({ dataUrl: photoPreview, name: photoName || "upload.jpg" });
+      const params = new URLSearchParams({ from: "photo" });
+      if (trimmed) params.set("q", trimmed);
+      router.push(`/request?${params.toString()}`);
+      return;
+    }
+
+    if (trimmed) router.push(`/products?q=${encodeURIComponent(trimmed)}`);
   }
 
   return (
@@ -76,25 +133,86 @@ export function BoldHero() {
           </p>
 
           {/* Search */}
-          <form
-            onSubmit={submit}
-            className="mt-7 flex max-w-xl items-center gap-2 rounded-2xl border-[3px] border-black bg-white p-1.5 pl-4 shadow-[4px_4px_0_0_#000] focus-within:shadow-[6px_6px_0_0_#000] focus-within:-translate-x-0.5 focus-within:-translate-y-0.5 transition-all"
-          >
-            <Search className="h-5 w-5 shrink-0 text-black" />
-            <input
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="Try 'air fryer', 'PS5', 'leather jacket'..."
-              aria-label="Search for anything"
-              className="h-11 min-w-0 flex-1 bg-transparent text-[15px] font-medium text-black outline-none placeholder:text-neutral-400"
-            />
-            <button
-              type="submit"
-              className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl border-2 border-black bg-black px-5 text-sm font-extrabold uppercase text-white transition-colors hover:bg-brand hover:text-white"
-            >
-              Find it
-              <ArrowRight className="h-4 w-4" />
-            </button>
+          <form onSubmit={submit} className="mt-7 max-w-xl">
+            <div className="flex items-center gap-1.5 rounded-2xl border-[3px] border-black bg-white p-1.5 pl-4 shadow-[4px_4px_0_0_#000] transition-all focus-within:-translate-x-0.5 focus-within:-translate-y-0.5 focus-within:shadow-[6px_6px_0_0_#000] sm:gap-2">
+              <Search className="hidden h-5 w-5 shrink-0 text-black sm:block" />
+              <input
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="Try 'air fryer', 'PS5', 'leather jacket'..."
+                aria-label="Search for anything"
+                className="h-11 min-w-0 flex-1 bg-transparent text-[15px] font-medium text-black outline-none placeholder:text-neutral-400"
+              />
+
+              {photoPreview ? (
+                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border-2 border-black">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoPreview} alt="Uploaded search reference" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={clearPhoto}
+                    className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-black bg-white text-black"
+                    aria-label="Remove photo"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => void handlePhotoSelect(e.target.files?.[0] ?? null)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white text-black transition-colors hover:bg-neutral-100"
+                    aria-label="Upload a photo of what you're looking for"
+                    title="Upload a photo"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+
+              <button
+                type="button"
+                onClick={toggleVoice}
+                disabled={!voiceSupported}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-black transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  listening
+                    ? "animate-pulse bg-brand text-white"
+                    : "bg-white text-black hover:bg-neutral-100"
+                }`}
+                aria-label={listening ? "Stop listening" : "Search by voice"}
+                title={voiceSupported ? "Search by voice" : "Voice search not supported in this browser"}
+              >
+                {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </button>
+
+              <button
+                type="submit"
+                disabled={!value.trim() && !photoPreview}
+                className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl border-2 border-black bg-black px-4 text-sm font-extrabold uppercase text-white transition-colors hover:bg-brand hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:px-5"
+              >
+                Find it
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            {(searchHint || voiceError || photoError) && (
+              <p
+                className={`mt-2 text-xs font-semibold ${
+                  voiceError || photoError ? "text-red-600" : "text-neutral-500"
+                }`}
+              >
+                {voiceError || photoError || searchHint}
+              </p>
+            )}
           </form>
 
           {/* Sticker badges */}

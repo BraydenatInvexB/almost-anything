@@ -1,5 +1,7 @@
 import type { Product, ProductCardData } from "@/types";
-import type { ProductCategory } from "@/types/database";
+import type { Json, ProductCategory } from "@/types/database";
+import type { ProductVariantsConfig } from "@/types/product-variants";
+import { buildVariantMatrix } from "@/types/product-variants";
 
 type StockStatus = Product["stock_status"];
 
@@ -23,6 +25,7 @@ interface SeedInput {
   dmin?: number;
   dmax?: number;
   badge?: string;
+  variants?: ProductVariantsConfig;
 }
 
 type SeedProduct = Omit<Product, "id" | "created_at" | "updated_at">;
@@ -66,7 +69,10 @@ function product(p: SeedInput): SeedProduct {
     is_exclusive: p.exclusive ?? false,
     is_deal: p.deal !== undefined,
     deal_discount_percent: p.deal ?? null,
-    metadata: p.badge ? { badge: p.badge } : {},
+    metadata: {
+      ...(p.badge ? { badge: p.badge } : {}),
+      ...(p.variants ? { variants: p.variants } : {}),
+    } as Json,
   };
 }
 
@@ -121,7 +127,31 @@ export const SEED_PRODUCTS: SeedProduct[] = [
   product({ slug: "modular-sectional-grey", name: "Modular Sectional, Cloud Grey", category: "furniture", base: 890, rating: 4.9, reviews: 312, featured: true, supplier: "Comfort Direct", dmin: 8, dmax: 16, img: "photo-1493663284031-b7e3aefcae8e", desc: "Configurable sectional sofa with deep seats and removable, washable covers." }),
 
   // ───────────────────────── Fashion ─────────────────────────
-  product({ slug: "everyday-leather-sneakers", name: "Everyday Leather Sneakers", category: "fashion", base: 90, rating: 4.6, reviews: 421, deal: 20, img: "photo-1525966222134-fcfa99b8ae77", desc: "Minimal leather sneakers with cushioned soles that go with absolutely everything." }),
+  product({
+    slug: "everyday-leather-sneakers",
+    name: "Everyday Leather Sneakers",
+    category: "fashion",
+    base: 90,
+    rating: 4.6,
+    reviews: 421,
+    deal: 20,
+    img: "photo-1525966222134-fcfa99b8ae77",
+    desc: "Minimal leather sneakers with cushioned soles that go with absolutely everything. Choose your colour and size.",
+    variants: {
+      options: [
+        { name: "Colour", values: ["White", "Black", "Navy"] },
+        { name: "Size", values: ["UK 7", "UK 8", "UK 9", "UK 10", "UK 11"] },
+      ],
+      variants: buildVariantMatrix([
+        { name: "Colour", values: ["White", "Black", "Navy"] },
+        { name: "Size", values: ["UK 7", "UK 8", "UK 9", "UK 10", "UK 11"] },
+      ]).map((v, i) => ({
+        ...v,
+        stock: v.selections.Size === "UK 11" ? 2 : 8 + (i % 4),
+        priceAdjust: v.selections.Colour === "Black" ? 0 : 0,
+      })),
+    },
+  }),
   product({ slug: "weekender-canvas-bag", name: "Weekender Canvas Bag", category: "fashion", base: 65, rating: 4.7, reviews: 198, img: "photo-1547949003-9792a18a2601", desc: "Durable waxed-canvas weekender with leather trim and a roomy interior." }),
   product({ slug: "aviator-sunglasses", name: "Classic Aviator Sunglasses", category: "fashion", base: 35, rating: 4.5, reviews: 356, img: "photo-1572635196237-14b3f281503f", desc: "Timeless aviators with polarized lenses and a lightweight metal frame." }),
   product({ slug: "merino-wool-beanie", name: "Merino Wool Beanie", category: "fashion", base: 24, rating: 4.6, reviews: 142, img: "photo-1576871337622-98d48d1cf531", desc: "Soft, itch-free merino beanie that keeps its shape season after season." }),

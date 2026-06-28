@@ -11,6 +11,8 @@ import type {
   ConfigCourier,
   Expense,
   ExtendedPlatformConfig,
+  EmailBroadcast,
+  EmailSubscriber,
   InventoryRecord,
   ProcurementRecord,
   ReturnRequest,
@@ -40,6 +42,8 @@ interface StaffAccessOverride {
 
 interface OperationsState {
   campaigns: Campaign[];
+  emailSubscribers: EmailSubscriber[];
+  emailBroadcasts: EmailBroadcast[];
   expenses: Expense[];
   returns: ReturnRequest[];
   procurement: ProcurementRecord[];
@@ -92,6 +96,26 @@ const initial: OperationsState = {
       reach: 0,
       clicks: 0,
       createdAt: iso(5),
+    },
+  ],
+  emailSubscribers: [
+    { id: "sub-001", email: "deals@example.com", name: "Newsletter fan", source: "newsletter", status: "active", subscribedAt: iso(30) },
+    { id: "sub-002", email: "gabriela@consolidated.co", name: "Gabriela Christiansen", source: "customer", status: "active", subscribedAt: iso(60), tags: ["vip"] },
+    { id: "sub-003", email: "marcus.bennett@gmail.com", name: "Marcus Bennett", source: "customer", status: "active", subscribedAt: iso(45) },
+    { id: "sub-004", email: "hello@almostanything.store", source: "manual", status: "active", subscribedAt: iso(10) },
+  ],
+  emailBroadcasts: [
+    {
+      id: "eml-001",
+      subject: "Summer clearance — up to 25% off",
+      previewText: "Fresh deals just dropped across the store.",
+      body: "Hi there,\n\nOur summer clearance is live with up to 25% off thousands of items. Shop now before your favourites sell out.\n\n— Almost Anything",
+      audience: "all",
+      status: "sent",
+      recipientCount: 8420,
+      sentAt: iso(7),
+      createdBy: "Amara Okafor",
+      createdAt: iso(8),
     },
   ],
   expenses: [
@@ -627,4 +651,69 @@ export function updateCheckoutOrder(
   if (idx < 0) return null;
   state.checkoutOrders[idx] = { ...state.checkoutOrders[idx], ...patch };
   return state.checkoutOrders[idx];
+}
+
+export function listEmailSubscribers() {
+  return state.emailSubscribers;
+}
+
+export function addEmailSubscriber(input: Omit<EmailSubscriber, "id" | "subscribedAt"> & { id?: string }) {
+  const email = input.email.toLowerCase();
+  const existing = state.emailSubscribers.find((s) => s.email === email);
+  if (existing) {
+    if (existing.status === "unsubscribed") {
+      existing.status = "active";
+      existing.subscribedAt = new Date().toISOString();
+    }
+    if (input.name && !existing.name) existing.name = input.name;
+    return existing;
+  }
+  const subscriber: EmailSubscriber = {
+    id: input.id ?? `sub-${Date.now()}`,
+    email,
+    name: input.name,
+    source: input.source,
+    status: input.status ?? "active",
+    subscribedAt: new Date().toISOString(),
+    tags: input.tags,
+  };
+  state.emailSubscribers.unshift(subscriber);
+  return subscriber;
+}
+
+export function removeEmailSubscriber(id: string) {
+  const idx = state.emailSubscribers.findIndex((s) => s.id === id);
+  if (idx < 0) return false;
+  state.emailSubscribers.splice(idx, 1);
+  return true;
+}
+
+export function updateEmailSubscriber(id: string, patch: Partial<EmailSubscriber>) {
+  const idx = state.emailSubscribers.findIndex((s) => s.id === id);
+  if (idx < 0) return null;
+  state.emailSubscribers[idx] = { ...state.emailSubscribers[idx], ...patch };
+  return state.emailSubscribers[idx];
+}
+
+export function listEmailBroadcasts() {
+  return state.emailBroadcasts;
+}
+
+export function createEmailBroadcast(input: Omit<EmailBroadcast, "id" | "createdAt" | "recipientCount" | "status"> & { status?: EmailBroadcast["status"]; recipientCount?: number }) {
+  const broadcast: EmailBroadcast = {
+    ...input,
+    id: `eml-${Date.now()}`,
+    status: input.status ?? "draft",
+    recipientCount: input.recipientCount ?? 0,
+    createdAt: new Date().toISOString(),
+  };
+  state.emailBroadcasts.unshift(broadcast);
+  return broadcast;
+}
+
+export function updateEmailBroadcast(id: string, patch: Partial<EmailBroadcast>) {
+  const idx = state.emailBroadcasts.findIndex((b) => b.id === id);
+  if (idx < 0) return null;
+  state.emailBroadcasts[idx] = { ...state.emailBroadcasts[idx], ...patch };
+  return state.emailBroadcasts[idx];
 }

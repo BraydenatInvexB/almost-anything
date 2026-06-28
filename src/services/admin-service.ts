@@ -564,7 +564,12 @@ export interface ReportsSummary {
   revenueByStatus: { status: string; count: number; total: number }[];
   ordersByDay: { label: string; count: number }[];
   supportMetrics: { open: number; urgent: number; avgResponseHrs: number };
-  catalogHealth: { inStock: number; lowStock: number; outOfStock: number };
+  catalogHealth: {
+    inStock: number;
+    availableInternational: number;
+    lowStock: number;
+    outOfStock: number;
+  };
   fulfillmentBacklog: number;
 }
 
@@ -599,6 +604,7 @@ export async function getReportsSummary(): Promise<ReportsSummary> {
     },
     catalogHealth: {
       inStock: products.filter((p) => p.stock_status === "in_stock").length,
+      availableInternational: products.filter((p) => p.stock_status === "available_international").length,
       lowStock: products.filter((p) => p.stock_status === "low_stock").length,
       outOfStock: products.filter((p) => p.stock_status === "out_of_stock").length,
     },

@@ -4,6 +4,7 @@ import { can, staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader, BtnSecondary } from "@/components/admin/ui";
 import { ProductForm } from "@/components/admin/ProductForm";
+import { parseVariantsConfig } from "@/types/product-variants";
 
 export default async function AdminEditProductPage({
   params,
@@ -51,6 +52,7 @@ export default async function AdminEditProductPage({
           delivery_days_max: product.delivery_days_max,
           is_featured: product.is_featured,
           is_deal: product.is_deal,
+          variants: parseVariantsConfig(product.metadata) ?? undefined,
         }}
       />
     </>

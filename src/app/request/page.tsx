@@ -1,22 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Check } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Search, Check, ImageIcon } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { clearSearchPhoto, readSearchPhoto } from "@/lib/utils/search-photo";
 
 export default function RequestPage() {
-  const [query, setQuery] = useState("");
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <RequestPageContent />
+    </Suspense>
+  );
+}
+
+function RequestPageContent() {
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [email, setEmail] = useState("");
   const [budget, setBudget] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [photo, setPhoto] = useState<{ dataUrl: string; name: string } | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get("from") === "photo") {
+      const stored = readSearchPhoto();
+      if (stored) {
+        setPhoto(stored);
+        if (!searchParams.get("q")) {
+          setQuery("I'm looking for something like the photo I uploaded.");
+        }
+      }
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,6 +67,8 @@ export default function RequestPage() {
       }
 
       setSubmitted(true);
+      clearSearchPhoto();
+      setPhoto(null);
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -102,6 +128,36 @@ export default function RequestPage() {
           <>
             <Card variant="elevated" className="mt-10 bg-white p-8">
               <form onSubmit={handleSubmit} className="space-y-5">
+                {photo ? (
+                  <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-white">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={photo.dataUrl} alt="Your reference photo" className="h-full w-full object-cover" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
+                          <ImageIcon className="h-4 w-4" />
+                          Reference photo attached
+                        </p>
+                        <p className="mt-1 text-xs text-neutral-500">
+                          {photo.name} — tell us any extra details below (size, colour, budget, etc.).
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearSearchPhoto();
+                            setPhoto(null);
+                          }}
+                          className="mt-2 text-xs font-medium text-neutral-500 underline hover:text-neutral-900"
+                        >
+                          Remove photo
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-sm font-medium">
                     <Search className="h-4 w-4" />

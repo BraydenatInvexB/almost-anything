@@ -22,7 +22,7 @@ interface CartContextValue {
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
-  isInCart: (slug: string) => boolean;
+  isInCart: (slug: string, variantId?: string) => boolean;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -31,7 +31,8 @@ function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as CartItem[]) : [];
+    const items = raw ? (JSON.parse(raw) as CartItem[]) : [];
+    return items.filter((item) => item.type === "product");
   } catch {
     return [];
   }
@@ -61,9 +62,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     (item: Omit<CartItem, "id" | "quantity"> & { quantity?: number }) => {
       setItems((prev) => {
         const existing = prev.find(
-          (i) =>
-            i.type === item.type &&
-            (item.slug ? i.slug === item.slug : i.quoteOptionId === item.quoteOptionId),
+          (i) => i.slug === item.slug && (i.variantId ?? "") === (item.variantId ?? ""),
         );
 
         if (existing) {
@@ -102,7 +101,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = useCallback(() => setItems([]), []);
 
   const isInCart = useCallback(
-    (slug: string) => items.some((i) => i.slug === slug),
+    (slug: string, variantId = "") =>
+      items.some((i) => i.slug === slug && (i.variantId ?? "") === variantId),
     [items],
   );
 

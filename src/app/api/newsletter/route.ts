@@ -8,6 +8,7 @@ import {
   logApiRequest,
 } from "@/lib/security/api";
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
+import { addEmailSubscriber } from "@/lib/admin/operations-store";
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -51,6 +52,12 @@ export async function POST(request: NextRequest) {
       return secureErrorResponse("Failed to subscribe", "INTERNAL_ERROR", 500);
     }
   }
+
+  addEmailSubscriber({
+    email: parsed.data.email,
+    source: "newsletter",
+    status: "active",
+  });
 
   await logApiRequest("/api/newsletter", "POST", ip, 200);
   return secureJsonResponse({ success: true, message: "Subscribed successfully" });

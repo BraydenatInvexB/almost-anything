@@ -22,6 +22,9 @@ export const cartItemSchema = z.object({
   currency: z.string().default("ZAR"),
   imageUrl: z.string().optional(),
   quantity: z.number().int().min(1).max(99),
+  variantId: z.string().optional(),
+  variantLabel: z.string().optional(),
+  selectedOptions: z.record(z.string(), z.string()).optional(),
   quoteOptionId: z.string().optional(),
   quoteRequestId: z.string().optional(),
   tier: z.string().optional(),
@@ -36,16 +39,6 @@ export const checkoutSchema = z.object({
   courierName: z.string().optional(),
   shippingInternalCost: z.number().min(0).optional(),
   customerShippingCharge: z.number().min(0).optional(),
-});
-
-export const selectQuoteSchema = z.object({
-  requestId: z.string(),
-  optionId: z.string(),
-  tier: z.enum(["cheapest", "fastest", "best_quality"]),
-  productName: z.string(),
-  supplierName: z.string(),
-  retailPrice: z.number().positive(),
-  imageUrl: z.string().nullable().optional(),
 });
 
 export const sourcingRequestSchema = z.object({

@@ -18,6 +18,8 @@ import { ProductGrid } from "@/components/home/ProductGrid";
 import { getProductBySlug, getRelatedProducts } from "@/services/product-service";
 import { getCategory } from "@/config/categories";
 import { formatCurrency, formatRating } from "@/lib/utils/cn";
+import { getStockAvailabilityMessage, getStockStatusLabel } from "@/config/product-stock";
+import { parseVariantsConfig } from "@/types/product-variants";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -43,6 +45,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.is_deal && product.deal_discount_percent
       ? product.retail_price / (1 - product.deal_discount_percent / 100)
       : null;
+  const variants = parseVariantsConfig(product.metadata);
 
   return (
     <div className="flex min-h-full flex-col bg-white">
@@ -116,8 +119,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <span className="text-neutral-400"> ({product.review_count} reviews)</span>
               </span>
               <span className="text-sm text-neutral-300">·</span>
-              <span className="text-sm capitalize text-neutral-500">
-                {product.stock_status.replace("_", " ")}
+              <span className="text-sm text-neutral-500">
+                {getStockStatusLabel(product.stock_status)}
               </span>
             </div>
 
@@ -131,8 +134,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </p>
               )}
             </div>
-            <p className="mt-1 text-sm text-emerald-600">
-              In stock, ships in {product.delivery_days_min} to {product.delivery_days_max} days
+            <p
+              className={`mt-1 text-sm ${
+                product.stock_status === "out_of_stock" ? "text-neutral-500" : "text-emerald-600"
+              }`}
+            >
+              {getStockAvailabilityMessage(
+                product.stock_status,
+                product.delivery_days_min,
+                product.delivery_days_max,
+              )}
             </p>
 
             <p className="mt-6 leading-relaxed text-neutral-600">{product.description}</p>
@@ -145,6 +156,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
               currency={product.currency}
               imageUrl={imageUrl ?? ""}
               rating={product.rating}
+              stockStatus={product.stock_status}
+              variants={variants}
             />
 
             {/* Trust badges */}

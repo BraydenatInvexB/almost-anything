@@ -61,6 +61,7 @@ export default async function AdminReportsPage() {
           label="Catalog SKUs"
           value={String(
             reports.catalogHealth.inStock +
+              reports.catalogHealth.availableInternational +
               reports.catalogHealth.lowStock +
               reports.catalogHealth.outOfStock,
           )}
@@ -113,10 +114,14 @@ export default async function AdminReportsPage() {
         </Panel>
 
         <Panel title="Catalog health">
-          <div className="grid grid-cols-3 gap-4 p-5">
+          <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
             <div className="rounded-lg bg-emerald-50 p-4 text-center ring-1 ring-emerald-100">
               <p className="text-2xl font-bold text-emerald-700">{reports.catalogHealth.inStock}</p>
-              <p className="mt-1 text-xs font-semibold uppercase text-emerald-600">In stock</p>
+              <p className="mt-1 text-xs font-semibold uppercase text-emerald-600">In stock (SA)</p>
+            </div>
+            <div className="rounded-lg bg-blue-50 p-4 text-center ring-1 ring-blue-100">
+              <p className="text-2xl font-bold text-blue-700">{reports.catalogHealth.availableInternational}</p>
+              <p className="mt-1 text-xs font-semibold uppercase text-blue-600">International</p>
             </div>
             <div className="rounded-lg bg-amber-50 p-4 text-center ring-1 ring-amber-100">
               <p className="text-2xl font-bold text-amber-700">{reports.catalogHealth.lowStock}</p>

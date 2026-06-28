@@ -93,16 +93,6 @@ export function secureErrorResponse(
   return secureJsonResponse({ error: message, code }, status);
 }
 
-export const quoteRequestSchema = z.object({
-  query: z
-    .string()
-    .min(3, "Query must be at least 3 characters")
-    .max(500, "Query too long"),
-  budget: z.number().positive().optional(),
-  urgency: z.enum(["standard", "express", "flexible"]).optional(),
-  category: z.string().max(50).optional(),
-});
-
 export const searchQuerySchema = z.object({
   q: z.string().max(200).optional(),
   category: z.string().max(50).optional(),

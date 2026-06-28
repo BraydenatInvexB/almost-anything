@@ -116,6 +116,42 @@ export interface ExtendedPlatformConfig {
   couriers: ConfigCourier[];
 }
 
+export type EmailSubscriberSource = "newsletter" | "customer" | "manual";
+export type EmailSubscriberStatus = "active" | "unsubscribed";
+
+export interface EmailSubscriber {
+  id: string;
+  email: string;
+  name?: string;
+  source: EmailSubscriberSource;
+  status: EmailSubscriberStatus;
+  subscribedAt: string;
+  tags?: string[];
+}
+
+export type EmailAudience =
+  | "all"
+  | "subscribers"
+  | "customers"
+  | "vip"
+  | "active_customers";
+
+export type EmailBroadcastStatus = "draft" | "scheduled" | "sent";
+
+export interface EmailBroadcast {
+  id: string;
+  subject: string;
+  previewText?: string;
+  body: string;
+  audience: EmailAudience;
+  status: EmailBroadcastStatus;
+  recipientCount: number;
+  sentAt?: string;
+  scheduledAt?: string;
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface AdminProductDraft {
   id: string;
   slug: string;
@@ -126,7 +162,7 @@ export interface AdminProductDraft {
   retail_price: number;
   markup_percent: number;
   currency: string;
-  stock_status: "in_stock" | "low_stock" | "out_of_stock" | "sourced";
+  stock_status: "in_stock" | "available_international" | "low_stock" | "out_of_stock" | "sourced";
   stock_origin: StockOrigin;
   quantity: number;
   image_url: string | null;
@@ -136,6 +172,7 @@ export interface AdminProductDraft {
   is_featured: boolean;
   is_deal: boolean;
   deal_discount_percent: number | null;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

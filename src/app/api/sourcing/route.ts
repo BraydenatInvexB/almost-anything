@@ -7,7 +7,6 @@ import {
   logApiRequest,
 } from "@/lib/security/api";
 import { sourcingRequestSchema } from "@/lib/validation/checkout";
-import { generateQuoteOptions } from "@/lib/ai/quote-generator";
 import { generateRequestId } from "@/lib/utils/cn";
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
 
@@ -32,40 +31,26 @@ export async function POST(request: NextRequest) {
   }
 
   const requestId = generateRequestId();
+  const parsedIntent = {
+    query: parsed.data.query,
+    keywords: parsed.data.query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 12),
+    budget: parsed.data.budget ?? null,
+    urgency: parsed.data.urgency ?? "standard",
+  };
 
   try {
-    const quote = generateQuoteOptions(
-      {
-        query: parsed.data.query,
-        budget: parsed.data.budget,
-        urgency: parsed.data.urgency,
-      },
-      requestId,
-    );
-
     if (isSupabaseConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const supabase = createServiceClient();
       await supabase.from("customer_requests").insert({
         id: requestId,
         query: parsed.data.query,
-        parsed_intent: quote.parsedIntent,
+        parsed_intent: parsedIntent,
         status: "searching",
       });
-
-      await supabase.from("quote_options").insert(
-        quote.options.map((option) => ({
-          request_id: requestId,
-          tier: option.tier,
-          product_name: option.productName,
-          supplier_name: option.supplierName,
-          base_price: option.basePrice,
-          retail_price: option.retailPrice,
-          delivery_days: option.deliveryDays,
-          quality_score: option.qualityScore,
-          rating: option.rating,
-          image_url: option.imageUrl,
-        })),
-      );
     }
 
     await logApiRequest("/api/sourcing", "POST", ip, 200);
@@ -73,9 +58,7 @@ export async function POST(request: NextRequest) {
       requestId,
       status: "searching",
       message:
-        "Your sourcing request has been submitted. We're searching suppliers now.",
-      quoteUrl: `/quote?requestId=${requestId}`,
-      quote,
+        "Your request has been submitted. We'll confirm availability and pricing shortly.",
     });
   } catch {
     await logApiRequest("/api/sourcing", "POST", ip, 500);

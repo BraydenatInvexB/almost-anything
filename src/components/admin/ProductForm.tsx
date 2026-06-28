@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BtnPrimary } from "@/components/admin/ui";
+import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor";
+import {
+  STOCK_STATUS_OPTIONS,
+  getStockStatusOrigin,
+} from "@/config/product-stock";
+import type { ProductVariantsConfig } from "@/types/product-variants";
+import { emptyVariantsConfig, parseVariantsConfig } from "@/types/product-variants";
 
 interface ProductInput {
   id?: string;
@@ -21,6 +28,7 @@ interface ProductInput {
   delivery_days_max: number;
   is_featured: boolean;
   is_deal: boolean;
+  variants?: ProductVariantsConfig;
 }
 
 export function ProductForm({
@@ -51,6 +59,9 @@ export function ProductForm({
     is_featured: product?.is_featured ?? false,
     is_deal: product?.is_deal ?? false,
   });
+  const [variants, setVariants] = useState<ProductVariantsConfig>(
+    product?.variants ?? emptyVariantsConfig(),
+  );
 
   function update(key: string, value: string | boolean) {
     setForm((f) => {
@@ -60,6 +71,9 @@ export function ProductForm({
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/(^-|-$)/g, "");
+      }
+      if (key === "stock_status" && typeof value === "string") {
+        next.stock_origin = getStockStatusOrigin(value);
       }
       return next;
     });
@@ -79,6 +93,10 @@ export function ProductForm({
         delivery_days_max: Number(form.delivery_days_max),
         image_url: form.image_url || null,
         source_name: form.source_name || null,
+        metadata:
+          variants.options.length > 0
+            ? { variants }
+            : {},
       };
 
       const res = await fetch("/api/admin/products", {
@@ -103,6 +121,7 @@ export function ProductForm({
                 delivery_days_max: payload.delivery_days_max,
                 is_featured: payload.is_featured,
                 is_deal: payload.is_deal,
+                metadata: payload.metadata,
                 retail_price: Number(
                   (payload.base_price * (1 + payload.markup_percent / 100)).toFixed(2),
                 ),
@@ -172,18 +191,26 @@ export function ProductForm({
           <Field label="Quantity">
             <input type="number" className="input" value={form.quantity} onChange={(e) => update("quantity", e.target.value)} />
           </Field>
-          <Field label="Stock status">
-            <select className="input" value={form.stock_status} onChange={(e) => update("stock_status", e.target.value)}>
-              <option value="in_stock">In stock (SA warehouse)</option>
-              <option value="low_stock">Low stock</option>
-              <option value="out_of_stock">Out of stock</option>
-              <option value="sourced">Sourced on order</option>
+          <Field label="Stock status" hint="Sets availability and whether the item ships from SA or internationally.">
+            <select
+              className="input"
+              value={form.stock_status}
+              onChange={(e) => update("stock_status", e.target.value)}
+            >
+              {STOCK_STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-neutral-400">
+              {STOCK_STATUS_OPTIONS.find((o) => o.value === form.stock_status)?.description}
+            </p>
           </Field>
-          <Field label="Stock origin">
+          <Field label="Stock origin" hint="Auto-set from stock status — override if needed.">
             <select className="input" value={form.stock_origin} onChange={(e) => update("stock_origin", e.target.value)}>
               <option value="sa_warehouse">South Africa warehouse</option>
-              <option value="overseas">Overseas supplier</option>
+              <option value="overseas">Overseas / international supplier</option>
             </select>
           </Field>
           <Field label="Delivery days">
@@ -205,6 +232,8 @@ export function ProductForm({
         </div>
       </div>
 
+      <ProductVariantsEditor value={variants} onChange={setVariants} />
+
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex justify-end gap-2">
         <button type="button" onClick={() => router.back()} className="h-9 rounded-lg border border-neutral-200 px-4 text-sm font-semibold">
@@ -218,10 +247,21 @@ export function ProductForm({
   );
 }
 
-function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({
+  label,
+  hint,
+  children,
+  className = "",
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <label className={`flex flex-col gap-1.5 ${className}`}>
       <span className="text-xs font-semibold text-neutral-600">{label}</span>
+      {hint ? <span className="text-[11px] text-neutral-400">{hint}</span> : null}
       {children}
     </label>
   );

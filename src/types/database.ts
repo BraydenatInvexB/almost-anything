@@ -78,7 +78,7 @@ export interface Database {
           currency: string;
           rating: number;
           review_count: number;
-          stock_status: "in_stock" | "low_stock" | "out_of_stock" | "sourced";
+          stock_status: "in_stock" | "available_international" | "low_stock" | "out_of_stock" | "sourced";
           image_url: string | null;
           enhanced_image_url: string | null;
           source_url: string | null;
@@ -105,7 +105,7 @@ export interface Database {
           currency?: string;
           rating?: number;
           review_count?: number;
-          stock_status?: "in_stock" | "low_stock" | "out_of_stock" | "sourced";
+          stock_status?: "in_stock" | "available_international" | "low_stock" | "out_of_stock" | "sourced";
           image_url?: string | null;
           enhanced_image_url?: string | null;
           source_url?: string | null;

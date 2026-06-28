@@ -8,6 +8,9 @@ export interface CartItem {
   currency: string;
   imageUrl?: string;
   quantity: number;
+  variantId?: string;
+  variantLabel?: string;
+  selectedOptions?: Record<string, string>;
   quoteOptionId?: string;
   quoteRequestId?: string;
   tier?: string;

@@ -39,14 +39,14 @@ export default function CartPage() {
               Your cart is empty
             </p>
             <p className="mt-2 text-neutral-500">
-              Browse our catalog or get a custom quote.
+              Browse our catalog or tell us what you need.
             </p>
             <div className="mt-6 flex justify-center gap-3">
               <Link href="/products">
                 <Button>Browse Products</Button>
               </Link>
-              <Link href="/quote">
-                <Button variant="secondary">Get a Quote</Button>
+              <Link href="/request">
+                <Button variant="secondary">Request a Product</Button>
               </Link>
             </div>
           </Card>
@@ -81,19 +81,17 @@ export default function CartPage() {
                         <h3 className="font-semibold text-neutral-900">
                           {item.name}
                         </h3>
-                        {item.type === "quote" ? (
-                          <p className="mt-0.5 text-xs text-neutral-500">
-                            Quote option · {item.tier?.replace("_", " ")} ·{" "}
-                            {item.supplierName}
-                          </p>
-                        ) : (
+                        {item.slug ? (
                           <Link
                             href={`/products/${item.slug}`}
                             className="mt-0.5 text-xs text-neutral-500 hover:text-neutral-900"
                           >
                             View product
+                            {item.variantLabel ? ` · ${item.variantLabel}` : ""}
                           </Link>
-                        )}
+                        ) : item.variantLabel ? (
+                          <p className="mt-0.5 text-xs text-neutral-500">{item.variantLabel}</p>
+                        ) : null}
                       </div>
                       <p className="font-semibold">
                         {formatCurrency(item.price * item.quantity)}

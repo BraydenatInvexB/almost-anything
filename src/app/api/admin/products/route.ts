@@ -16,7 +16,7 @@ const patchSchema = z.object({
   is_featured: z.boolean().optional(),
   is_deal: z.boolean().optional(),
   stock_status: z
-    .enum(["in_stock", "low_stock", "out_of_stock", "sourced"])
+    .enum(["in_stock", "available_international", "low_stock", "out_of_stock", "sourced"])
     .optional(),
   stock_origin: z.enum(["sa_warehouse", "overseas"]).optional(),
   quantity: z.number().min(0).optional(),
@@ -28,6 +28,7 @@ const patchSchema = z.object({
   source_name: z.string().nullable().optional(),
   delivery_days_min: z.number().optional(),
   delivery_days_max: z.number().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 const createSchema = z.object({
@@ -37,7 +38,7 @@ const createSchema = z.object({
   category: z.string().default("general"),
   base_price: z.number().min(0),
   markup_percent: z.number().min(0).max(500).default(18),
-  stock_status: z.enum(["in_stock", "low_stock", "out_of_stock", "sourced"]).default("in_stock"),
+  stock_status: z.enum(["in_stock", "available_international", "low_stock", "out_of_stock", "sourced"]).default("in_stock"),
   stock_origin: z.enum(["sa_warehouse", "overseas"]).default("sa_warehouse"),
   quantity: z.number().min(0).default(10),
   image_url: z.string().optional().nullable(),
@@ -47,6 +48,7 @@ const createSchema = z.object({
   is_featured: z.boolean().default(false),
   is_deal: z.boolean().default(false),
   deal_discount_percent: z.number().nullable().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function POST(request: Request) {
@@ -70,6 +72,7 @@ export async function POST(request: Request) {
       image_url: parsed.data.image_url ?? null,
       source_name: parsed.data.source_name ?? null,
       deal_discount_percent: parsed.data.deal_discount_percent ?? null,
+      metadata: parsed.data.metadata ?? {},
     });
     return NextResponse.json({ ok: true, demo: true, product });
   }
@@ -94,6 +97,7 @@ export async function POST(request: Request) {
         is_featured: parsed.data.is_featured,
         is_deal: parsed.data.is_deal,
         deal_discount_percent: parsed.data.deal_discount_percent,
+        metadata: (parsed.data.metadata ?? {}) as ProductUpdate["metadata"],
       })
       .select()
       .single();
@@ -122,11 +126,13 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid payload", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { id, stock_origin: _origin, quantity: _qty, ...updates } = parsed.data;
+  const { id, stock_origin: _origin, quantity: _qty, metadata, ...updates } = parsed.data;
+
+  const patchPayload = { ...parsed.data, metadata };
 
   // Demo mode: persist to in-memory store so edits survive navigation.
   if (!isSupabaseConfigured()) {
-    const product = updateCustomProduct(id, parsed.data as Parameters<typeof updateCustomProduct>[1]);
+    const product = updateCustomProduct(id, patchPayload as Parameters<typeof updateCustomProduct>[1]);
     if (!product && !id.startsWith("custom-")) {
       return NextResponse.json({ ok: true, demo: true, id, updates });
     }

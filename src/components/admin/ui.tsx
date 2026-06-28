@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowDownRight, ArrowUpRight, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { getStockStatusLabel } from "@/config/product-stock";
 
 export function PageHeader({
   title,
@@ -192,6 +193,7 @@ const STATUS_STYLES: Record<string, string> = {
   vip: "bg-violet-50 text-violet-700 ring-1 ring-violet-100",
   flagged: "bg-red-50 text-red-700 ring-1 ring-red-100",
   in_stock: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100",
+  available_international: "bg-blue-50 text-blue-700 ring-1 ring-blue-100",
   low_stock: "bg-amber-50 text-amber-700 ring-1 ring-amber-100",
   out_of_stock: "bg-red-50 text-red-700 ring-1 ring-red-100",
   sourced: "bg-violet-50 text-violet-700 ring-1 ring-violet-100",
@@ -212,11 +214,15 @@ const STATUS_STYLES: Record<string, string> = {
   payroll: "bg-pink-50 text-pink-700 ring-1 ring-pink-100",
   operations: "bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200",
   refunds: "bg-red-50 text-red-700 ring-1 ring-red-100",
+  unsubscribed: "bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200",
+  sent: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100",
   other: "bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200",
 };
 
 export function StatusBadge({ status }: { status: string }) {
-  const label = status.replace(/_/g, " ");
+  const productLabel = getStockStatusLabel(status);
+  const label =
+    productLabel !== status.replace(/_/g, " ") ? productLabel : status.replace(/_/g, " ");
   return (
     <span
       className={cn(

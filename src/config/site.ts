@@ -47,14 +47,3 @@ export const TEAM_MEMBERS: TeamMember[] = [
   },
 ];
 
-export const QUOTE_TIER_LABELS = {
-  cheapest: "Cheapest Option",
-  fastest: "Fastest Delivery",
-  best_quality: "Best Quality",
-} as const;
-
-export const QUOTE_TIER_DESCRIPTIONS = {
-  cheapest: "Lowest total cost, ideal when budget is the priority.",
-  fastest: "Shortest delivery window from verified suppliers.",
-  best_quality: "Highest rated option with premium materials and reviews.",
-} as const;

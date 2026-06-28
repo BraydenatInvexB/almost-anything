@@ -2,10 +2,8 @@ export type {
   Database,
   Product,
   CustomerRequest,
-  QuoteOption,
   SourcedListing,
   ProductCategory,
-  QuoteTier,
   SourcingStatus,
   Json,
 } from "./database";
@@ -24,41 +22,6 @@ export interface ProductCardData {
   dealLabel?: string;
   dealDiscountPercent?: number;
   isExclusive?: boolean;
-}
-
-export interface QuoteRequestPayload {
-  query: string;
-  budget?: number;
-  urgency?: "standard" | "express" | "flexible";
-  category?: string;
-}
-
-export interface QuoteOptionResponse {
-  id: string;
-  tier: "cheapest" | "fastest" | "best_quality";
-  tierLabel: string;
-  productName: string;
-  supplierName: string;
-  basePrice: number;
-  retailPrice: number;
-  deliveryDays: number;
-  qualityScore: number;
-  rating: number | null;
-  imageUrl: string | null;
-  savings?: number;
-}
-
-export interface QuoteResponse {
-  requestId: string;
-  query: string;
-  parsedIntent: {
-    productType: string;
-    keywords: string[];
-    attributes: string[];
-    budgetRange: { min: number; max: number } | null;
-  };
-  options: QuoteOptionResponse[];
-  generatedAt: string;
 }
 
 export interface SearchResult {

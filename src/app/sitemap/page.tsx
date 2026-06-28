@@ -9,7 +9,6 @@ const PAGES = [
   { label: "All Products", href: "/products" },
   { label: "Cart", href: "/cart" },
   { label: "Checkout", href: "/checkout" },
-  { label: "Quote Generator", href: "/quote" },
   { label: "Custom Request", href: "/request" },
   { label: "Favorites", href: "/favorites" },
   { label: "Account", href: "/account" },
