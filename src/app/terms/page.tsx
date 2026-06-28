@@ -9,7 +9,7 @@ export default function TermsPage() {
     <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
-        <h1 className="text-3xl font-bold text-neutral-900">Terms of Service</h1>
+        <h1 className="text-3xl font-bold text-neutral-900">Terms & Conditions</h1>
         <p className="mt-2 text-sm text-neutral-500">Last updated: June 27, 2026</p>
         <Card variant="elevated" className="mt-8 space-y-6 bg-white p-8 text-sm leading-relaxed text-neutral-600">
           <section>

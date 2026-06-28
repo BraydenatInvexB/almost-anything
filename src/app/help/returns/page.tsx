@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { ReturnRequestForm } from "@/components/returns/ReturnRequestForm";
 import { SITE_CONFIG } from "@/config/site";
 
 export default function ReturnsHelpPage() {
@@ -9,22 +11,58 @@ export default function ReturnsHelpPage() {
     <div className="flex min-h-full flex-col bg-white">
       <SiteHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
-        <Link href="/help" className="text-sm text-neutral-500 hover:text-neutral-900">← Help Center</Link>
+        <Link href="/help" className="text-sm text-neutral-500 hover:text-neutral-900">
+          ← Help Center
+        </Link>
         <h1 className="mt-4 text-3xl font-bold text-neutral-900">Returns & Refunds</h1>
+
         <Card variant="elevated" className="mt-8 space-y-6 bg-white p-8 text-sm leading-relaxed text-neutral-600">
           <section>
             <h2 className="font-semibold text-neutral-900">30 day return window</h2>
-            <p className="mt-2">Most items can be returned within 30 days of delivery for a full refund, provided they are unused and in original packaging.</p>
-          </section>
-          <section>
-            <h2 className="font-semibold text-neutral-900">How to start a return</h2>
-            <p className="mt-2">Email {SITE_CONFIG.supportEmail} with your order number and reason for return. Our team will send a prepaid label within 2 business days.</p>
+            <p className="mt-2">
+              Most items can be returned within 30 days of delivery for a full refund, provided they
+              are unused and in original packaging.
+            </p>
           </section>
           <section>
             <h2 className="font-semibold text-neutral-900">Refund timing</h2>
-            <p className="mt-2">Refunds are processed within 5 to 7 business days after we receive your return.</p>
+            <p className="mt-2">
+              Refunds are processed within 5 to 7 business days after we receive your return.
+            </p>
+          </section>
+          <section>
+            <h2 className="font-semibold text-neutral-900">Need help?</h2>
+            <p className="mt-2">
+              Email {SITE_CONFIG.supportEmail} or{" "}
+              <Link href="/help" className="text-brand hover:underline">
+                open a support ticket
+              </Link>
+              .
+            </p>
           </section>
         </Card>
+
+        <div id="start-return" className="mt-10 scroll-mt-24">
+          <h2 className="text-xl font-bold text-neutral-900">Start a return</h2>
+          <p className="mt-2 text-sm text-neutral-500">
+            Enter your order number and email. Signed-in customers can also manage returns from{" "}
+            <Link href="/account/returns" className="text-brand hover:underline">
+              My Account → Returns
+            </Link>
+            .
+          </p>
+          <div className="mt-6">
+            <ReturnRequestForm />
+          </div>
+        </div>
+
+        <div className="mt-8 text-center">
+          <Link href="/account/returns">
+            <Button variant="secondary" className="rounded-full">
+              View my returns
+            </Button>
+          </Link>
+        </div>
       </main>
       <SiteFooter />
     </div>

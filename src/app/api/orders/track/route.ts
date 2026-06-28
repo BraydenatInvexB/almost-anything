@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       orderNumber: live.orderNumber,
       placedAt: live.createdAt,
       estimatedDelivery: eta.toISOString(),
-      status: live.status === "paid" ? "processing" : live.status,
+      status: live.status,
       carrier: live.carrier ?? live.courierName,
       trackingNumber: live.trackingNumber ?? "",
       recipient: live.shippingAddress.fullName,

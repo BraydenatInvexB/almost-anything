@@ -7,8 +7,7 @@ import {
   logApiRequest,
 } from "@/lib/security/api";
 import { sourcingRequestSchema } from "@/lib/validation/checkout";
-import { generateRequestId } from "@/lib/utils/cn";
-import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
+import { submitItemRequest } from "@/services/sourcing-request-service";
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -30,33 +29,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const requestId = generateRequestId();
-  const parsedIntent = {
-    query: parsed.data.query,
-    keywords: parsed.data.query
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 12),
-    budget: parsed.data.budget ?? null,
-    urgency: parsed.data.urgency ?? "standard",
-  };
-
   try {
-    if (isSupabaseConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const supabase = createServiceClient();
-      await supabase.from("customer_requests").insert({
-        id: requestId,
-        query: parsed.data.query,
-        parsed_intent: parsedIntent,
-        status: "searching",
-      });
-    }
+    const itemRequest = await submitItemRequest({
+      query: parsed.data.query,
+      email: parsed.data.email,
+      budget: parsed.data.budget,
+      urgency: parsed.data.urgency,
+    });
 
     await logApiRequest("/api/sourcing", "POST", ip, 200);
     return secureJsonResponse({
-      requestId,
-      status: "searching",
+      requestId: itemRequest.id,
+      requestNumber: itemRequest.requestNumber,
+      status: itemRequest.status,
       message:
         "Your request has been submitted. We'll confirm availability and pricing shortly.",
     });

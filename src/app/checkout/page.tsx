@@ -13,31 +13,31 @@ import { useCart } from "@/context/CartProvider";
 import { useAuth } from "@/context/AuthProvider";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { ShippingAddress } from "@/types/cart";
-import { COURIERS, calculateCustomerShipping } from "@/config/couriers";
+import { COURIERS } from "@/config/couriers";
+import { useStorefrontSettings, defaultCouriersFromSettings } from "@/hooks/useStorefrontSettings";
+import { computeStorefrontTotals } from "@/lib/pricing/storefront-totals";
 
-interface StoreSettings {
-  freeShippingThreshold: number;
-  flatShippingFee: number;
-  taxRate: number;
-  embedShippingInPrice: boolean;
-  defaultCourierId: string;
-  couriers: { id: string; name: string; etaLabel: string }[];
-  config?: import("@/lib/admin/operations-types").ExtendedPlatformConfig;
-}
+const PAYMENT_METHODS = [
+  { id: "card", label: "Credit / debit card" },
+  { id: "eft", label: "Instant EFT" },
+  ...(process.env.NODE_ENV === "development"
+    ? [{ id: "demo", label: "Demo checkout" }]
+    : []),
+];
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   const { user } = useAuth();
+  const { settings } = useStorefrontSettings();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [courierId, setCourierId] = useState("aramex");
   const [paymentMethod, setPaymentMethod] = useState("card");
 
   const [address, setAddress] = useState<ShippingAddress>({
-    fullName: user?.user_metadata?.full_name ?? "",
-    email: user?.email ?? "",
+    fullName: "",
+    email: "",
     phone: "",
     addressLine1: "",
     addressLine2: "",
@@ -48,37 +48,26 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    fetch("/api/storefront/settings")
-      .then((r) => r.json())
-      .then((data) => {
-        setSettings(data);
-        setCourierId(data.defaultCourierId ?? "aramex");
-      })
-      .catch(() => {
-        setSettings({
-          freeShippingThreshold: 1000,
-          flatShippingFee: 99,
-          taxRate: 0.15,
-          embedShippingInPrice: true,
-          defaultCourierId: "aramex",
-          couriers: COURIERS.map((c) => ({ id: c.id, name: c.name, etaLabel: c.etaLabel })),
-        });
-      });
-  }, []);
+    if (!user) return;
+    setAddress((prev) => ({
+      ...prev,
+      fullName: prev.fullName || (user.user_metadata?.full_name as string) || "",
+      email: prev.email || user.email || "",
+    }));
+  }, [user]);
 
-  const shippingCalc = settings
-    ? calculateCustomerShipping(subtotal, courierId, {
-        freeShippingThreshold: settings.freeShippingThreshold,
-        flatShippingFee: settings.flatShippingFee,
-        embedShippingInPrice: settings.embedShippingInPrice,
-        config: settings.config,
-      })
-    : { customerCharge: 0, internalCost: 0, displayFree: true };
+  useEffect(() => {
+    if (settings?.defaultCourierId) setCourierId(settings.defaultCourierId);
+  }, [settings?.defaultCourierId]);
 
-  const shipping = shippingCalc.customerCharge;
-  const tax = Math.round(subtotal * (settings?.taxRate ?? 0.15) * 100) / 100;
-  const total = Math.round((subtotal + shipping + tax) * 100) / 100;
-  const selectedCourier = COURIERS.find((c) => c.id === courierId);
+  const couriers = settings ? defaultCouriersFromSettings(settings) : COURIERS.map((c) => ({ id: c.id, name: c.name, etaLabel: c.etaLabel }));
+  const currency = settings?.currency ?? "ZAR";
+
+  const pricing = settings
+    ? computeStorefrontTotals(subtotal, settings, courierId)
+    : { shipping: 0, tax: 0, total: subtotal, shippingCalc: { displayFree: true, customerCharge: 0, internalCost: 0 } };
+  const { shipping, tax, total, shippingCalc } = pricing;
+  const selectedCourier = couriers.find((c) => c.id === courierId);
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
@@ -176,7 +165,7 @@ export default function CheckoutPage() {
                   : "Choose your delivery partner."}
               </p>
               <div className="mt-4 space-y-2">
-                {(settings?.couriers ?? COURIERS).map((c) => (
+                {couriers.map((c) => (
                   <label key={c.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 ${courierId === c.id ? "border-brand bg-brand/5" : "border-neutral-200"}`}>
                     <input type="radio" name="courier" value={c.id} checked={courierId === c.id} onChange={() => setCourierId(c.id)} />
                     <div>
@@ -194,11 +183,7 @@ export default function CheckoutPage() {
                 Payment method
               </h2>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {[
-                  { id: "card", label: "Credit / debit card" },
-                  { id: "eft", label: "Instant EFT" },
-                  { id: "demo", label: "Demo checkout" },
-                ].map((m) => (
+                {PAYMENT_METHODS.map((m) => (
                   <label key={m.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border-2 p-3 text-sm font-medium ${paymentMethod === m.id ? "border-brand bg-brand/5" : "border-neutral-200"}`}>
                     <input type="radio" name="payment" value={m.id} checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} />
                     {m.label}
@@ -218,19 +203,19 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <li key={item.id} className="flex justify-between text-sm text-neutral-600">
                   <span className="truncate pr-2">{item.name} × {item.quantity}</span>
-                  <span>{formatCurrency(item.price * item.quantity)}</span>
+                  <span>{formatCurrency(item.price * item.quantity, currency)}</span>
                 </li>
               ))}
             </ul>
             <dl className="mt-4 space-y-2 border-t border-neutral-100 pt-4 text-sm">
               <div className="flex justify-between">
                 <dt className="text-neutral-500">Subtotal</dt>
-                <dd>{formatCurrency(subtotal)}</dd>
+                <dd>{formatCurrency(subtotal, currency)}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-neutral-500">Delivery {selectedCourier ? `(${selectedCourier.name})` : ""}</dt>
                 <dd className={shippingCalc.displayFree ? "font-semibold text-emerald-600" : ""}>
-                  {shipping === 0 ? "Free" : formatCurrency(shipping)}
+                  {shipping === 0 ? "Free" : formatCurrency(shipping, currency)}
                 </dd>
               </div>
               {settings?.embedShippingInPrice && (
@@ -238,18 +223,18 @@ export default function CheckoutPage() {
               )}
               <div className="flex justify-between">
                 <dt className="text-neutral-500">VAT</dt>
-                <dd>{formatCurrency(tax)}</dd>
+                <dd>{formatCurrency(tax, currency)}</dd>
               </div>
               <div className="flex justify-between pt-2 text-base font-semibold">
                 <dt>Total</dt>
-                <dd>{formatCurrency(total)}</dd>
+                <dd>{formatCurrency(total, currency)}</dd>
               </div>
             </dl>
 
             {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}
 
             <Button type="submit" className="mt-6 w-full rounded-full" isLoading={loading}>
-              Place Order · {formatCurrency(total)}
+              Place Order · {formatCurrency(total, currency)}
             </Button>
           </Card>
         </form>

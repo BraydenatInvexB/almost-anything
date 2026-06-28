@@ -46,6 +46,10 @@ export default async function AdminOrdersPage({
             ? `Showing results for "${q}"`
             : "Track, process, and fulfill every customer order in one place."
         }
+        breadcrumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Orders" },
+        ]}
         action={
           <Link
             href="/admin/fulfillment"
@@ -65,10 +69,16 @@ export default async function AdminOrdersPage({
 
       {/* Filter tabs */}
       <div className="mb-4 flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
+        {FILTERS.map((f) => {
+          const params = new URLSearchParams();
+          if (f !== "all") params.set("status", f);
+          if (q.trim()) params.set("q", q.trim());
+          const qs = params.toString();
+          const href = qs ? `/admin/orders?${qs}` : "/admin/orders";
+          return (
           <Link
             key={f}
-            href={f === "all" ? "/admin/orders" : `/admin/orders?status=${f}`}
+            href={href}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-xs font-semibold capitalize transition-colors",
               status === f
@@ -78,7 +88,8 @@ export default async function AdminOrdersPage({
           >
             {f}
           </Link>
-        ))}
+          );
+        })}
       </div>
 
       <Panel>

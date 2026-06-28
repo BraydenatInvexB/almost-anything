@@ -21,7 +21,7 @@ export function TrackTimeline({ status }: { status: OrderStatus }) {
     <div>
       <p className="mb-6 text-sm text-neutral-500">
         Current status:{" "}
-        <span className="font-semibold text-white">{label}</span>
+        <span className="font-semibold text-neutral-900">{label}</span>
       </p>
 
       {/* Desktop: horizontal stepper */}
@@ -52,7 +52,7 @@ export function TrackTimeline({ status }: { status: OrderStatus }) {
               </span>
               <span
                 className={`mt-2 text-xs font-medium ${
-                  i <= step ? "text-white" : "text-neutral-400"
+                  active ? "text-neutral-900" : done ? "text-neutral-700" : "text-neutral-400"
                 }`}
               >
                 {s}
@@ -86,7 +86,7 @@ export function TrackTimeline({ status }: { status: OrderStatus }) {
                   <span className={`my-1 h-8 w-0.5 ${i < step ? "bg-brand" : "bg-neutral-200"}`} />
                 )}
               </div>
-              <span className={`pt-2 text-sm font-medium ${i <= step ? "text-white" : "text-neutral-400"}`}>
+              <span className={`pt-2 text-sm font-medium ${active ? "text-neutral-900" : done ? "text-neutral-700" : "text-neutral-400"}`}>
                 {s}
               </span>
             </li>

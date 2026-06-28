@@ -118,7 +118,11 @@ export function TicketActionsPanel({ ticket, agents, canManage }: TicketActionsP
             "Update ticket"
           )}
         </BtnPrimary>
-      ) : null}
+      ) : (
+        <p className="rounded-lg bg-neutral-50 px-3 py-2.5 text-xs text-neutral-600">
+          You have view-only access to this ticket. Contact a support lead to change status or assignment.
+        </p>
+      )}
     </div>
   );
 }

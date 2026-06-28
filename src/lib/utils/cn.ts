@@ -7,15 +7,15 @@ export function cn(...inputs: ClassValue[]): string {
 
 export function formatCurrency(
   amount: number,
-  locale: string = "en-US",
+  currency: string = "ZAR",
+  locale: string = "en-ZA",
 ): string {
-  // The store operates in South African Rand. We render the "R" symbol with
-  // standard grouping so amounts read cleanly (e.g. R1,234.56).
-  const value = new Intl.NumberFormat(locale, {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
-  return `R${value}`;
 }
 
 export function formatRating(rating: number): string {

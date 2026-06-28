@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getCurrentStaff,
@@ -144,11 +145,11 @@ export default async function AdminCustomerDetailPage({
                   <Th />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-50">
+              <tbody>
                 {orders.map((o) => (
-                  <tr key={o.id} className="hover:bg-neutral-50/80">
-                    <Td className="font-semibold">{o.orderNumber}</Td>
-                    <Td className="text-neutral-500">
+                  <tr key={o.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/80">
+                    <Td className="whitespace-nowrap font-semibold">{o.orderNumber}</Td>
+                    <Td className="whitespace-nowrap text-neutral-500">
                       {new Date(o.createdAt).toLocaleDateString("en-ZA")}
                     </Td>
                     <Td>
@@ -179,11 +180,19 @@ export default async function AdminCustomerDetailPage({
                 <Th>Priority</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-50">
+            <tbody>
               {tickets.map((t) => (
-                <tr key={t.id} className="hover:bg-neutral-50/80">
-                  <Td className="font-medium">{t.ticket_number}</Td>
-                  <Td className="max-w-xs truncate text-neutral-600">{t.subject}</Td>
+                <tr key={t.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/80">
+                  <Td className="whitespace-nowrap font-medium">
+                    <Link href={`/admin/support/${t.id}`} className="text-brand hover:underline">
+                      {t.ticket_number}
+                    </Link>
+                  </Td>
+                  <Td className="max-w-xs whitespace-normal text-neutral-600">
+                    <Link href={`/admin/support/${t.id}`} className="hover:text-brand">
+                      {t.subject}
+                    </Link>
+                  </Td>
                   <Td>
                     <StatusBadge status={t.status} />
                   </Td>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Banknote,
   CreditCard,
@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   TrendingUp,
 } from "lucide-react";
-import type { Expense, ReturnRequest } from "@/lib/admin/operations-types";
+import type { Expense } from "@/lib/admin/operations-types";
 import type { FinanceDashboardData, SupplierPayable } from "@/lib/admin/finance-types";
 import {
   BtnPrimary,
@@ -22,8 +22,11 @@ import {
   Table,
   Th,
   Td,
+  EmptyState,
 } from "@/components/admin/ui";
 import { formatCurrency, cn } from "@/lib/utils/cn";
+import { ReturnsDesk } from "@/components/admin/ReturnsDesk";
+import type { StaffProfile } from "@/types/staff-access";
 
 type Tab = "overview" | "revenue" | "expenses" | "payables" | "refunds" | "shipping" | "tax";
 
@@ -50,13 +53,39 @@ const CATEGORY_LABELS: Record<string, string> = {
 export function FinanceDashboard({
   data,
   canManage,
+  canManageReturns,
+  agents = [],
 }: {
   data: FinanceDashboardData;
   canManage: boolean;
+  canManageReturns?: boolean;
+  agents?: StaffProfile[];
 }) {
-  const [tab, setTab] = useState<Tab>("overview");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as Tab | null;
+  const [tab, setTab] = useState<Tab>(
+    tabParam && TABS.some((t) => t.id === tabParam) ? tabParam : "overview",
+  );
+
+  useEffect(() => {
+    if (tabParam && TABS.some((t) => t.id === tabParam)) {
+      setTab(tabParam);
+    }
+  }, [tabParam]);
+
+  function selectTab(id: Tab) {
+    setTab(id);
+    const params = new URLSearchParams(searchParams.toString());
+    if (id === "overview") params.delete("tab");
+    else params.set("tab", id);
+    const qs = params.toString();
+    router.replace(qs ? `/admin/finance?${qs}` : "/admin/finance", { scroll: false });
+  }
+
   const { summary } = data;
   const cur = summary.currency;
+  const returnsManage = canManageReturns ?? canManage;
   const maxDayRev = Math.max(...summary.revenueByDay.map((d) => d.revenue), 1);
 
   return (
@@ -66,7 +95,7 @@ export function FinanceDashboard({
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => selectTab(t.id)}
             className={cn(
               "rounded-lg px-3.5 py-2 text-sm font-medium transition-colors",
               tab === t.id
@@ -85,7 +114,6 @@ export function FinanceDashboard({
             <StatCard
               label="Gross revenue"
               value={formatCurrency(summary.grossRevenue, cur)}
-              change={12.4}
               icon={<TrendingUp className="h-4 w-4" />}
               accent="bg-brand"
               hint={`${summary.orderCount} orders · AOV ${formatCurrency(summary.avgOrderValue, cur)}`}
@@ -93,7 +121,6 @@ export function FinanceDashboard({
             <StatCard
               label="Net profit"
               value={formatCurrency(summary.netProfit, cur)}
-              change={summary.netMarginPct}
               icon={<Wallet className="h-4 w-4" />}
               accent="bg-emerald-600"
               hint={`${summary.netMarginPct}% net margin`}
@@ -108,7 +135,6 @@ export function FinanceDashboard({
             <StatCard
               label="Net cash flow"
               value={formatCurrency(summary.netCashFlow, cur)}
-              change={summary.netCashFlow >= 0 ? 8 : -8}
               icon={<Banknote className="h-4 w-4" />}
               accent={summary.netCashFlow >= 0 ? "bg-emerald-600" : "bg-red-600"}
             />
@@ -146,26 +172,26 @@ export function FinanceDashboard({
                   label="Pending payables"
                   value={formatCurrency(summary.pendingPayables, cur)}
                   href="/admin/finance"
-                  onClick={() => setTab("payables")}
+                  onClick={() => selectTab("payables")}
                 />
                 <AlertRow
                   icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
                   label="Overdue invoices"
                   value={formatCurrency(summary.overduePayables, cur)}
                   urgent={summary.overduePayables > 0}
-                  onClick={() => setTab("payables")}
+                  onClick={() => selectTab("payables")}
                 />
                 <AlertRow
                   icon={<CreditCard className="h-4 w-4 text-neutral-400" />}
                   label="Outstanding refunds"
                   value={formatCurrency(summary.outstandingRefunds, cur)}
-                  onClick={() => setTab("refunds")}
+                  onClick={() => selectTab("refunds")}
                 />
                 <AlertRow
                   icon={<Receipt className="h-4 w-4 text-neutral-400" />}
                   label="VAT collected"
                   value={formatCurrency(summary.vatCollected, cur)}
-                  onClick={() => setTab("tax")}
+                  onClick={() => selectTab("tax")}
                 />
               </ul>
             </Panel>
@@ -272,7 +298,33 @@ export function FinanceDashboard({
       )}
 
       {tab === "refunds" && (
-        <RefundsTab returns={data.returns} canManage={canManage} currency={cur} />
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StatCard
+              label="Refunds processed"
+              value={formatCurrency(
+                data.returns.filter((r) => r.status === "refunded").reduce((s, r) => s + r.refundAmount, 0),
+                cur,
+              )}
+              accent="bg-red-600"
+            />
+            <StatCard
+              label="Pending refund queue"
+              value={String(
+                data.returns.filter(
+                  (r) => r.status === "requested" || r.status === "approved" || r.status === "received",
+                ).length,
+              )}
+              accent="bg-amber-600"
+            />
+          </div>
+          <ReturnsDesk
+            returns={data.returns}
+            canManage={returnsManage}
+            agents={agents}
+            embedded
+          />
+        </>
       )}
 
       {tab === "shipping" && (
@@ -502,6 +554,12 @@ function ExpensesTab({
         </Panel>
       )}
       <Panel title="Expense ledger">
+        {expenses.length === 0 ? (
+          <EmptyState
+            title="No expenses recorded"
+            description={canManage ? "Record your first operating expense above." : "Expenses will appear here once recorded."}
+          />
+        ) : (
         <Table>
           <thead>
             <tr>
@@ -533,6 +591,7 @@ function ExpensesTab({
             ))}
           </tbody>
         </Table>
+        )}
       </Panel>
     </>
   );
@@ -583,6 +642,12 @@ function PayablesTab({
         />
       </div>
       <Panel title="Supplier invoices & payables">
+        {payables.length === 0 ? (
+          <EmptyState
+            title="No payables on file"
+            description="Supplier invoices and outstanding payables will appear here."
+          />
+        ) : (
         <Table>
           <thead>
             <tr>
@@ -634,85 +699,9 @@ function PayablesTab({
             ))}
           </tbody>
         </Table>
+        )}
       </Panel>
     </>
   );
 }
 
-function RefundsTab({
-  returns,
-  canManage,
-  currency,
-}: {
-  returns: ReturnRequest[];
-  canManage: boolean;
-  currency: string;
-}) {
-  const router = useRouter();
-  const refunded = returns.filter((r) => r.status === "refunded").reduce((s, r) => s + r.refundAmount, 0);
-  const pending = returns.filter((r) => r.status === "requested" || r.status === "approved");
-
-  async function update(id: string, status: ReturnRequest["status"], refundAmount?: number) {
-    await fetch("/api/admin/returns", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status, refundAmount }),
-    });
-    router.refresh();
-  }
-
-  return (
-    <>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <StatCard label="Refunds processed" value={formatCurrency(refunded, currency)} accent="bg-red-600" />
-        <StatCard label="Pending refund queue" value={String(pending.length)} accent="bg-amber-600" />
-      </div>
-      <Panel title="Return & refund queue">
-        <Table>
-          <thead>
-            <tr>
-              <Th>Order</Th>
-              <Th>Customer</Th>
-              <Th>Reason</Th>
-              <Th>Status</Th>
-              <Th className="text-right">Refund</Th>
-              {canManage && <Th />}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-50">
-            {returns.map((r) => (
-              <tr key={r.id}>
-                <Td className="font-semibold">{r.orderNumber}</Td>
-                <Td>
-                  <p>{r.customerName}</p>
-                  <p className="text-xs text-neutral-400">{r.customerEmail}</p>
-                </Td>
-                <Td className="max-w-xs truncate text-neutral-600">{r.reason}</Td>
-                <Td><StatusBadge status={r.status} /></Td>
-                <Td className="text-right font-semibold">
-                  {r.refundAmount ? formatCurrency(r.refundAmount, r.currency) : "—"}
-                </Td>
-                {canManage && (
-                  <Td>
-                    <div className="flex justify-end gap-2">
-                      {r.status === "requested" && (
-                        <button type="button" onClick={() => update(r.id, "approved", r.refundAmount || 500)} className="text-xs font-semibold text-brand">
-                          Approve
-                        </button>
-                      )}
-                      {r.status === "approved" && (
-                        <button type="button" onClick={() => update(r.id, "refunded", r.refundAmount || 500)} className="text-xs font-semibold text-emerald-600">
-                          Process refund
-                        </button>
-                      )}
-                    </div>
-                  </Td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </Panel>
-    </>
-  );
-}

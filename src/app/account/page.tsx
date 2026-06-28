@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Package, Heart, ShieldCheck, LogOut, User } from "lucide-react";
+import { Package, Heart, LogOut, User, RotateCcw } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthProvider";
 import { useFavorites } from "@/context/FavoritesProvider";
 import { useCart } from "@/context/CartProvider";
+import { AccountSubNav } from "@/components/account/AccountSubNav";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function AccountPage() {
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 sm:px-6">
+        <AccountSubNav current="/account" />
         <h1 className="text-2xl font-bold text-neutral-900">My Account</h1>
 
         {!isConfigured || (!loading && !user) ? (
@@ -93,6 +95,19 @@ export default function AccountPage() {
                 </Card>
               </Link>
 
+              <Link href="/account/returns">
+                <Card
+                  variant="elevated"
+                  className="bg-white p-6 transition-shadow hover:shadow-md"
+                >
+                  <RotateCcw className="h-8 w-8 text-neutral-600" />
+                  <h3 className="mt-3 font-semibold">Returns</h3>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    Request and track return requests
+                  </p>
+                </Card>
+              </Link>
+
               <Link href="/favorites">
                 <Card
                   variant="elevated"
@@ -119,18 +134,6 @@ export default function AccountPage() {
                 </Card>
               </Link>
 
-            <Link href="/admin">
-              <Card
-                variant="elevated"
-                className="bg-white p-6 transition-shadow hover:shadow-md"
-              >
-                <ShieldCheck className="h-8 w-8 text-neutral-900" />
-                <h3 className="mt-3 font-semibold">Admin Console</h3>
-                <p className="mt-1 text-sm text-neutral-500">
-                  Staff access to orders, catalog & support
-                </p>
-              </Card>
-            </Link>
             </div>
           </div>
         )}

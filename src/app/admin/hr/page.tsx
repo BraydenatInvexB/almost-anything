@@ -10,7 +10,9 @@ import { Shield } from "lucide-react";
 
 export default async function AdminHRPage() {
   const staff = await getCurrentStaff();
-  if (!staff || !staffCan(staff, "hr.view")) return <AccessDenied feature="HR" />;
+  if (!staff || !(staffCan(staff, "hr.view") || staffCan(staff, "staff.view"))) {
+    return <AccessDenied feature="HR & staff" role={staff?.role} />;
+  }
 
   const allStaff = await listStaff();
   const active = allStaff.filter((s) => s.status === "active").length;

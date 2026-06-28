@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { AccountSubNav } from "@/components/account/AccountSubNav";
 import { useAuth } from "@/context/AuthProvider";
 import type { Order } from "@/types/cart";
 import { formatCurrency } from "@/lib/utils/cn";
@@ -17,14 +18,21 @@ export default function OrdersPage() {
   const { user, isConfigured } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [fetched, setFetched] = useState(false);
+  const [fetchError, setFetchError] = useState("");
 
   useEffect(() => {
     if (!user || !isConfigured) return;
 
     fetch("/api/orders")
-      .then((r) => r.json())
-      .then((data) => setOrders(data.orders ?? []))
-      .catch(() => setOrders([]))
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error ?? "Could not load orders");
+        setOrders(data.orders ?? []);
+      })
+      .catch((err: Error) => {
+        setFetchError(err.message || "Could not load orders. Please try again.");
+        setOrders([]);
+      })
       .finally(() => setFetched(true));
   }, [user, isConfigured]);
 
@@ -35,6 +43,7 @@ export default function OrdersPage() {
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 sm:px-6">
+        <AccountSubNav current="/account/orders" />
         <h1 className="text-2xl font-bold text-neutral-900">Order History</h1>
 
         {!user ? (
@@ -46,6 +55,28 @@ export default function OrdersPage() {
           </Card>
         ) : loading ? (
           <p className="mt-8 text-neutral-500">Loading orders...</p>
+        ) : fetchError ? (
+          <Card variant="elevated" className="mt-8 bg-white p-8 text-center">
+            <p className="font-medium text-red-600">{fetchError}</p>
+            <Button
+              variant="secondary"
+              className="mt-4"
+              onClick={() => {
+                setFetched(false);
+                setFetchError("");
+                fetch("/api/orders")
+                  .then(async (r) => {
+                    const data = await r.json();
+                    if (!r.ok) throw new Error(data.error ?? "Could not load orders");
+                    setOrders(data.orders ?? []);
+                  })
+                  .catch((err: Error) => setFetchError(err.message))
+                  .finally(() => setFetched(true));
+              }}
+            >
+              Try again
+            </Button>
+          </Card>
         ) : orders.length === 0 ? (
           <Card variant="elevated" className="mt-8 bg-white py-16 text-center">
             <Package className="mx-auto h-12 w-12 text-neutral-300" />
@@ -67,7 +98,7 @@ export default function OrdersPage() {
                       {order.orderNumber}
                     </p>
                     <p className="mt-1 text-sm text-neutral-500">
-                      {new Date(order.createdAt).toLocaleDateString("en-US", {
+                      {new Date(order.createdAt).toLocaleDateString("en-ZA", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
@@ -97,11 +128,22 @@ export default function OrdersPage() {
                   <span className="font-semibold">
                     Total {formatCurrency(order.total)}
                   </span>
-                  <Link href={`/track?order=${encodeURIComponent(order.orderNumber)}`}>
-                    <Button variant="secondary" size="sm" className="rounded-full">
-                      Track order
-                    </Button>
-                  </Link>
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/track?order=${encodeURIComponent(order.orderNumber)}`}>
+                      <Button variant="secondary" size="sm" className="rounded-full">
+                        Track order
+                      </Button>
+                    </Link>
+                    {(order.status === "delivered" || order.status === "shipped") && (
+                      <Link
+                        href={`/account/returns?start=1&order=${encodeURIComponent(order.orderNumber)}`}
+                      >
+                        <Button variant="ghost" size="sm" className="rounded-full">
+                          Request return
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </Card>
             ))}

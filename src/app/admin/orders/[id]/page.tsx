@@ -5,7 +5,8 @@ import {
   getCurrentStaff,
   getAdminOrder,
 } from "@/services/admin-service";
-import { can, staffCan } from "@/config/rbac";
+import { listReturnsByOrder } from "@/lib/admin/operations-store";
+import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { OrderDetailActions } from "@/components/admin/OrderDetailActions";
 import {
@@ -33,6 +34,9 @@ export default async function AdminOrderDetailPage({
   if (!order) notFound();
 
   const canManage = staffCan(staff, "orders.manage");
+  const orderReturns = listReturnsByOrder(order.id).length
+    ? listReturnsByOrder(order.id)
+    : listReturnsByOrder(order.orderNumber);
   const fulfillment = resolveFulfillment({
     stockOrigin: order.stockOrigin,
     shippingCountry: order.shippingAddress.country,
@@ -122,6 +126,30 @@ export default async function AdminOrderDetailPage({
               />
             </div>
           </Panel>
+
+          {orderReturns.length > 0 && (
+            <Panel
+              title="Returns"
+              description={`${orderReturns.length} return request${orderReturns.length === 1 ? "" : "s"} linked to this order`}
+            >
+              <ul className="divide-y divide-neutral-100">
+                {orderReturns.map((r) => (
+                  <li key={r.id} className="flex items-center justify-between px-5 py-4">
+                    <div>
+                      <Link
+                        href={`/admin/returns/${r.id}`}
+                        className="font-mono text-sm font-semibold text-brand hover:underline"
+                      >
+                        {r.rmaNumber}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-neutral-500">{r.reason}</p>
+                    </div>
+                    <StatusBadge status={r.status} />
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
         </div>
 
         <div className="space-y-4">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   DollarSign,
   ShoppingCart,
@@ -8,12 +9,12 @@ import {
   Truck,
   BarChart3,
 } from "lucide-react";
-import { getCurrentStaff, getDashboardStats, getFulfillmentQueue, listTickets } from "@/services/admin-service";
+import { getCurrentStaff, getDashboardStats, getFulfillmentQueue } from "@/services/admin-service";
+import { countOpenItemRequests } from "@/services/sourcing-request-service";
 import { can, staffCan } from "@/config/rbac";
 import { ROLE_META } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import {
-  PageHeader,
   StatCard,
   Panel,
   StatusBadge,
@@ -24,6 +25,7 @@ import {
   BtnSecondary,
 } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
+import { SITE_CONFIG } from "@/config/site";
 
 export default async function AdminDashboardPage() {
   const staff = await getCurrentStaff();
@@ -31,17 +33,32 @@ export default async function AdminDashboardPage() {
 
   const stats = await getDashboardStats();
   const fulfillment = await getFulfillmentQueue();
-  const tickets = await listTickets();
-  const urgentTickets = tickets.filter((t) => t.priority === "urgent" && t.status !== "closed").length;
+  const openItemRequests = staffCan(staff, "procurement.view") ? countOpenItemRequests() : 0;
   const maxRevenue = Math.max(...stats.revenueSeries.map((d) => d.value), 1);
 
   return (
     <>
-      <PageHeader
-        title={`Operations overview`}
-        subtitle={`${ROLE_META[staff.role].label} · ${staff.full_name.split(" ")[0]}, here is what needs your attention today.`}
-        action={<BtnSecondary href="/admin/reports">Full reports</BtnSecondary>}
-      />
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <Link href="/admin" className="shrink-0 pt-0.5">
+            <Image
+              src={SITE_CONFIG.logo}
+              alt={SITE_CONFIG.name}
+              width={180}
+              height={44}
+              className="h-10 w-auto"
+              priority
+            />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-950">Operations overview</h1>
+            <p className="mt-1 text-sm text-neutral-500">
+              {ROLE_META[staff.role].label} · {staff.full_name.split(" ")[0]}, here is what needs your attention today.
+            </p>
+          </div>
+        </div>
+        <BtnSecondary href="/admin/reports">Full reports</BtnSecondary>
+      </div>
 
       {/* Workflow queues */}
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -52,6 +69,15 @@ export default async function AdminDashboardPage() {
           href="/admin/fulfillment"
           urgent={fulfillment.length > 0}
         />
+        {staffCan(staff, "procurement.view") && (
+          <WorkflowCard
+            title="Item requests"
+            count={openItemRequests}
+            description="Customers looking for products not in the catalog."
+            href="/admin/requests"
+            urgent={openItemRequests > 0}
+          />
+        )}
         <WorkflowCard
           title="Open support"
           count={stats.openTickets}
@@ -65,13 +91,6 @@ export default async function AdminDashboardPage() {
           description="Catalog items that may block new orders."
           href="/admin/products"
           urgent={stats.lowStock > 0}
-        />
-        <WorkflowCard
-          title="Urgent tickets"
-          count={urgentTickets}
-          description="High-priority support cases requiring immediate attention."
-          href="/admin/support"
-          urgent={urgentTickets > 0}
         />
       </div>
 

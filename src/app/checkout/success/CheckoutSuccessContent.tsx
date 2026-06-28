@@ -9,12 +9,14 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { Order } from "@/types/cart";
+import { useAuth } from "@/context/AuthProvider";
 import { formatCurrency } from "@/lib/utils/cn";
 import { customerStatus } from "@/lib/orders/status";
 
 export default function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("orderNumber");
+  const { user } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
 
   useEffect(() => {
@@ -83,6 +85,23 @@ export default function CheckoutSuccessContent() {
               </Button>
             </Link>
           </div>
+
+          {!user && (
+            <Card variant="default" className="mt-6 p-5 text-left">
+              <p className="text-sm font-semibold text-neutral-900">Save your order history</p>
+              <p className="mt-1 text-sm text-neutral-600">
+                Create a free account to track this order and all future purchases in one place.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href={`/signup?redirect=${encodeURIComponent("/account/orders")}`}>
+                  <Button size="sm">Create account</Button>
+                </Link>
+                <Link href="/login">
+                  <Button variant="secondary" size="sm">Sign in</Button>
+                </Link>
+              </div>
+            </Card>
+          )}
         </Card>
 
         <Card variant="default" className="mt-6 p-6">

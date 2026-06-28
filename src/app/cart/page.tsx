@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useStorefrontSettings } from "@/hooks/useStorefrontSettings";
+import { computeStorefrontTotals } from "@/lib/pricing/storefront-totals";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -13,10 +15,13 @@ import { formatCurrency } from "@/lib/utils/cn";
 export default function CartPage() {
   const { items, itemCount, subtotal, updateQuantity, removeItem, clearCart } =
     useCart();
+  const { settings } = useStorefrontSettings();
 
-  const shipping = subtotal > 1000 ? 0 : 99;
-  const tax = Math.round(subtotal * 0.15 * 100) / 100;
-  const total = Math.round((subtotal + shipping + tax) * 100) / 100;
+  const pricing = settings
+    ? computeStorefrontTotals(subtotal, settings)
+    : { shipping: 0, tax: 0, total: subtotal, shippingCalc: { displayFree: true, customerCharge: 0, internalCost: 0 } };
+  const { shipping, tax, total, shippingCalc } = pricing;
+  const currency = settings?.currency ?? "ZAR";
 
   return (
     <div className="flex min-h-full flex-col bg-white">
@@ -149,25 +154,31 @@ export default function CartPage() {
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-neutral-500">Subtotal</dt>
-                  <dd>{formatCurrency(subtotal)}</dd>
+                  <dd>{formatCurrency(subtotal, currency)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-neutral-500">Shipping</dt>
-                  <dd>{shipping === 0 ? "Free" : formatCurrency(shipping)}</dd>
+                  <dd>
+                    {shippingCalc.displayFree || shipping === 0
+                      ? "Included"
+                      : formatCurrency(shipping, currency)}
+                  </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-neutral-500">VAT (15%)</dt>
-                  <dd>{formatCurrency(tax)}</dd>
+                  <dt className="text-neutral-500">VAT ({Math.round((settings?.taxRate ?? 0.15) * 100)}%)</dt>
+                  <dd>{formatCurrency(tax, currency)}</dd>
                 </div>
                 <div className="flex justify-between border-t border-neutral-100 pt-3 text-base font-semibold">
                   <dt>Total</dt>
-                  <dd>{formatCurrency(total)}</dd>
+                  <dd>{formatCurrency(total, currency)}</dd>
                 </div>
               </dl>
-              {subtotal > 0 && subtotal <= 1000 ? (
+              {settings && !settings.embedShippingInPrice && subtotal > 0 && subtotal < settings.freeShippingThreshold ? (
                 <p className="mt-3 text-xs text-neutral-400">
-                  Free shipping on orders over R1,000
+                  Free shipping on orders over {formatCurrency(settings.freeShippingThreshold, currency)}
                 </p>
+              ) : settings?.embedShippingInPrice ? (
+                <p className="mt-3 text-xs text-neutral-400">Delivery is included in product prices.</p>
               ) : null}
               <Link href="/checkout" className="mt-6 block">
                 <Button className="w-full rounded-full">

@@ -18,6 +18,7 @@ import type {
   ReturnRequest,
   SiteAnalytics,
   StockOrigin,
+  CustomerItemRequest,
 } from "@/lib/admin/operations-types";
 
 function iso(daysAgo = 0, hoursAgo = 0) {
@@ -46,6 +47,7 @@ interface OperationsState {
   emailBroadcasts: EmailBroadcast[];
   expenses: Expense[];
   returns: ReturnRequest[];
+  itemRequests: CustomerItemRequest[];
   procurement: ProcurementRecord[];
   inventory: InventoryRecord[];
   customProducts: AdminProductDraft[];
@@ -257,27 +259,149 @@ const initial: OperationsState = {
   returns: [
     {
       id: "ret-001",
+      rmaNumber: "RMA-48291",
       orderId: "ord-1005",
       orderNumber: "AA-83915",
       customerName: "Marcus Bennett",
       customerEmail: "marcus.bennett@gmail.com",
-      reason: "Damaged lamp shade on arrival",
+      reasonCode: "damaged",
+      reason: "Damaged lamp shade on arrival — packaging was crushed on one corner.",
+      items: [
+        {
+          orderItemId: "li-001",
+          name: "Arc Floor Lamp",
+          quantity: 1,
+          unitPrice: 890,
+          returnQuantity: 1,
+        },
+      ],
+      method: "courier_pickup",
       status: "approved",
       refundAmount: 890,
       currency: "ZAR",
+      restockItems: false,
+      notes: [
+        {
+          id: "rn-001",
+          body: "Customer sent photos — shade cracked. Approved for pickup.",
+          authorName: "Thandi Mokoena",
+          authorType: "staff",
+          isInternal: true,
+          createdAt: iso(2),
+        },
+      ],
       createdAt: iso(3),
+      updatedAt: iso(2),
+      approvedAt: iso(2),
     },
     {
       id: "ret-002",
+      rmaNumber: "RMA-48304",
       orderId: "ord-1008",
       orderNumber: "AA-83912",
       customerName: "Olivia Hughes",
       customerEmail: "olivia.h@proton.me",
-      reason: "Wrong size sofa ordered",
+      reasonCode: "wrong_item",
+      reason: "Received a 2-seater instead of the 3-seater sofa I ordered.",
+      items: [
+        {
+          orderItemId: "li-002",
+          name: "Modular Corner Sofa",
+          quantity: 1,
+          unitPrice: 12499,
+          returnQuantity: 1,
+        },
+      ],
+      method: "courier_pickup",
       status: "requested",
-      refundAmount: 0,
+      refundAmount: 12499,
       currency: "ZAR",
+      restockItems: true,
+      notes: [],
       createdAt: iso(1),
+      updatedAt: iso(1),
+    },
+    {
+      id: "ret-003",
+      rmaNumber: "RMA-48102",
+      orderId: "ord-1012",
+      orderNumber: "AA-83908",
+      customerName: "James Okonkwo",
+      customerEmail: "j.okonkwo@outlook.com",
+      reasonCode: "changed_mind",
+      reason: "Colour doesn't match the room after seeing it in person.",
+      items: [
+        {
+          orderItemId: "li-003",
+          name: "Velvet Accent Chair",
+          quantity: 2,
+          unitPrice: 2199,
+          returnQuantity: 2,
+        },
+      ],
+      method: "drop_off",
+      status: "received",
+      refundAmount: 4398,
+      currency: "ZAR",
+      restockItems: true,
+      notes: [
+        {
+          id: "rn-002",
+          body: "Items received at Johannesburg DC — condition good, tags attached.",
+          authorName: "System",
+          authorType: "system",
+          isInternal: true,
+          createdAt: iso(0),
+        },
+      ],
+      createdAt: iso(5),
+      updatedAt: iso(0),
+      approvedAt: iso(4),
+      receivedAt: iso(0),
+    },
+  ],
+  itemRequests: [
+    {
+      id: "req-seed-001",
+      requestNumber: "REQ-10482",
+      query: "Vintage leather armchair, cognac brown, under R15,000",
+      customerEmail: "marcus.bennett@gmail.com",
+      budget: 15000,
+      currency: "ZAR",
+      urgency: "standard",
+      status: "searching",
+      assignedTo: "stf-003",
+      assignedToName: "Jordan Kim",
+      createdAt: iso(0, 3),
+      updatedAt: iso(0, 1),
+    },
+    {
+      id: "req-seed-002",
+      requestNumber: "REQ-10471",
+      query: "PlayStation 5 Digital Edition with extra controller",
+      customerEmail: "gabriela@consolidated.co",
+      budget: 12000,
+      currency: "ZAR",
+      urgency: "express",
+      status: "quoted",
+      assignedTo: "stf-001",
+      assignedToName: "Alex Rivera",
+      quotedAmount: 11499,
+      internalNotes: "Supplier confirmed — quote sent to customer.",
+      createdAt: iso(1, 5),
+      updatedAt: iso(0, 8),
+    },
+    {
+      id: "req-seed-003",
+      requestNumber: "REQ-10455",
+      query: "Mid-century dining set for 6, teak or walnut",
+      customerEmail: "zara.mthembu@outlook.com",
+      budget: 25000,
+      currency: "ZAR",
+      urgency: "flexible",
+      status: "pending",
+      createdAt: iso(2),
+      updatedAt: iso(2),
     },
   ],
   procurement: [
@@ -422,15 +546,124 @@ export function listReturns() {
   return state.returns;
 }
 
+export function getReturn(id: string) {
+  return state.returns.find((r) => r.id === id || r.rmaNumber === id) ?? null;
+}
+
+export function listReturnsByOrder(orderId: string) {
+  const q = orderId.trim();
+  return state.returns.filter((r) => r.orderId === q || r.orderNumber === q);
+}
+
+export function listReturnsByEmail(email: string) {
+  const q = email.trim().toLowerCase();
+  return state.returns.filter((r) => r.customerEmail.toLowerCase() === q);
+}
+
+export type CreateReturnInput = Omit<
+  ReturnRequest,
+  "id" | "rmaNumber" | "status" | "notes" | "createdAt" | "updatedAt"
+> & { notes?: ReturnRequest["notes"] };
+
+export function createReturn(input: CreateReturnInput) {
+  const now = new Date().toISOString();
+  const ret: ReturnRequest = {
+    ...input,
+    id: `ret-${Date.now()}`,
+    rmaNumber: `RMA-${Math.floor(Math.random() * 90000) + 10000}`,
+    status: "requested",
+    notes: input.notes ?? [],
+    createdAt: now,
+    updatedAt: now,
+  };
+  state.returns.unshift(ret);
+  return ret;
+}
+
 export function updateReturn(id: string, patch: Partial<ReturnRequest>) {
   const idx = state.returns.findIndex((r) => r.id === id);
   if (idx < 0) return null;
-  state.returns[idx] = { ...state.returns[idx], ...patch };
+  state.returns[idx] = {
+    ...state.returns[idx],
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+  return state.returns[idx];
+}
+
+export function addReturnNote(
+  returnId: string,
+  note: Omit<ReturnRequest["notes"][number], "id" | "createdAt">,
+) {
+  const idx = state.returns.findIndex((r) => r.id === returnId);
+  if (idx < 0) return null;
+  const entry = {
+    ...note,
+    id: `rn-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+  };
+  state.returns[idx] = {
+    ...state.returns[idx],
+    notes: [...state.returns[idx].notes, entry],
+    updatedAt: new Date().toISOString(),
+  };
   return state.returns[idx];
 }
 
 export function listProcurement() {
   return state.procurement;
+}
+
+export function listItemRequests() {
+  return state.itemRequests;
+}
+
+export function getItemRequest(id: string) {
+  return (
+    state.itemRequests.find(
+      (r) => r.id === id || r.requestNumber.toLowerCase() === id.toLowerCase(),
+    ) ?? null
+  );
+}
+
+export type CreateItemRequestInput = {
+  id?: string;
+  query: string;
+  customerEmail?: string;
+  budget?: number;
+  currency?: string;
+  urgency?: CustomerItemRequest["urgency"];
+  userId?: string;
+};
+
+export function createItemRequest(input: CreateItemRequestInput) {
+  const now = new Date().toISOString();
+  const req: CustomerItemRequest = {
+    id: input.id ?? `req-${Date.now()}`,
+    requestNumber: `REQ-${Math.floor(Math.random() * 90000) + 10000}`,
+    query: input.query.trim(),
+    customerEmail: input.customerEmail?.trim().toLowerCase(),
+    budget: input.budget,
+    currency: input.currency ?? "ZAR",
+    urgency: input.urgency ?? "standard",
+    status: "searching",
+    userId: input.userId,
+    createdAt: now,
+    updatedAt: now,
+  };
+  state.itemRequests.unshift(req);
+  return req;
+}
+
+export function updateItemRequest(id: string, patch: Partial<CustomerItemRequest>) {
+  const idx = state.itemRequests.findIndex((r) => r.id === id);
+  if (idx < 0) return null;
+  state.itemRequests[idx] = {
+    ...state.itemRequests[idx],
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+  return state.itemRequests[idx];
 }
 
 export function updateProcurement(id: string, patch: Partial<ProcurementRecord>) {

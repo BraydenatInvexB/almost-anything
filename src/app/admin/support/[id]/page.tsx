@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Mail, Package, ExternalLink } from "lucide-react";
-import { getCurrentStaff, getTicket, listStaff } from "@/services/admin-service";
+import { getCurrentStaff, getTicket, listStaff, listCustomers } from "@/services/admin-service";
 import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader, Panel, StatusBadge } from "@/components/admin/ui";
@@ -27,7 +27,10 @@ export default async function TicketDetailPage({
   if (!result) notFound();
 
   const { ticket, messages } = result;
-  const team = await listStaff();
+  const [team, customers] = await Promise.all([listStaff(), listCustomers()]);
+  const customerRecord = customers.find(
+    (c) => c.email.toLowerCase() === ticket.customer_email?.toLowerCase(),
+  );
   const assignee = ticket.assigned_to
     ? team.find((s) => s.id === ticket.assigned_to)?.full_name
     : null;
@@ -164,11 +167,11 @@ export default async function TicketDetailPage({
                   Email customer
                 </a>
                 <Link
-                  href="/admin/customers"
+                  href={customerRecord ? `/admin/customers/${customerRecord.id}` : `/admin/customers?q=${encodeURIComponent(ticket.customer_email ?? "")}`}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  View in CRM
+                  View customer
                 </Link>
               </div>
             </div>
@@ -183,10 +186,10 @@ export default async function TicketDetailPage({
                 <div>
                   <p className="font-mono text-sm font-semibold">{ticket.order_id}</p>
                   <Link
-                    href={`/admin/orders?q=${encodeURIComponent(ticket.order_id)}`}
+                    href={`/admin/orders/${ticket.order_id}`}
                     className="text-xs font-medium text-brand hover:underline"
                   >
-                    Open in orders
+                    Open order
                   </Link>
                 </div>
               </div>

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, Loader2, Search, Star } from "lucide-react";
-import { StatusBadge, Table, Th, Td } from "@/components/admin/ui";
+import { StatusBadge, Table, Th, Td, EmptyState } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { Product } from "@/types/database";
 
@@ -14,12 +14,13 @@ interface Props {
   canEdit?: boolean;
   minMarkup: number;
   maxMarkup: number;
+  initialQuery?: string;
 }
 
 type SaveState = "idle" | "saving" | "saved";
 
-export function ProductsManager({ products, canEditMarkup, canEdit, minMarkup, maxMarkup }: Props) {
-  const [query, setQuery] = useState("");
+export function ProductsManager({ products, canEditMarkup, canEdit, minMarkup, maxMarkup, initialQuery = "" }: Props) {
+  const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState("all");
   const [markups, setMarkups] = useState<Record<string, number>>(
     Object.fromEntries(products.map((p) => [p.id, Number(p.markup_percent)])),
@@ -85,6 +86,16 @@ export function ProductsManager({ products, canEditMarkup, canEdit, minMarkup, m
         </select>
       </div>
 
+      {filtered.length === 0 ? (
+        <EmptyState
+          title={query || category !== "all" ? "No products match your filters" : "No products yet"}
+          description={
+            query || category !== "all"
+              ? "Try a different search term or category."
+              : "Add products from the catalog or import your inventory."
+          }
+        />
+      ) : (
       <Table>
         <thead>
           <tr className="border-b border-neutral-100">
@@ -188,6 +199,7 @@ export function ProductsManager({ products, canEditMarkup, canEdit, minMarkup, m
           })}
         </tbody>
       </Table>
+      )}
     </div>
   );
 }

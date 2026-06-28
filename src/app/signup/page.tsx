@@ -6,9 +6,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Check, ShieldCheck, Truck, Tag, Phone } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/context/AuthProvider";
+import { GoogleIcon, FacebookIcon } from "@/components/ui/BrandIcons";
+import { useAuth, type OAuthProvider } from "@/context/AuthProvider";
 import { AVATARS, DEFAULT_AVATAR } from "@/config/avatars";
 import { cn } from "@/lib/utils/cn";
 
@@ -20,7 +22,7 @@ const PERKS = [
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signUp, isConfigured } = useAuth();
+  const { signUp, signInWithProvider, isConfigured } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -30,6 +32,17 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null);
+
+  async function handleOAuth(provider: OAuthProvider) {
+    setError("");
+    setOauthLoading(provider);
+    const result = await signInWithProvider(provider);
+    if (result.error) {
+      setError(result.error);
+      setOauthLoading(null);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -137,7 +150,45 @@ export default function SignupPage() {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="mt-7 space-y-5">
+              <>
+                <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOAuth("google")}
+                    disabled={!isConfigured || oauthLoading !== null}
+                    className="flex h-11 items-center justify-center gap-2.5 rounded-full border border-neutral-200 bg-white text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {oauthLoading === "google" ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-700" />
+                    ) : (
+                      <GoogleIcon className="h-4 w-4" />
+                    )}
+                    Continue with Google
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOAuth("facebook")}
+                    disabled={!isConfigured || oauthLoading !== null}
+                    className="flex h-11 items-center justify-center gap-2.5 rounded-full border border-neutral-200 bg-white text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {oauthLoading === "facebook" ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-700" />
+                    ) : (
+                      <FacebookIcon className="h-4 w-4" />
+                    )}
+                    Continue with Facebook
+                  </button>
+                </div>
+
+                <div className="mt-5 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-neutral-200" />
+                  <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                    or sign up with email
+                  </span>
+                  <span className="h-px flex-1 bg-neutral-200" />
+                </div>
+
+              <form onSubmit={handleSubmit} className="mt-5 space-y-5">
                 {/* Avatar picker */}
                 <div>
                   <div className="mb-3 flex items-center gap-3">
@@ -268,10 +319,12 @@ export default function SignupPage() {
                   <Link href="/privacy" className="underline">Privacy Policy</Link>.
                 </p>
               </form>
+              </>
             )}
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -115,7 +115,7 @@ export function OrdersTable({
                   <p className="text-xs text-neutral-400">{o.customerEmail}</p>
                 </Td>
                 <Td className="text-neutral-500">
-                  {new Date(o.createdAt).toLocaleDateString("en-US", {
+                  {new Date(o.createdAt).toLocaleDateString("en-ZA", {
                     month: "short",
                     day: "numeric",
                     year: "numeric",

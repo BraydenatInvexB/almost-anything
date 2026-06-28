@@ -24,9 +24,7 @@ function TrackInner() {
   const params = useSearchParams();
   const orderParam = params.get("order") ?? "";
   const [input, setInput] = useState(orderParam);
-  const [order, setOrder] = useState<TrackedOrder | null>(() =>
-    orderParam ? (findDemoOrder(orderParam) ?? null) : null,
-  );
+  const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -46,11 +44,18 @@ function TrackInner() {
         return;
       }
     } catch {
-      /* fall through to demo */
+      /* network error */
     }
-    const found = findDemoOrder(trimmed);
-    setOrder(found ?? null);
-    setNotFound(!found && trimmed.length > 0);
+    if (process.env.NODE_ENV === "development") {
+      const found = findDemoOrder(trimmed);
+      if (found) {
+        setOrder(found);
+        setNotFound(false);
+        return;
+      }
+    }
+    setOrder(null);
+    setNotFound(trimmed.length > 0);
   }
 
   return (

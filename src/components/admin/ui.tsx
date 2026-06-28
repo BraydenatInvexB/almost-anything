@@ -50,17 +50,21 @@ export function Panel({
   title,
   action,
   description,
+  clip = false,
 }: {
   children: ReactNode;
   className?: string;
   title?: string;
   action?: ReactNode;
   description?: string;
+  /** Clip inner content to rounded corners (disable for tables with dropdown menus). */
+  clip?: boolean;
 }) {
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-xl border border-neutral-200/80 bg-white shadow-sm",
+        "rounded-xl border border-neutral-200/80 bg-white shadow-sm",
+        clip ? "overflow-hidden" : "overflow-visible",
         className,
       )}
     >
@@ -198,6 +202,10 @@ const STATUS_STYLES: Record<string, string> = {
   out_of_stock: "bg-red-50 text-red-700 ring-1 ring-red-100",
   sourced: "bg-violet-50 text-violet-700 ring-1 ring-violet-100",
   requested: "bg-amber-50 text-amber-700 ring-1 ring-amber-100",
+  searching: "bg-violet-50 text-violet-700 ring-1 ring-violet-100",
+  found: "bg-blue-50 text-blue-700 ring-1 ring-blue-100",
+  quoted: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-100",
+  failed: "bg-red-50 text-red-700 ring-1 ring-red-100",
   approved: "bg-blue-50 text-blue-700 ring-1 ring-blue-100",
   received: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100",
   refunded: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100",
@@ -340,7 +348,7 @@ export function EmptyState({
 
 export function Table({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto overflow-y-visible">
       <table className="w-full min-w-[640px] text-left text-sm">{children}</table>
     </div>
   );
@@ -360,7 +368,9 @@ export function Th({ children, className }: { children?: ReactNode; className?: 
 }
 
 export function Td({ children, className }: { children?: ReactNode; className?: string }) {
-  return <td className={cn("whitespace-nowrap px-5 py-3.5 align-middle", className)}>{children}</td>;
+  return (
+    <td className={cn("px-5 py-4 align-middle text-neutral-700", className)}>{children}</td>
+  );
 }
 
 export function DetailGrid({ children }: { children: ReactNode }) {

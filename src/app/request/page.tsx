@@ -28,6 +28,7 @@ function RequestPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submittedRef, setSubmittedRef] = useState("");
   const [photo, setPhoto] = useState<{ dataUrl: string; name: string } | null>(null);
 
   useEffect(() => {
@@ -67,6 +68,7 @@ function RequestPageContent() {
       }
 
       setSubmitted(true);
+      setSubmittedRef(data.requestNumber ?? data.requestId ?? "");
       clearSearchPhoto();
       setPhoto(null);
     } catch {
@@ -106,6 +108,12 @@ function RequestPageContent() {
               We&apos;ll confirm availability and your price
               {email ? " and email you shortly" : " shortly"}. Most requests are
               ready the same day.
+              {submittedRef ? (
+                <>
+                  {" "}
+                  Your reference is <strong className="font-mono">{submittedRef}</strong>.
+                </>
+              ) : null}
             </p>
             <div className="mt-7 flex justify-center gap-3">
               <Link href="/products">
@@ -116,6 +124,7 @@ function RequestPageContent() {
                 className="rounded-full"
                 onClick={() => {
                   setSubmitted(false);
+                  setSubmittedRef("");
                   setQuery("");
                   setBudget("");
                 }}

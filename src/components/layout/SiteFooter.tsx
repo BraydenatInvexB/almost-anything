@@ -4,7 +4,7 @@ import { SITE_CONFIG } from "@/config/site";
 import { SiteLogo } from "@/components/layout/SiteLogo";
 import {
   FOOTER_NAV,
-  FOOTER_LEGAL,
+  FOOTER_POLICIES,
   FOOTER_SOCIALS,
   FOOTER_PAYMENTS,
   FOOTER_CATEGORIES,
@@ -89,18 +89,27 @@ export function SiteFooter() {
               </a>
             </p>
             <div className="mt-5 flex items-center gap-2">
-              {FOOTER_SOCIALS.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white"
-                >
-                  <SocialIcon label={social.label} />
-                </a>
-              ))}
+              {FOOTER_SOCIALS.length > 0 &&
+                FOOTER_SOCIALS.map((social) => (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white"
+                  >
+                    <SocialIcon label={social.label} />
+                  </a>
+                ))}
+            </div>
+            <div className="mt-8 border-t border-neutral-200 pt-8 lg:mt-10">
+              <p className="text-xs font-extrabold uppercase tracking-widest">Stay in the loop</p>
+              <p className="mt-2 text-base font-black uppercase leading-tight">Deals before they go live</p>
+              <p className="mt-1 text-sm text-neutral-600">New arrivals and deals. No spam.</p>
+              <div className="mt-4">
+                <FooterNewsletter />
+              </div>
             </div>
           </div>
 
@@ -145,14 +154,21 @@ export function SiteFooter() {
             </Link>
           </div>
 
-          {/* Newsletter */}
+          {/* Terms and Policies */}
           <div className="lg:col-span-2">
-            <p className="text-xs font-extrabold uppercase tracking-widest">Stay in the loop</p>
-            <p className="mt-2 text-lg font-black uppercase">Deals before they go live</p>
-            <p className="mt-1 text-sm text-neutral-600">New arrivals and deals. No spam.</p>
-            <div className="mt-4">
-              <FooterNewsletter />
-            </div>
+            <p className="mb-3 text-xs font-extrabold uppercase tracking-widest">Terms and Policies</p>
+            <ul className="space-y-2.5">
+              {FOOTER_POLICIES.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm font-medium text-neutral-600 hover:text-brand hover:underline"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
@@ -163,17 +179,7 @@ export function SiteFooter() {
           <p className="text-xs font-medium text-white/70">
             © {year} {SITE_CONFIG.name}. All rights reserved.
           </p>
-          <nav className="flex flex-wrap gap-x-5 gap-y-2">
-            {FOOTER_LEGAL.map((link) => (
-              <Link key={link.href} href={link.href} className="text-xs font-bold uppercase tracking-wide text-white/80 hover:text-brand">
-                {link.label}
-              </Link>
-            ))}
-            <Link href="/sitemap" className="text-xs font-bold uppercase tracking-wide text-white/80 hover:text-brand">
-              Sitemap
-            </Link>
-          </nav>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 sm:justify-end">
             {FOOTER_PAYMENTS.map((p) => (
               <span key={p} className="rounded border border-white/25 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase text-white/80">
                 {p}

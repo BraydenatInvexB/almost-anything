@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BtnPrimary } from "@/components/admin/ui";
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor";
+import { ProductImageField } from "@/components/admin/ProductImageField";
 import {
   STOCK_STATUS_OPTIONS,
   getStockStatusOrigin,
@@ -170,9 +171,10 @@ export function ProductForm({
               required
             />
           </Field>
-          <Field label="Image URL">
-            <input className="input" value={form.image_url} onChange={(e) => update("image_url", e.target.value)} placeholder="https://…" />
-          </Field>
+          <ProductImageField
+            value={form.image_url}
+            onChange={(url) => update("image_url", url)}
+          />
           <Field label="Supplier name">
             <input className="input" value={form.source_name} onChange={(e) => update("source_name", e.target.value)} />
           </Field>

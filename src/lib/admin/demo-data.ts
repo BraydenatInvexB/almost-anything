@@ -195,7 +195,7 @@ export const DEMO_STAFF: StaffMember[] = [
 export const DEMO_SETTINGS: PlatformSettings = {
   id: 1,
   store_name: "Almost Anything",
-  support_email: "hello@almostanything.store",
+  support_email: "help@almostanything.co.za",
   currency: "ZAR",
   default_markup_percent: 18,
   min_markup_percent: 8,

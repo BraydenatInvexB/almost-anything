@@ -32,11 +32,13 @@ export function OrderDetailActions({
   const [trackingNumber, setTrackingNumber] = useState(initialTracking);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   async function save() {
     setSaving(true);
+    setError("");
     try {
-      await fetch("/api/admin/orders", {
+      const res = await fetch("/api/admin/orders", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -46,6 +48,11 @@ export function OrderDetailActions({
           trackingNumber: trackingNumber || undefined,
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Could not save changes");
+        return;
+      }
       setSaved(true);
       router.refresh();
       setTimeout(() => setSaved(false), 2500);
@@ -55,11 +62,19 @@ export function OrderDetailActions({
   }
 
   if (!canManage) {
-    return <StatusBadge status={initialStatus} />;
+    return (
+      <div className="space-y-2">
+        <StatusBadge status={initialStatus} />
+        <p className="text-sm text-neutral-500">
+          View-only — you need orders.manage permission to update status and tracking.
+        </p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
           Status

@@ -59,10 +59,7 @@ export function isAdminLiveMode(): boolean {
 // ---------------------------------------------------------------------------
 export async function getCurrentStaff(): Promise<StaffProfile | null> {
   if (!isSupabaseConfigured()) {
-    const { cookies } = await import("next/headers");
-    const cookieStore = await cookies();
-    const staffId = cookieStore.get("demo_admin_staff_id")?.value ?? DEMO_SUPER_ADMIN.id;
-    return getStaffProfile(staffId);
+    return getStaffProfile(DEMO_SUPER_ADMIN.id);
   }
 
   try {

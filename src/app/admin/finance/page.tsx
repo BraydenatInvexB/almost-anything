@@ -1,4 +1,5 @@
-import { getCurrentStaff, getFinanceDashboard } from "@/services/admin-service";
+import { Suspense } from "react";
+import { getCurrentStaff, getFinanceDashboard, listStaff } from "@/services/admin-service";
 import { can, staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader } from "@/components/admin/ui";
@@ -9,6 +10,7 @@ export default async function AdminFinancePage() {
   if (!staff || !staffCan(staff, "finance.view")) return <AccessDenied feature="finance" />;
 
   const data = await getFinanceDashboard();
+  const agents = await listStaff();
 
   return (
     <>
@@ -20,7 +22,14 @@ export default async function AdminFinancePage() {
           { label: "Finance" },
         ]}
       />
-      <FinanceDashboard data={data} canManage={staffCan(staff, "finance.manage")} />
+      <Suspense fallback={<div className="h-32 animate-pulse rounded-xl bg-neutral-100" />}>
+        <FinanceDashboard
+          data={data}
+          canManage={staffCan(staff, "finance.manage")}
+          canManageReturns={staffCan(staff, "returns.manage")}
+          agents={agents}
+        />
+      </Suspense>
     </>
   );
 }

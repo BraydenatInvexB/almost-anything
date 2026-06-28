@@ -79,58 +79,73 @@ export function SupportContactForm() {
         <div>
           <h2 className="text-lg font-bold text-neutral-950">Open a support ticket</h2>
           <p className="mt-1 text-sm text-neutral-500">
-            Goes straight to our helpdesk — the same system our agents use in admin.
+            Goes straight to our helpdesk team — we typically respond within one business day.
           </p>
         </div>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <input
-          className="input"
-          placeholder="Your name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
-        <input
-          className="input"
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          required
-        />
-        <select
-          className="input"
-          value={form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
-        >
-          {SUPPORT_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <input
-          className="input"
-          placeholder="Order # (optional)"
-          value={form.order_id}
-          onChange={(e) => setForm({ ...form, order_id: e.target.value })}
-        />
-        <input
-          className="input sm:col-span-2"
-          placeholder="Subject"
-          value={form.subject}
-          onChange={(e) => setForm({ ...form, subject: e.target.value })}
-          required
-        />
-        <textarea
-          className="input min-h-[120px] sm:col-span-2"
-          placeholder="Describe your issue in detail — include product names, dates, and anything that helps us resolve it faster."
-          value={form.body}
-          onChange={(e) => setForm({ ...form, body: e.target.value })}
-          required
-        />
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-neutral-600">Your name</span>
+          <input
+            className="input w-full"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-neutral-600">Email</span>
+          <input
+            className="input w-full"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            required
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-neutral-600">Category</span>
+          <select
+            className="input w-full"
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+          >
+            {SUPPORT_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-neutral-600">Order number (optional)</span>
+          <input
+            className="input w-full"
+            value={form.order_id}
+            onChange={(e) => setForm({ ...form, order_id: e.target.value })}
+            placeholder="e.g. AA-83915"
+          />
+        </label>
+        <label className="block sm:col-span-2">
+          <span className="mb-1 block text-xs font-semibold text-neutral-600">Subject</span>
+          <input
+            className="input w-full"
+            value={form.subject}
+            onChange={(e) => setForm({ ...form, subject: e.target.value })}
+            required
+          />
+        </label>
+        <label className="block sm:col-span-2">
+          <span className="mb-1 block text-xs font-semibold text-neutral-600">Message</span>
+          <textarea
+            className="input min-h-[120px] w-full"
+            placeholder="Describe your issue in detail — include product names, dates, and anything that helps us resolve it faster."
+            value={form.body}
+            onChange={(e) => setForm({ ...form, body: e.target.value })}
+            required
+          />
+        </label>
       </div>
 
       {state === "error" && errorMsg ? (

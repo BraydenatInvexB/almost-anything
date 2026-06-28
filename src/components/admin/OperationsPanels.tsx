@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Expense, InventoryRecord, ProcurementRecord, ReturnRequest } from "@/lib/admin/operations-types";
@@ -74,45 +75,48 @@ export function FinancePanel({ expenses, canManage, revenue }: { expenses: Expen
 }
 
 export function ReturnsPanel({ returns, canManage }: { returns: ReturnRequest[]; canManage: boolean }) {
-  const router = useRouter();
-
-  async function update(id: string, status: ReturnRequest["status"], refundAmount?: number) {
-    await fetch("/api/admin/returns", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status, refundAmount }),
-    });
-    router.refresh();
-  }
-
   return (
     <div className="rounded-xl border bg-white shadow-sm">
       <Table>
-        <thead><tr><Th>Order</Th><Th>Customer</Th><Th>Reason</Th><Th>Status</Th><Th>Refund</Th>{canManage && <Th />}</tr></thead>
+        <thead>
+          <tr>
+            <Th>RMA</Th>
+            <Th>Order</Th>
+            <Th>Customer</Th>
+            <Th>Reason</Th>
+            <Th>Status</Th>
+            <Th>Refund</Th>
+          </tr>
+        </thead>
         <tbody className="divide-y divide-neutral-50">
           {returns.map((r) => (
             <tr key={r.id}>
+              <Td>
+                <Link href={`/admin/returns/${r.id}`} className="font-mono text-sm font-semibold text-brand hover:underline">
+                  {r.rmaNumber}
+                </Link>
+              </Td>
               <Td className="font-semibold">{r.orderNumber}</Td>
-              <Td><p>{r.customerName}</p><p className="text-xs text-neutral-400">{r.customerEmail}</p></Td>
+              <Td>
+                <p>{r.customerName}</p>
+                <p className="text-xs text-neutral-400">{r.customerEmail}</p>
+              </Td>
               <Td className="max-w-xs truncate text-neutral-600">{r.reason}</Td>
               <Td><StatusBadge status={r.status} /></Td>
               <Td>{r.refundAmount ? formatCurrency(r.refundAmount, r.currency) : "—"}</Td>
-              {canManage && (
-                <Td>
-                  <div className="flex gap-1">
-                    {r.status === "requested" && (
-                      <button type="button" onClick={() => update(r.id, "approved")} className="text-xs font-semibold text-brand">Approve</button>
-                    )}
-                    {r.status === "approved" && (
-                      <button type="button" onClick={() => update(r.id, "refunded", r.refundAmount || 500)} className="text-xs font-semibold text-brand">Process refund</button>
-                    )}
-                  </div>
-                </Td>
-              )}
             </tr>
           ))}
         </tbody>
       </Table>
+      {canManage && (
+        <p className="border-t border-neutral-100 px-5 py-3 text-xs text-neutral-500">
+          Manage returns in the{" "}
+          <Link href="/admin/returns" className="font-semibold text-brand hover:underline">
+            Returns desk
+          </Link>
+          .
+        </p>
+      )}
     </div>
   );
 }

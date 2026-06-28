@@ -55,6 +55,7 @@ const ICONS: Record<string, LucideIcon> = {
   Globe,
   Building2,
   Activity,
+  Search,
 };
 
 const GROUP_ORDER = ["Overview", "Commerce", "People", "Finance", "Growth", "System"] as const;
@@ -131,12 +132,13 @@ export function AdminSearch() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="relative hidden max-w-lg flex-1 sm:block">
+    <form onSubmit={handleSubmit} className="relative min-w-0 flex-1 sm:max-w-lg">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search orders, customers, products…"
+        placeholder="Search…"
+        aria-label="Search orders, customers, and products"
         className="h-10 w-full rounded-lg border border-neutral-200 bg-neutral-50 pl-9 pr-4 text-sm placeholder:text-neutral-400 focus:border-brand/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/10"
       />
     </form>
@@ -176,6 +178,8 @@ export function AdminShell({
     if (pathname.includes("/orders/")) return "Order detail";
     if (pathname.includes("/customers/")) return "Customer profile";
     if (pathname.includes("/support/")) return "Support ticket";
+    if (pathname.includes("/returns/")) return "Return detail";
+    if (pathname.includes("/requests")) return "Item requests";
     return match?.label ?? "Admin";
   }, [pathname]);
 
@@ -216,11 +220,22 @@ export function AdminShell({
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 flex h-full w-72 flex-col bg-neutral-950 px-4 py-5 text-white">
             <div className="mb-6 flex items-center justify-between px-2">
-              <span className="text-sm font-bold">Operations Console</span>
+              <Link href="/admin" onClick={() => setMobileOpen(false)}>
+                <Image
+                  src={SITE_CONFIG.logo}
+                  alt={SITE_CONFIG.name}
+                  width={160}
+                  height={40}
+                  className="h-9 w-auto brightness-0 invert"
+                />
+              </Link>
               <button onClick={() => setMobileOpen(false)} aria-label="Close menu">
                 <X className="h-5 w-5" />
               </button>
             </div>
+            <p className="mb-4 px-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+              Operations Console
+            </p>
             <div className="flex-1 overflow-y-auto">
               <AdminNavList
                 groups={groups}
@@ -244,6 +259,17 @@ export function AdminShell({
               <Menu className="h-5 w-5" />
             </button>
 
+            <Link href="/admin" className="shrink-0 lg:hidden">
+              <Image
+                src={SITE_CONFIG.logo}
+                alt={SITE_CONFIG.name}
+                width={140}
+                height={36}
+                className="h-8 w-auto"
+                priority
+              />
+            </Link>
+
             <div className="hidden min-w-0 lg:block">
               <p className="truncate text-sm font-semibold text-neutral-950">{pageTitle}</p>
               <p className="truncate text-xs text-neutral-500">{roleMeta.label}</p>
@@ -252,21 +278,20 @@ export function AdminShell({
             <AdminSearch />
 
             <div className="ml-auto flex items-center gap-2">
-              <Link
-                href="/admin/support"
-                className={cn(
-                  "relative flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50",
-                  !staffCan(staff, "support.view") && "pointer-events-none opacity-40",
-                )}
-                aria-label="Alerts"
-              >
-                <Bell className="h-4 w-4" />
-                {alerts > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[9px] font-bold text-white">
-                    {alerts > 9 ? "9+" : alerts}
-                  </span>
-                )}
-              </Link>
+              {staffCan(staff, "support.view") && (
+                <Link
+                  href="/admin/support"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50"
+                  aria-label="Support queue"
+                >
+                  <Bell className="h-4 w-4" />
+                  {alerts > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[9px] font-bold text-white">
+                      {alerts > 9 ? "9+" : alerts}
+                    </span>
+                  )}
+                </Link>
+              )}
 
               <div className="relative">
                 <button

@@ -14,7 +14,7 @@ export const SITE_CONFIG = {
   defaultMarkupPercent: 18,
   minMarkupPercent: 8,
   maxMarkupPercent: 45,
-  supportEmail: "hello@almostanything.store",
+  supportEmail: "help@almostanything.co.za",
 } as const;
 
 export const NAV_CATEGORIES: CategoryItem[] = STORE_CATEGORIES.map((c) => ({

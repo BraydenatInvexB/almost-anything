@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, Shield, X } from "lucide-react";
 import { ROLE_META } from "@/config/rbac";
-import { StatusBadge, Table, Th, Td } from "@/components/admin/ui";
+import { StatusBadge, Table, Th, Td, EmptyState } from "@/components/admin/ui";
 import { StaffPermissionsModal } from "@/components/admin/StaffPermissionsModal";
 import { cn } from "@/lib/utils/cn";
 import type { StaffProfile } from "@/types/staff-access";
@@ -64,6 +64,12 @@ export function StaffManager({
       )}
 
       <div className="rounded-2xl border border-neutral-200 bg-white">
+        {members.length === 0 ? (
+          <EmptyState
+            title="No team members yet"
+            description={canManage ? "Invite your first team member to get started." : "Team members will appear here once added."}
+          />
+        ) : (
         <Table>
           <thead>
             <tr className="border-b border-neutral-100">
@@ -75,27 +81,27 @@ export function StaffManager({
               {canManage && <Th>Access</Th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-50">
+          <tbody>
             {members.map((m) => (
-              <tr key={m.id} className="hover:bg-neutral-50">
-                <Td>
-                  <div className="flex items-center gap-3">
+              <tr key={m.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
+                <Td className="min-w-[220px] whitespace-normal">
+                  <div className="flex items-center gap-3 py-0.5">
                     {m.avatar_url ? (
                       <Image
                         src={m.avatar_url}
                         alt={m.full_name}
                         width={36}
                         height={36}
-                        className="h-9 w-9 rounded-full object-cover"
+                        className="h-9 w-9 shrink-0 rounded-full object-cover"
                       />
                     ) : (
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
                         {m.full_name.charAt(0)}
                       </span>
                     )}
-                    <div>
-                      <p className="font-medium text-neutral-900">{m.full_name}</p>
-                      <p className="text-xs text-neutral-400">{m.email}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium leading-snug text-neutral-900">{m.full_name}</p>
+                      <p className="mt-0.5 truncate text-xs leading-snug text-neutral-500">{m.email}</p>
                     </div>
                   </div>
                 </Td>
@@ -141,7 +147,7 @@ export function StaffManager({
                 </Td>
                 <Td className="text-neutral-500">
                   {m.last_active_at
-                    ? new Date(m.last_active_at).toLocaleDateString("en-US", {
+                    ? new Date(m.last_active_at).toLocaleDateString("en-ZA", {
                         month: "short",
                         day: "numeric",
                       })
@@ -167,6 +173,7 @@ export function StaffManager({
             ))}
           </tbody>
         </Table>
+        )}
       </div>
 
       {permissionsFor && (
