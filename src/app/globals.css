@@ -1,26 +1,181 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-outer: #c9cdd4;
+  --bg-page: #e8eaed;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --lime: #CDFF00;
+  --radius-card: 28px;
 }
 
 @theme inline {
-  --color-background: var(--background);
+  --color-background: var(--bg-page);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-lime: var(--lime);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+ * NOTE: Do NOT add an unlayered `* { margin:0; padding:0 }` reset here.
+ * Tailwind v4 emits its utilities inside `@layer`s, and unlayered rules win
+ * over layered ones in the cascade — an unlayered universal reset would
+ * silently override every `p-*` / `m-*` utility. Tailwind's own preflight
+ * already handles base resets. We only layer our custom base below.
+ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100dvh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    background: #f4eee1;
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+::selection {
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+/* Shared admin form control */
+@layer components {
+  .input {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e5e5;
+    background: #ffffff;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    outline: none;
+  }
+  .input:focus {
+    border-color: #a3a3a3;
+  }
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Floating dot animation used in hero */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-14px); }
+}
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-float-slow { animation: float-slow 5s ease-in-out infinite; }
+.animate-float-delay { animation: float 3.5s ease-in-out 0.8s infinite; }
+
+/* ── Futuristic homepage motion ──────────────────────────── */
+
+/* Horizontal marquee for the live ticker */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+.animate-marquee-fast {
+  animation: marquee 22s linear infinite;
+}
+.marquee-paused:hover .animate-marquee,
+.marquee-paused:hover .animate-marquee-fast {
+  animation-play-state: paused;
+}
+
+/* Slow orbital rotation for the hero product ring */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes spin-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+.animate-spin-slow { animation: spin-slow 28s linear infinite; }
+.animate-spin-reverse { animation: spin-reverse 40s linear infinite; }
+
+/* Drifting gradient mesh background */
+@keyframes mesh-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(6%, -4%, 0) scale(1.1); }
+  66% { transform: translate3d(-5%, 5%, 0) scale(0.95); }
+}
+.animate-mesh { animation: mesh-drift 18s ease-in-out infinite; }
+.animate-mesh-slow { animation: mesh-drift 26s ease-in-out infinite reverse; }
+
+/* Soft pulsing glow */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.7; }
+}
+.animate-glow { animation: glow-pulse 4s ease-in-out infinite; }
+
+/* Live status blip */
+@keyframes blip {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.8); }
+}
+.animate-blip { animation: blip 1.6s ease-in-out infinite; }
+
+/* Rotating headline word reveal */
+@keyframes word-in {
+  0% { opacity: 0; transform: translateY(14px) rotateX(-40deg); }
+  100% { opacity: 1; transform: translateY(0) rotateX(0deg); }
+}
+.animate-word-in { animation: word-in 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* Subtle moving grid lines */
+@keyframes grid-pan {
+  from { background-position: 0 0; }
+  to { background-position: 40px 40px; }
+}
+.animate-grid-pan { animation: grid-pan 6s linear infinite; }
+
+/* Smooth page-to-page transition (runs on every route change via template.tsx) */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-page-in { animation: page-in 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-marquee-fast,
+  .animate-spin-slow,
+  .animate-spin-reverse,
+  .animate-mesh,
+  .animate-mesh-slow,
+  .animate-glow,
+  .animate-blip,
+  .animate-grid-pan,
+  .animate-float,
+  .animate-float-slow,
+  .animate-float-delay,
+  .animate-page-in {
+    animation: none !important;
+  }
 }

@@ -1,0 +1,142 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Package, Heart, ShieldCheck, LogOut, User } from "lucide-react";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthProvider";
+import { useFavorites } from "@/context/FavoritesProvider";
+import { useCart } from "@/context/CartProvider";
+
+export default function AccountPage() {
+  const router = useRouter();
+  const { user, signOut, loading, isConfigured } = useAuth();
+  const { favorites } = useFavorites();
+  const { itemCount } = useCart();
+
+  async function handleSignOut() {
+    await signOut();
+    router.push("/");
+  }
+
+  return (
+    <div className="flex min-h-full flex-col bg-[#F4EEE1]">
+      <SiteHeader />
+
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 sm:px-6">
+        <h1 className="text-2xl font-bold text-neutral-900">My Account</h1>
+
+        {!isConfigured || (!loading && !user) ? (
+          <Card variant="elevated" className="mt-8 max-w-lg bg-white p-8 text-center">
+            <User className="mx-auto h-12 w-12 text-neutral-300" />
+            <p className="mt-4 font-medium">Sign in to access your account</p>
+            <p className="mt-2 text-sm text-neutral-500">
+              Track orders, save favorites, and manage your account.
+            </p>
+            <div className="mt-6 flex justify-center gap-3">
+              <Link href="/login">
+                <Button>Sign In</Button>
+              </Link>
+              <Link href="/signup">
+                <Button variant="secondary">Create Account</Button>
+              </Link>
+            </div>
+          </Card>
+        ) : loading ? (
+          <p className="mt-8 text-neutral-500">Loading...</p>
+        ) : (
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            <Card variant="elevated" className="bg-white p-6 md:col-span-1">
+              {user?.user_metadata?.avatar_url ? (
+                <Image
+                  src={user.user_metadata.avatar_url}
+                  alt={user.user_metadata.full_name ?? "Avatar"}
+                  width={64}
+                  height={64}
+                  className="h-16 w-16 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-neutral-900 text-xl font-bold text-white">
+                  {(user?.email?.[0] ?? "U").toUpperCase()}
+                </div>
+              )}
+              <h2 className="mt-4 font-semibold">
+                {user?.user_metadata?.full_name ?? "Member"}
+              </h2>
+              <p className="text-sm text-neutral-500">{user?.email}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-4 text-red-500"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </Card>
+
+            <div className="grid gap-4 sm:grid-cols-2 md:col-span-2">
+              <Link href="/account/orders">
+                <Card
+                  variant="elevated"
+                  className="bg-white p-6 transition-shadow hover:shadow-md"
+                >
+                  <Package className="h-8 w-8 text-neutral-900" />
+                  <h3 className="mt-3 font-semibold">Orders</h3>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    View order history and tracking
+                  </p>
+                </Card>
+              </Link>
+
+              <Link href="/favorites">
+                <Card
+                  variant="elevated"
+                  className="bg-white p-6 transition-shadow hover:shadow-md"
+                >
+                  <Heart className="h-8 w-8 fill-red-500 text-red-500" />
+                  <h3 className="mt-3 font-semibold">Favorites</h3>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    {favorites.length} saved items
+                  </p>
+                </Card>
+              </Link>
+
+              <Link href="/cart">
+                <Card
+                  variant="elevated"
+                  className="bg-white p-6 transition-shadow hover:shadow-md"
+                >
+                  <Package className="h-8 w-8 text-neutral-600" />
+                  <h3 className="mt-3 font-semibold">Cart</h3>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    {itemCount} items in cart
+                  </p>
+                </Card>
+              </Link>
+
+            <Link href="/admin">
+              <Card
+                variant="elevated"
+                className="bg-white p-6 transition-shadow hover:shadow-md"
+              >
+                <ShieldCheck className="h-8 w-8 text-neutral-900" />
+                <h3 className="mt-3 font-semibold">Admin Console</h3>
+                <p className="mt-1 text-sm text-neutral-500">
+                  Staff access to orders, catalog & support
+                </p>
+              </Card>
+            </Link>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <SiteFooter />
+    </div>
+  );
+}

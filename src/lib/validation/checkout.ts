@@ -1,0 +1,52 @@
+import { z } from "zod";
+
+export const shippingAddressSchema = z.object({
+  fullName: z.string().min(2, "Full name is required"),
+  email: z.string().email("Valid email required"),
+  phone: z.string().min(7, "Phone number required"),
+  addressLine1: z.string().min(5, "Address is required"),
+  addressLine2: z.string().optional(),
+  city: z.string().min(2, "City is required"),
+  state: z.string().min(2, "State is required"),
+  postalCode: z.string().min(3, "Postal code is required"),
+  country: z.string().min(2, "Country is required").default("US"),
+});
+
+export const cartItemSchema = z.object({
+  id: z.string(),
+  type: z.enum(["product", "quote"]),
+  productId: z.string().optional(),
+  slug: z.string().optional(),
+  name: z.string(),
+  price: z.number().positive(),
+  currency: z.string().default("ZAR"),
+  imageUrl: z.string().optional(),
+  quantity: z.number().int().min(1).max(99),
+  quoteOptionId: z.string().optional(),
+  quoteRequestId: z.string().optional(),
+  tier: z.string().optional(),
+  supplierName: z.string().optional(),
+});
+
+export const checkoutSchema = z.object({
+  items: z.array(cartItemSchema).min(1, "Cart is empty"),
+  shippingAddress: shippingAddressSchema,
+  paymentMethod: z.enum(["card", "demo"]).default("demo"),
+});
+
+export const selectQuoteSchema = z.object({
+  requestId: z.string(),
+  optionId: z.string(),
+  tier: z.enum(["cheapest", "fastest", "best_quality"]),
+  productName: z.string(),
+  supplierName: z.string(),
+  retailPrice: z.number().positive(),
+  imageUrl: z.string().nullable().optional(),
+});
+
+export const sourcingRequestSchema = z.object({
+  query: z.string().min(3).max(500),
+  email: z.string().email().optional(),
+  budget: z.number().positive().optional(),
+  urgency: z.enum(["standard", "express", "flexible"]).optional(),
+});
