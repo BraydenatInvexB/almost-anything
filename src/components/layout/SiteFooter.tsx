@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Truck, ShieldCheck, RotateCcw, Headphones } from "lucide-react";
 import { SITE_CONFIG } from "@/config/site";
 import { SiteLogo } from "@/components/layout/SiteLogo";
@@ -13,10 +14,54 @@ import { FooterNewsletter } from "@/components/layout/FooterNewsletter";
 
 const TRUST = [
   { icon: Truck, title: "Free delivery", sub: "On orders over R1,000" },
-  { icon: RotateCcw, title: "30 day returns", sub: "Hassle free refunds" },
+  { icon: RotateCcw, title: "30 day returns", sub: "Hassle-free refunds" },
   { icon: ShieldCheck, title: "Secure checkout", sub: "Encrypted payments" },
-  { icon: Headphones, title: "24/7 support", sub: "We're here to help" },
+  { icon: Headphones, title: "Dedicated support", sub: "help@almostanything.co.za" },
 ];
+
+function FooterColumn({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500">
+        {title}
+      </h3>
+      <div className="mt-4">{children}</div>
+    </div>
+  );
+}
+
+function FooterLink({
+  href,
+  children,
+  external,
+}: {
+  href: string;
+  children: ReactNode;
+  external?: boolean;
+}) {
+  const className =
+    "text-sm leading-relaxed text-neutral-600 transition-colors hover:text-neutral-950";
+
+  if (external || href.startsWith("mailto:")) {
+    return (
+      <a href={href} className={className}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+}
 
 function SocialIcon({ label }: { label: string }) {
   if (label.includes("Instagram")) {
@@ -37,13 +82,6 @@ function SocialIcon({ label }: { label: string }) {
       </svg>
     );
   }
-  if (label.includes("TikTok")) {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-2" aria-hidden>
-        <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
-      </svg>
-    );
-  }
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L2.16 2.25h6.977l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -53,21 +91,21 @@ function SocialIcon({ label }: { label: string }) {
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
-  const categories = FOOTER_CATEGORIES.slice(0, 8);
+  const topCategories = FOOTER_CATEGORIES.slice(0, 6);
 
   return (
-    <footer className="mt-auto border-t-[3px] border-black bg-white text-black">
+    <footer className="mt-auto border-t border-neutral-200 bg-white text-neutral-900">
       {/* Trust strip */}
-      <div className="border-b-[3px] border-black bg-brand text-white">
-        <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-4 px-6 py-6 sm:grid-cols-2 lg:grid-cols-4 lg:py-7">
+      <div className="border-b border-neutral-200 bg-neutral-950 text-white">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-6 py-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           {TRUST.map((t) => (
-            <div key={t.title} className="flex items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-white/30 bg-white/10">
-                <t.icon className="h-5 w-5 text-white" />
+            <div key={t.title} className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">
+                <t.icon className="h-4 w-4 text-brand" />
               </span>
-              <div className="min-w-0">
-                <p className="text-sm font-extrabold uppercase">{t.title}</p>
-                <p className="text-xs font-medium text-white/80">{t.sub}</p>
+              <div className="min-w-0 pt-0.5">
+                <p className="text-sm font-semibold">{t.title}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-neutral-400">{t.sub}</p>
               </div>
             </div>
           ))}
@@ -75,113 +113,105 @@ export function SiteFooter() {
       </div>
 
       {/* Main footer */}
-      <div className="mx-auto max-w-[1400px] px-6 py-12 sm:py-14">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-8">
-          {/* Brand */}
-          <div className="lg:col-span-3">
+      <div className="mx-auto max-w-7xl px-6 py-14 lg:py-16">
+        {/* Link columns */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-12">
+          {FOOTER_NAV.map((col) => (
+            <FooterColumn key={col.title} title={col.title}>
+              <ul className="space-y-3">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    <FooterLink href={link.href} external={link.href.startsWith("mailto:")}>
+                      {link.label}
+                    </FooterLink>
+                  </li>
+                ))}
+              </ul>
+            </FooterColumn>
+          ))}
+
+          <FooterColumn title="Categories">
+            <ul className="space-y-3">
+              {topCategories.map((cat) => (
+                <li key={cat.href}>
+                  <FooterLink href={cat.href}>{cat.label}</FooterLink>
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/products"
+              className="mt-4 inline-block text-sm font-medium text-brand hover:underline"
+            >
+              Browse all categories
+            </Link>
+          </FooterColumn>
+
+          <FooterColumn title="Terms & policies">
+            <ul className="space-y-3">
+              {FOOTER_POLICIES.map((link) => (
+                <li key={link.href}>
+                  <FooterLink href={link.href}>{link.label}</FooterLink>
+                </li>
+              ))}
+            </ul>
+          </FooterColumn>
+        </div>
+
+        {/* Brand + newsletter */}
+        <div className="mt-12 flex flex-col gap-10 border-t border-neutral-200 pt-12 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
+          <div className="max-w-md shrink-0">
             <SiteLogo variant="full" />
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-neutral-600">
-              {SITE_CONFIG.tagline} Thousands of products, fair prices, fast delivery, all in one store.
+            <p className="mt-5 text-sm leading-relaxed text-neutral-600">
+              {SITE_CONFIG.tagline} Thousands of quality products, fair prices, and fast delivery
+              across South Africa.
             </p>
-            <p className="mt-4 text-sm text-neutral-600">
-              <a href={`mailto:${SITE_CONFIG.supportEmail}`} className="font-semibold text-brand hover:underline">
+            <p className="mt-4">
+              <FooterLink href={`mailto:${SITE_CONFIG.supportEmail}`} external>
                 {SITE_CONFIG.supportEmail}
-              </a>
+              </FooterLink>
             </p>
-            <div className="mt-5 flex items-center gap-2">
-              {FOOTER_SOCIALS.length > 0 &&
-                FOOTER_SOCIALS.map((social) => (
+            {FOOTER_SOCIALS.length > 0 && (
+              <div className="mt-6 flex items-center gap-3">
+                {FOOTER_SOCIALS.map((social) => (
                   <a
                     key={social.label}
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-600 transition-colors hover:border-neutral-900 hover:text-neutral-900"
                   >
                     <SocialIcon label={social.label} />
                   </a>
                 ))}
-            </div>
-            <div className="mt-8 border-t border-neutral-200 pt-8 lg:mt-10">
-              <p className="text-xs font-extrabold uppercase tracking-widest">Stay in the loop</p>
-              <p className="mt-2 text-base font-black uppercase leading-tight">Deals before they go live</p>
-              <p className="mt-1 text-sm text-neutral-600">New arrivals and deals. No spam.</p>
-              <div className="mt-4">
-                <FooterNewsletter />
               </div>
+            )}
+          </div>
+
+          <div className="w-full lg:max-w-md lg:pt-1">
+            <h3 className="text-base font-semibold text-neutral-950">Stay in the loop</h3>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+              Get new arrivals, member deals, and exclusive offers. Unsubscribe anytime.
+            </p>
+            <div className="mt-5">
+              <FooterNewsletter />
             </div>
-          </div>
-
-          {/* Nav columns */}
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-5">
-            {FOOTER_NAV.map((col) => (
-              <div key={col.title}>
-                <p className="mb-3 text-xs font-extrabold uppercase tracking-widest">{col.title}</p>
-                <ul className="space-y-2.5">
-                  {col.links.map((link) => (
-                    <li key={link.label}>
-                      {link.href.startsWith("mailto:") ? (
-                        <a href={link.href} className="text-sm font-medium text-neutral-600 hover:text-brand hover:underline">
-                          {link.label}
-                        </a>
-                      ) : (
-                        <Link href={link.href} className="text-sm font-medium text-neutral-600 hover:text-brand hover:underline">
-                          {link.label}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          {/* Categories */}
-          <div className="lg:col-span-2">
-            <p className="mb-3 text-xs font-extrabold uppercase tracking-widest">Categories</p>
-            <ul className="space-y-2">
-              {categories.map((cat) => (
-                <li key={cat.href}>
-                  <Link href={cat.href} className="text-sm font-medium text-neutral-600 hover:text-brand hover:underline">
-                    {cat.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Link href="/products" className="mt-3 inline-block text-sm font-bold text-brand hover:underline">
-              View all →
-            </Link>
-          </div>
-
-          {/* Terms and Policies */}
-          <div className="lg:col-span-2">
-            <p className="mb-3 text-xs font-extrabold uppercase tracking-widest">Terms and Policies</p>
-            <ul className="space-y-2.5">
-              {FOOTER_POLICIES.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm font-medium text-neutral-600 hover:text-brand hover:underline"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t-[3px] border-black bg-black text-white">
-        <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs font-medium text-white/70">
+      <div className="border-t border-neutral-200 bg-neutral-50">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-neutral-500">
             © {year} {SITE_CONFIG.name}. All rights reserved.
           </p>
-          <div className="flex flex-wrap gap-2 sm:justify-end">
+          <div className="flex flex-wrap items-center gap-2">
             {FOOTER_PAYMENTS.map((p) => (
-              <span key={p} className="rounded border border-white/25 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase text-white/80">
+              <span
+                key={p}
+                className="rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-neutral-500"
+              >
                 {p}
               </span>
             ))}

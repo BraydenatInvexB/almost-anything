@@ -65,7 +65,8 @@ export default function SignupPage() {
 
     setSuccess(true);
     setLoading(false);
-    setTimeout(() => router.push("/account"), 2000);
+    if (result.needsEmailConfirmation) return;
+    router.push("/complete-profile");
   }
 
   return (
@@ -146,7 +147,8 @@ export default function SignupPage() {
               <div className="mt-8 rounded-2xl bg-emerald-50 p-5 text-sm text-emerald-800">
                 <p className="font-semibold">Account created!</p>
                 <p className="mt-1">
-                  Check your email to confirm, then we&apos;ll take you to your account.
+                  Check your email to confirm your address, then sign in to finish setting up
+                  your account.
                 </p>
               </div>
             ) : (
@@ -272,18 +274,16 @@ export default function SignupPage() {
                     required
                     className="rounded-2xl"
                   />
-                  <div className="relative">
-                    <Phone className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                    <Input
-                      type="tel"
-                      inputMode="tel"
-                      placeholder="Phone number"
-                      autoComplete="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="rounded-2xl pl-11"
-                    />
-                  </div>
+                  <Input
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="Phone number"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    leadingIcon={<Phone className="h-4 w-4" />}
+                    className="rounded-2xl"
+                  />
                   <Input
                     type="password"
                     placeholder="Password (min 6 characters)"

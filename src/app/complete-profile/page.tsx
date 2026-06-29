@@ -111,19 +111,17 @@ function ProfileForm({
           />
         </div>
 
-        <div className="relative">
-          <Phone className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-          <Input
-            type="tel"
-            inputMode="tel"
-            placeholder="Phone number"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-            className="rounded-2xl pl-11"
-          />
-        </div>
+        <Input
+          type="tel"
+          inputMode="tel"
+          placeholder="Phone number"
+          autoComplete="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          required
+          leadingIcon={<Phone className="h-4 w-4" />}
+          className="rounded-2xl"
+        />
 
         {error ? <p className="text-sm text-red-500">{error}</p> : null}
 

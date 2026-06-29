@@ -29,37 +29,38 @@ export function FooterNewsletter() {
 
   if (status === "success") {
     return (
-      <div className="flex items-center gap-2 rounded-xl border-2 border-black bg-brand px-4 py-3 text-sm font-bold text-white">
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-white/40 bg-white/20">
-          <Check className="h-3 w-3" />
-        </span>
-        You&apos;re in. Deals are on the way.
+      <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <Check className="h-4 w-4 shrink-0" />
+        You&apos;re subscribed. Watch your inbox for deals.
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+    <div className="w-full">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-2 sm:flex-row sm:items-stretch"
+      >
         <input
           type="email"
-          placeholder="Enter your email"
+          placeholder="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           aria-label="Email address"
-          className="h-11 w-full rounded-xl border-2 border-black bg-white px-4 text-sm font-medium text-black outline-none placeholder:text-neutral-400 focus:shadow-[3px_3px_0_0_#000]"
+          className="h-11 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
         />
         <button
           type="submit"
           disabled={status === "loading"}
-          className="h-11 w-full rounded-xl border-2 border-black bg-brand text-sm font-extrabold uppercase tracking-wide text-white transition-colors hover:bg-black disabled:opacity-50"
+          className="h-11 shrink-0 rounded-lg bg-brand px-6 text-sm font-semibold text-white transition-colors hover:bg-brand/90 disabled:opacity-50 sm:px-8"
         >
           {status === "loading" ? "Subscribing…" : "Subscribe"}
         </button>
       </form>
       {status === "error" ? (
-        <p className="mt-2 text-xs font-semibold text-brand">Something went wrong. Please try again.</p>
+        <p className="mt-2 text-xs text-red-600">Something went wrong. Please try again.</p>
       ) : null}
     </div>
   );

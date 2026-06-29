@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { formatAuthError } from "@/lib/supabase/auth-errors";
 import type { User } from "@supabase/supabase-js";
 
 export type OAuthProvider = "google" | "facebook";
@@ -26,7 +27,7 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (data: SignUpData) => Promise<{ error?: string }>;
+  signUp: (data: SignUpData) => Promise<{ error?: string; needsEmailConfirmation?: boolean }>;
   signInWithProvider: (provider: OAuthProvider) => Promise<{ error?: string }>;
   updateProfile: (data: Record<string, unknown>) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
@@ -71,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return { error: error?.message };
+      return { error: formatAuthError(error) };
     },
     [isConfigured],
   );
@@ -83,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const supabase = createClient();
       const fullName = `${firstName} ${lastName}`.trim();
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -96,7 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
         },
       });
-      return { error: error?.message };
+      return {
+        error: formatAuthError(error),
+        needsEmailConfirmation: !error && !data.session,
+      };
     },
     [isConfigured],
   );
@@ -112,11 +116,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           redirectTo:
             typeof window !== "undefined"
-              ? `${window.location.origin}/complete-profile`
+              ? `${window.location.origin}/auth/callback?next=/complete-profile`
               : undefined,
         },
       });
-      return { error: error?.message };
+      return { error: formatAuthError(error) };
     },
     [isConfigured],
   );
@@ -129,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const supabase = createClient();
       const { data: updated, error } = await supabase.auth.updateUser({ data });
       if (updated.user) setUser(updated.user);
-      return { error: error?.message };
+      return { error: formatAuthError(error) };
     },
     [isConfigured],
   );
