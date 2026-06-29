@@ -6,7 +6,7 @@ import {
   addEmailSubscriber,
   listEmailSubscribers,
   removeEmailSubscriber,
-} from "@/lib/admin/operations-store";
+} from "@/lib/admin/operations-persistence";
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
 
 const createSchema = z.object({
@@ -21,7 +21,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const subscribers = listEmailSubscribers();
+  const subscribers = await listEmailSubscribers();
   const customers = await listCustomers();
 
   return NextResponse.json({ subscribers, customers });
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const subscriber = addEmailSubscriber({
+  const subscriber = await addEmailSubscriber({
     email: parsed.data.email,
     name: parsed.data.name,
     source: parsed.data.source,
@@ -68,6 +68,6 @@ export async function DELETE(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  removeEmailSubscriber(id);
+  await removeEmailSubscriber(id);
   return NextResponse.json({ ok: true });
 }

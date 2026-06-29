@@ -1,27 +1,22 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { Table, Th, Td, EmptyState } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { AdminOrderSummary } from "@/services/admin-service";
 import { resolveFulfillment } from "@/lib/orders/fulfillment";
+import { ORDER_STATUS_LABELS, ORDER_STATUSES } from "@/lib/orders/order-operations";
 import { cn } from "@/lib/utils/cn";
 
-const STATUS_OPTIONS = [
-  "pending",
-  "paid",
-  "purchased",
-  "shipped",
-  "delivered",
-  "cancelled",
-] as const;
+const STATUS_OPTIONS = ORDER_STATUSES.filter((s) => s !== "pending" && s !== "cancelled");
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800",
   paid: "bg-blue-100 text-blue-800",
+  sourcing: "bg-violet-100 text-violet-800",
   purchased: "bg-indigo-100 text-indigo-800",
-  shipped: "bg-violet-100 text-violet-800",
+  shipped: "bg-cyan-100 text-cyan-800",
   delivered: "bg-emerald-100 text-emerald-800",
   cancelled: "bg-red-100 text-red-700",
 };
@@ -35,6 +30,17 @@ interface RowState {
   open: boolean;
 }
 
+function defaultRow(order: AdminOrderSummary): RowState {
+  return {
+    status: order.status,
+    carrier: "",
+    trackingNumber: "",
+    saving: false,
+    saved: false,
+    open: false,
+  };
+}
+
 export function OrdersTable({
   orders,
   canManage,
@@ -43,20 +49,46 @@ export function OrdersTable({
   canManage: boolean;
 }) {
   const [rows, setRows] = useState<Record<string, RowState>>(() =>
-    Object.fromEntries(
-      orders.map((o) => [
-        o.id,
-        { status: o.status, carrier: "", trackingNumber: "", saving: false, saved: false, open: false },
-      ]),
-    ),
+    Object.fromEntries(orders.map((o) => [o.id, defaultRow(o)])),
   );
 
+  useEffect(() => {
+    setRows((prev) => {
+      const next = { ...prev };
+      for (const order of orders) {
+        if (!next[order.id]) {
+          next[order.id] = defaultRow(order);
+        }
+      }
+      return next;
+    });
+  }, [orders]);
+
+  function getRow(order: AdminOrderSummary): RowState {
+    return rows[order.id] ?? defaultRow(order);
+  }
+
   function update(id: string, patch: Partial<RowState>) {
-    setRows((r) => ({ ...r, [id]: { ...r[id], ...patch } }));
+    setRows((r) => {
+      const order = orders.find((o) => o.id === id);
+      const base =
+        r[id] ??
+        (order
+          ? defaultRow(order)
+          : {
+              status: "pending",
+              carrier: "",
+              trackingNumber: "",
+              saving: false,
+              saved: false,
+              open: false,
+            });
+      return { ...r, [id]: { ...base, ...patch } };
+    });
   }
 
   async function save(o: AdminOrderSummary) {
-    const row = rows[o.id];
+    const row = getRow(o);
     update(o.id, { saving: true, saved: false });
     try {
       await fetch("/api/admin/orders", {
@@ -98,7 +130,7 @@ export function OrdersTable({
       </thead>
       <tbody className="divide-y divide-neutral-50">
         {orders.map((o) => {
-          const row = rows[o.id];
+          const row = getRow(o);
           return (
             <Fragment key={o.id}>
               <tr className="hover:bg-neutral-50/80">
@@ -134,7 +166,7 @@ export function OrdersTable({
                     >
                       {STATUS_OPTIONS.map((s) => (
                         <option key={s} value={s}>
-                          {s}
+                          {ORDER_STATUS_LABELS[s]}
                         </option>
                       ))}
                     </select>

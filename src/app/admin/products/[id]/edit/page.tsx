@@ -5,6 +5,7 @@ import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader, BtnSecondary } from "@/components/admin/ui";
 import { ProductForm } from "@/components/admin/ProductForm";
 import { parseVariantsConfig } from "@/types/product-variants";
+import { parseProductEnrichment } from "@/types/product-enrichment";
 
 export default async function AdminEditProductPage({
   params,
@@ -48,11 +49,16 @@ export default async function AdminEditProductPage({
           quantity: Number(meta.quantity ?? 10),
           image_url: product.image_url ?? "",
           source_name: product.source_name ?? "",
+          source_url: product.source_url ?? "",
           delivery_days_min: product.delivery_days_min,
           delivery_days_max: product.delivery_days_max,
           is_featured: product.is_featured,
           is_deal: product.is_deal,
+          show_in_hot: product.show_in_hot,
+          show_in_steals: product.show_in_steals,
+          show_in_fresh_drops: product.show_in_fresh_drops,
           variants: parseVariantsConfig(product.metadata) ?? undefined,
+          enrichment: parseProductEnrichment(product.metadata),
         }}
       />
     </>

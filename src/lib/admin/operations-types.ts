@@ -118,10 +118,15 @@ export interface ProcurementRecord {
   id: string;
   orderId: string;
   orderNumber: string;
+  orderItemId?: string;
   productName: string;
+  quantity: number;
   supplier: string;
   supplierCountry: string;
+  supplierOrderRef?: string;
+  inboundTracking?: string;
   costPrice: number;
+  actualCostPaid?: number;
   sellPrice: number;
   currency: string;
   status: ProcurementStatus;
@@ -272,6 +277,9 @@ export interface AdminProductDraft {
   delivery_days_max: number;
   is_featured: boolean;
   is_deal: boolean;
+  show_in_hot: boolean;
+  show_in_steals: boolean;
+  show_in_fresh_drops: boolean;
   deal_discount_percent: number | null;
   metadata?: Record<string, unknown>;
   created_at: string;
@@ -280,11 +288,16 @@ export interface AdminProductDraft {
 
 export interface CheckoutOrderLineItem {
   id: string;
+  productId?: string;
   name: string;
   quantity: number;
   unitPrice: number;
   imageUrl?: string;
   stockOrigin?: StockOrigin;
+  sku?: string;
+  variantId?: string;
+  variantLabel?: string;
+  selectedOptions?: Record<string, string>;
 }
 
 export interface CheckoutOrderRecord {

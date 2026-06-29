@@ -25,6 +25,32 @@ interface ProductActionsProps {
   rating: number;
   stockStatus: string;
   variants?: ProductVariantsConfig | null;
+  minimumOrderQuantity?: number;
+}
+
+const COLOUR_HEX: Record<string, string> = {
+  black: "#171717",
+  white: "#f5f5f5",
+  grey: "#9ca3af",
+  gray: "#9ca3af",
+  navy: "#1e3a5f",
+  beige: "#d6c6a8",
+  brown: "#78350f",
+  green: "#166534",
+  blue: "#1d4ed8",
+  red: "#b91c1c",
+  oak: "#a67c52",
+  walnut: "#5c4033",
+  cream: "#fef3c7",
+  charcoal: "#374151",
+};
+
+function colourSwatch(value: string): string | null {
+  const key = value.toLowerCase().replace(/\s+/g, "");
+  for (const [name, hex] of Object.entries(COLOUR_HEX)) {
+    if (key.includes(name)) return hex;
+  }
+  return null;
 }
 
 export function ProductActions({
@@ -37,6 +63,7 @@ export function ProductActions({
   rating,
   stockStatus,
   variants,
+  minimumOrderQuantity = 1,
 }: ProductActionsProps) {
   const { addItem, isInCart } = useCart();
   const { isFavorite } = useFavorites();
@@ -46,6 +73,12 @@ export function ProductActions({
   const heartRef = useRef<HTMLButtonElement>(null);
   const wasFavorited = useRef(isFavorite(slug));
   const timerRef = useRef<number | undefined>(undefined);
+
+  const [quantity, setQuantity] = useState(minimumOrderQuantity);
+
+  useEffect(() => {
+    setQuantity((q) => Math.max(minimumOrderQuantity, q));
+  }, [minimumOrderQuantity]);
 
   const [selections, setSelections] = useState<Record<string, string>>(() => {
     if (!variants?.options.length) return {};
@@ -111,6 +144,8 @@ export function ProductActions({
       variantId: selectedVariant?.id,
       variantLabel: label,
       selectedOptions: selectedVariant ? { ...selections } : undefined,
+      minimumOrderQuantity,
+      quantity,
     });
     setJustAdded(true);
     if (timerRef.current) window.clearTimeout(timerRef.current);
@@ -132,6 +167,11 @@ export function ProductActions({
               <div className="mt-2 flex flex-wrap gap-2">
                 {opt.values.map((value) => {
                   const active = selections[opt.name] === value;
+                  const swatch =
+                    opt.name.toLowerCase().includes("colour") ||
+                    opt.name.toLowerCase().includes("color")
+                      ? colourSwatch(value)
+                      : null;
                   return (
                     <button
                       key={value}
@@ -142,8 +182,15 @@ export function ProductActions({
                         active
                           ? "border-neutral-900 bg-neutral-900 text-white"
                           : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-900",
+                        swatch && "flex items-center gap-2",
                       )}
                     >
+                      {swatch ? (
+                        <span
+                          className="h-4 w-4 rounded-full border border-neutral-300"
+                          style={{ backgroundColor: swatch }}
+                        />
+                      ) : null}
                       {value}
                     </button>
                   );
@@ -156,6 +203,31 @@ export function ProductActions({
               Only {selectedVariant.stock} left in this option
             </p>
           ) : null}
+        </div>
+      ) : null}
+
+      {minimumOrderQuantity > 1 ? (
+        <div className="mb-5">
+          <p className="text-sm font-semibold text-neutral-900">Quantity</p>
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => Math.max(minimumOrderQuantity, q - 1))}
+              disabled={quantity <= minimumOrderQuantity}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-700 disabled:opacity-40"
+            >
+              −
+            </button>
+            <span className="min-w-[2rem] text-center text-sm font-semibold">{quantity}</span>
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => q + 1)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-700"
+            >
+              +
+            </button>
+            <span className="text-xs text-neutral-500">Min {minimumOrderQuantity}</span>
+          </div>
         </div>
       ) : null}
 

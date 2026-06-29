@@ -21,8 +21,8 @@ export const STOCK_STATUS_OPTIONS: {
   },
   {
     value: "available_international",
-    label: "Available international",
-    description: "In stock at an overseas partner — ships internationally to the customer.",
+    label: "In stock (international warehouse)",
+    description: "In stock at our international warehouse — ships to customers after hub processing.",
     origin: "overseas",
   },
   {
@@ -37,19 +37,40 @@ export const STOCK_STATUS_OPTIONS: {
     description: "Temporarily unavailable — not accepting orders.",
     origin: "sa_warehouse",
   },
-  {
-    value: "sourced",
-    label: "Sourced on order (overseas)",
-    description: "Not held in stock — purchased from overseas supplier when ordered.",
-    origin: "overseas",
-  },
 ];
 
+export function getWarehouseBadgeLabel(status: string, metadata?: unknown): string {
+  const raw = (metadata ?? {}) as { stock_origin?: string };
+  const origin =
+    raw.stock_origin ??
+    (status === "available_international" || status === "sourced" ? "overseas" : "sa_warehouse");
+
+  if (origin === "sa_warehouse" || status === "in_stock" || status === "low_stock") {
+    return "South Africa warehouse";
+  }
+  return "International warehouse";
+}
+
 export function getStockStatusLabel(status: string): string {
+  if (status === "sourced") return "In stock (international warehouse)";
   return STOCK_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status.replace(/_/g, " ");
 }
 
+export function getStockStatusLabelFromMetadata(
+  status: string,
+  metadata?: unknown,
+): string {
+  const raw = (metadata ?? {}) as { stock_origin?: string };
+  if (status === "sourced" || status === "available_international") {
+    if (raw.stock_origin === "sa_warehouse") {
+      return "In stock (SA warehouse)";
+    }
+  }
+  return getStockStatusLabel(status);
+}
+
 export function getStockStatusOrigin(status: string): StockOrigin {
+  if (status === "sourced" || status === "available_international") return "overseas";
   return STOCK_STATUS_OPTIONS.find((o) => o.value === status)?.origin ?? "sa_warehouse";
 }
 
@@ -66,11 +87,10 @@ export function getStockAvailabilityMessage(
     case "in_stock":
       return `In stock, ships in ${deliveryDaysMin} to ${deliveryDaysMax} days`;
     case "available_international":
-      return `Available internationally, ships in ${deliveryDaysMin} to ${deliveryDaysMax} days`;
+    case "sourced":
+      return `In stock (international warehouse) — ships in ${deliveryDaysMin} to ${deliveryDaysMax} days`;
     case "low_stock":
       return `Limited stock — ships in ${deliveryDaysMin} to ${deliveryDaysMax} days`;
-    case "sourced":
-      return `Sourced on order — typically ${deliveryDaysMin} to ${deliveryDaysMax} days`;
     case "out_of_stock":
       return "Currently out of stock";
     default:

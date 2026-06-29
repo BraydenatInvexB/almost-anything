@@ -3,22 +3,24 @@ import { ArrowRight, ArrowUpRight, Search, Tag, Truck } from "lucide-react";
 import type { ProductCardData } from "@/types";
 import { STORE_CATEGORIES } from "@/config/categories";
 import type { HeroShowcaseConfig } from "@/lib/admin/operations-types";
+import { STOREFRONT_SECTION_BY_ID } from "@/config/storefront-sections";
 import { BoldHero } from "@/components/home/BoldHero";
 import { BoldProducts } from "@/components/home/BoldProducts";
 
 const POP = ["#e30613", "#5BC8FF", "#e30613", "#C7A8FF", "#e30613", "#7DE2A8", "#e30613", "#9BE7FF"];
 
 interface BoldHomeProps {
-  pool: ProductCardData[];
-  deals: ProductCardData[];
+  hot: ProductCardData[];
+  steals: ProductCardData[];
+  fresh: ProductCardData[];
   heroShowcase: HeroShowcaseConfig;
 }
 
-export function BoldHome({ pool, deals, heroShowcase }: BoldHomeProps) {
-  const hot = pool.slice(0, 8);
-  const steals = (deals.length ? deals : pool.slice(8)).slice(0, 4);
-  const fresh = pool.slice(8, 16);
+export function BoldHome({ hot, steals, fresh, heroShowcase }: BoldHomeProps) {
   const cats = STORE_CATEGORIES.slice(0, 8);
+  const hotSection = STOREFRONT_SECTION_BY_ID.hot;
+  const stealsSection = STOREFRONT_SECTION_BY_ID.steals;
+  const freshSection = STOREFRONT_SECTION_BY_ID.fresh;
 
   return (
     <div className="mt-4 flex flex-col gap-6">
@@ -47,8 +49,17 @@ export function BoldHome({ pool, deals, heroShowcase }: BoldHomeProps) {
       </div>
 
       {/* Hot right now */}
-      <SectionHead kicker="Flying off the shelf" title="Hot right now" href="/products" cta="Shop all" />
-      <BoldProducts products={hot} />
+      {hot.length ? (
+        <>
+          <SectionHead
+            kicker={hotSection.kicker}
+            title={hotSection.title}
+            href={hotSection.shopHref}
+            cta={hotSection.shopCta}
+          />
+          <BoldProducts products={hot} />
+        </>
+      ) : null}
 
       {/* How it works */}
       <HowItWorksBold />
@@ -56,7 +67,12 @@ export function BoldHome({ pool, deals, heroShowcase }: BoldHomeProps) {
       {/* Today's steals */}
       {steals.length ? (
         <>
-          <SectionHead kicker="Limited time" title="Today's steals" href="/products?deals=true" cta="All deals" />
+          <SectionHead
+            kicker={stealsSection.kicker}
+            title={stealsSection.title}
+            href={stealsSection.shopHref}
+            cta={stealsSection.shopCta}
+          />
           <BoldProducts products={steals} />
         </>
       ) : null}
@@ -64,7 +80,12 @@ export function BoldHome({ pool, deals, heroShowcase }: BoldHomeProps) {
       {/* Fresh drops */}
       {fresh.length ? (
         <>
-          <SectionHead kicker="Just landed" title="Fresh drops" href="/products" cta="Browse" />
+          <SectionHead
+            kicker={freshSection.kicker}
+            title={freshSection.title}
+            href={freshSection.shopHref}
+            cta={freshSection.shopCta}
+          />
           <BoldProducts products={fresh} />
         </>
       ) : null}

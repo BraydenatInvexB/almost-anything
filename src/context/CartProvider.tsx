@@ -92,9 +92,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateQuantity = useCallback((id: string, quantity: number) => {
-    if (quantity < 1) return;
     setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, quantity } : i)),
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        const min = i.minimumOrderQuantity ?? 1;
+        if (quantity < min) return i;
+        return { ...i, quantity };
+      }),
     );
   }, []);
 

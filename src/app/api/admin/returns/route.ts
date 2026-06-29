@@ -7,7 +7,7 @@ import {
   getReturn,
   listReturns,
   updateReturn,
-} from "@/lib/admin/operations-store";
+} from "@/lib/admin/operations-persistence";
 import { computeRefundAmount } from "@/lib/returns/returns";
 
 export async function GET() {
@@ -15,7 +15,7 @@ export async function GET() {
   if (!staff || !staffCan(staff, "returns.view")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  return NextResponse.json({ returns: listReturns() });
+  return NextResponse.json({ returns: await listReturns() });
 }
 
 export async function POST(request: Request) {
@@ -44,14 +44,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  addReturnNote(result.return.id, {
+  await addReturnNote(result.return.id, {
     body: `Return opened by ${staff.full_name} on behalf of customer.`,
     authorName: staff.full_name,
     authorType: "staff",
     isInternal: true,
   });
 
-  return NextResponse.json({ ok: true, return: getReturn(result.return.id) });
+  return NextResponse.json({ ok: true, return: await getReturn(result.return.id) });
 }
 
 export async function PATCH(request: Request) {
@@ -62,7 +62,7 @@ export async function PATCH(request: Request) {
   const body = await request.json().catch(() => null);
   if (!body?.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const existing = getReturn(body.id);
+  const existing = await getReturn(body.id);
   if (!existing) return NextResponse.json({ error: "Return not found" }, { status: 404 });
 
   const patch: Parameters<typeof updateReturn>[1] = {};
@@ -76,12 +76,12 @@ export async function PATCH(request: Request) {
   if (body.status === "approved") patch.approvedAt = new Date().toISOString();
   if (body.status === "received") patch.receivedAt = new Date().toISOString();
 
-  const updated = updateReturn(body.id, patch);
+  const updated = await updateReturn(body.id, patch);
 
   if (body.status === "refunded") {
     const amount = body.refundAmount ?? updated?.refundAmount ?? computeRefundAmount(existing.items);
     if (amount > 0) {
-      createExpense({
+      await createExpense({
         label: `Refund ${updated?.rmaNumber ?? updated?.orderNumber ?? body.id}`,
         category: "refunds",
         amount,

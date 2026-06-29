@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
 import { can, staffCan } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
-import { createCustomProduct, updateCustomProduct } from "@/lib/admin/operations-store";
+import { createCustomProduct, updateCustomProduct } from "@/lib/admin/operations-persistence";
 import type { Database } from "@/types/database";
 
 type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
@@ -15,6 +15,9 @@ const patchSchema = z.object({
   base_price: z.number().min(0).optional(),
   is_featured: z.boolean().optional(),
   is_deal: z.boolean().optional(),
+  show_in_hot: z.boolean().optional(),
+  show_in_steals: z.boolean().optional(),
+  show_in_fresh_drops: z.boolean().optional(),
   stock_status: z
     .enum(["in_stock", "available_international", "low_stock", "out_of_stock", "sourced"])
     .optional(),
@@ -26,6 +29,7 @@ const patchSchema = z.object({
   category: z.string().optional(),
   image_url: z.string().nullable().optional(),
   source_name: z.string().nullable().optional(),
+  source_url: z.string().nullable().optional(),
   delivery_days_min: z.number().optional(),
   delivery_days_max: z.number().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
@@ -37,16 +41,20 @@ const createSchema = z.object({
   description: z.string().min(10),
   category: z.string().default("general"),
   base_price: z.number().min(0),
-  markup_percent: z.number().min(0).max(500).default(18),
+  markup_percent: z.number().min(0).max(500).default(10),
   stock_status: z.enum(["in_stock", "available_international", "low_stock", "out_of_stock", "sourced"]).default("in_stock"),
   stock_origin: z.enum(["sa_warehouse", "overseas"]).default("sa_warehouse"),
   quantity: z.number().min(0).default(10),
   image_url: z.string().optional().nullable(),
   source_name: z.string().optional().nullable(),
+  source_url: z.string().optional().nullable(),
   delivery_days_min: z.number().default(3),
   delivery_days_max: z.number().default(7),
   is_featured: z.boolean().default(false),
   is_deal: z.boolean().default(false),
+  show_in_hot: z.boolean().default(false),
+  show_in_steals: z.boolean().default(false),
+  show_in_fresh_drops: z.boolean().default(false),
   deal_discount_percent: z.number().nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
@@ -92,10 +100,14 @@ export async function POST(request: Request) {
         stock_status: parsed.data.stock_status,
         image_url: parsed.data.image_url,
         source_name: parsed.data.source_name,
+        source_url: parsed.data.source_url,
         delivery_days_min: parsed.data.delivery_days_min,
         delivery_days_max: parsed.data.delivery_days_max,
         is_featured: parsed.data.is_featured,
         is_deal: parsed.data.is_deal,
+        show_in_hot: parsed.data.show_in_hot,
+        show_in_steals: parsed.data.show_in_steals,
+        show_in_fresh_drops: parsed.data.show_in_fresh_drops,
         deal_discount_percent: parsed.data.deal_discount_percent,
         metadata: (parsed.data.metadata ?? {}) as ProductUpdate["metadata"],
       })
@@ -126,24 +138,74 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid payload", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { id, stock_origin: _origin, quantity: _qty, metadata, ...updates } = parsed.data;
+  const { id, quantity, stock_origin, metadata, ...rest } = parsed.data;
 
-  const patchPayload = { ...parsed.data, metadata };
+  const updates = { ...rest } as ProductUpdate;
+  if (metadata !== undefined) {
+    updates.metadata = metadata as ProductUpdate["metadata"];
+  }
 
   // Demo mode: persist to in-memory store so edits survive navigation.
   if (!isSupabaseConfigured()) {
+    const patchPayload = {
+      ...parsed.data,
+      metadata: {
+        ...(metadata ?? {}),
+        ...(quantity !== undefined ? { quantity } : {}),
+        ...(stock_origin !== undefined ? { stock_origin } : {}),
+      },
+    };
     const product = updateCustomProduct(id, patchPayload as Parameters<typeof updateCustomProduct>[1]);
     if (!product && !id.startsWith("custom-")) {
-      return NextResponse.json({ ok: true, demo: true, id, updates });
+      return NextResponse.json({ ok: true, demo: true, id, updates: rest });
     }
-    return NextResponse.json({ ok: true, demo: true, product: product ?? { id, ...updates } });
+    return NextResponse.json({ ok: true, demo: true, product: product ?? { id, ...rest } });
   }
 
   try {
     const supabase = createServiceClient();
+
+    if (quantity !== undefined || stock_origin !== undefined) {
+      const { data: existing } = await supabase
+        .from("products")
+        .select("metadata, base_price, markup_percent")
+        .eq("id", id)
+        .maybeSingle();
+
+      const merged = {
+        ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+        ...((metadata as Record<string, unknown> | undefined) ?? {}),
+      };
+      if (quantity !== undefined) merged.quantity = quantity;
+      if (stock_origin !== undefined) merged.stock_origin = stock_origin;
+      updates.metadata = merged as ProductUpdate["metadata"];
+
+      const base = updates.base_price ?? Number(existing?.base_price) ?? 0;
+      const markup = updates.markup_percent ?? Number(existing?.markup_percent) ?? 10;
+      if (
+        updates.retail_price === undefined &&
+        (updates.markup_percent !== undefined || updates.base_price !== undefined)
+      ) {
+        updates.retail_price = Number((base * (1 + markup / 100)).toFixed(2));
+      }
+    } else if (
+      updates.retail_price === undefined &&
+      (updates.markup_percent !== undefined || updates.base_price !== undefined)
+    ) {
+      const { data: existing } = await supabase
+        .from("products")
+        .select("base_price, markup_percent")
+        .eq("id", id)
+        .maybeSingle();
+
+      const base = updates.base_price ?? Number(existing?.base_price) ?? 0;
+      const markup = updates.markup_percent ?? Number(existing?.markup_percent) ?? 10;
+      updates.retail_price = Number((base * (1 + markup / 100)).toFixed(2));
+    }
+
     const { data, error } = await supabase
       .from("products")
-      .update(updates as ProductUpdate)
+      .update(updates)
       .eq("id", id)
       .select()
       .single();
@@ -161,6 +223,48 @@ export async function PATCH(request: Request) {
     });
 
     return NextResponse.json({ ok: true, product: data });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const staff = await getCurrentStaff();
+  if (!staff || !staffCan(staff, "products.edit")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "Missing product id" }, { status: 400 });
+  }
+
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ ok: true, demo: true, id });
+  }
+
+  try {
+    const supabase = createServiceClient();
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    await supabase.from("inventory_records").delete().eq("product_id", id);
+
+    await supabase.from("staff_activity_log").insert({
+      staff_id: staff.id,
+      staff_name: staff.full_name,
+      action: "Removed product",
+      entity_type: "product",
+      entity_id: id,
+    });
+
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Server error" },

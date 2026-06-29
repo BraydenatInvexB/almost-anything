@@ -8,7 +8,7 @@ import {
   logApiRequest,
 } from "@/lib/security/api";
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
-import { addEmailSubscriber } from "@/lib/admin/operations-store";
+import { addEmailSubscriber } from "@/lib/admin/operations-persistence";
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  addEmailSubscriber({
+  await addEmailSubscriber({
     email: parsed.data.email,
     source: "newsletter",
     status: "active",

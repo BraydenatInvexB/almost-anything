@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
 import { staffCan } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
-import { addTicketMessage, updateSupportTicket } from "@/lib/admin/operations-store";
+import { addTicketMessage, updateSupportTicket } from "@/lib/admin/operations-persistence";
 
 const schema = z.object({
   body: z.string().min(1).max(5000),

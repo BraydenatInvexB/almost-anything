@@ -4,13 +4,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BtnPrimary } from "@/components/admin/ui";
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor";
+import { ProductEnrichmentEditor } from "@/components/admin/ProductEnrichmentEditor";
+import { ProductSupplierPanel } from "@/components/admin/ProductSupplierPanel";
 import { ProductImageField } from "@/components/admin/ProductImageField";
+import {
+  StorefrontSectionToggles,
+  flagsFromProduct,
+} from "@/components/admin/StorefrontSectionToggles";
 import {
   STOCK_STATUS_OPTIONS,
   getStockStatusOrigin,
 } from "@/config/product-stock";
 import type { ProductVariantsConfig } from "@/types/product-variants";
 import { emptyVariantsConfig, parseVariantsConfig } from "@/types/product-variants";
+import type { ProductEnrichment } from "@/types/product-enrichment";
+import { emptyEnrichment, parseProductEnrichment, buildProductMetadata } from "@/types/product-enrichment";
 
 interface ProductInput {
   id?: string;
@@ -25,15 +33,20 @@ interface ProductInput {
   quantity: number;
   image_url: string;
   source_name: string;
+  source_url: string;
   delivery_days_min: number;
   delivery_days_max: number;
   is_featured: boolean;
   is_deal: boolean;
+  show_in_hot?: boolean;
+  show_in_steals?: boolean;
+  show_in_fresh_drops?: boolean;
   variants?: ProductVariantsConfig;
+  enrichment?: ProductEnrichment;
 }
 
 export function ProductForm({
-  defaultMarkup = 18,
+  defaultMarkup = 10,
   product,
 }: {
   defaultMarkup?: number;
@@ -55,13 +68,24 @@ export function ProductForm({
     quantity: product ? String(product.quantity) : "10",
     image_url: product?.image_url ?? "",
     source_name: product?.source_name ?? "",
+    source_url: product?.source_url ?? "",
     delivery_days_min: product ? String(product.delivery_days_min) : "3",
     delivery_days_max: product ? String(product.delivery_days_max) : "7",
     is_featured: product?.is_featured ?? false,
     is_deal: product?.is_deal ?? false,
   });
+  const [sections, setSections] = useState(
+    flagsFromProduct({
+      show_in_hot: product?.show_in_hot ?? product?.is_featured ?? false,
+      show_in_steals: product?.show_in_steals ?? product?.is_deal ?? false,
+      show_in_fresh_drops: product?.show_in_fresh_drops ?? false,
+    }),
+  );
   const [variants, setVariants] = useState<ProductVariantsConfig>(
     product?.variants ?? emptyVariantsConfig(),
+  );
+  const [enrichment, setEnrichment] = useState<ProductEnrichment>(
+    product?.enrichment ?? emptyEnrichment(),
   );
 
   function update(key: string, value: string | boolean) {
@@ -94,10 +118,20 @@ export function ProductForm({
         delivery_days_max: Number(form.delivery_days_max),
         image_url: form.image_url || null,
         source_name: form.source_name || null,
-        metadata:
-          variants.options.length > 0
-            ? { variants }
-            : {},
+        source_url: form.source_url || null,
+        ...sections,
+        metadata: {
+          ...buildProductMetadata({
+            variants: variants.options.length > 0 ? variants : null,
+            highlights: enrichment.highlights,
+            specifications: enrichment.specifications,
+            summary: enrichment.summary,
+            sourcing: enrichment.sourcing,
+            supplierIntel: enrichment.supplierIntel,
+          }),
+          quantity: Number(form.quantity),
+          stock_origin: form.stock_origin,
+        },
       };
 
       const res = await fetch("/api/admin/products", {
@@ -118,10 +152,14 @@ export function ProductForm({
                 quantity: payload.quantity,
                 image_url: payload.image_url,
                 source_name: payload.source_name,
+                source_url: payload.source_url,
                 delivery_days_min: payload.delivery_days_min,
                 delivery_days_max: payload.delivery_days_max,
                 is_featured: payload.is_featured,
                 is_deal: payload.is_deal,
+                show_in_hot: sections.show_in_hot,
+                show_in_steals: sections.show_in_steals,
+                show_in_fresh_drops: sections.show_in_fresh_drops,
                 metadata: payload.metadata,
                 retail_price: Number(
                   (payload.base_price * (1 + payload.markup_percent / 100)).toFixed(2),
@@ -178,8 +216,24 @@ export function ProductForm({
           <Field label="Supplier name">
             <input className="input" value={form.source_name} onChange={(e) => update("source_name", e.target.value)} />
           </Field>
+          <Field label="Supplier listing URL">
+            <input
+              className="input"
+              type="url"
+              value={form.source_url}
+              onChange={(e) => update("source_url", e.target.value)}
+              placeholder="https://…"
+            />
+          </Field>
         </div>
       </div>
+
+      <ProductSupplierPanel
+        sourceName={form.source_name}
+        sourceUrl={form.source_url}
+        basePrice={form.base_price ? Number(form.base_price) : undefined}
+        supplierIntel={enrichment.supplierIntel}
+      />
 
       <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-neutral-950">Pricing & inventory</h2>
@@ -225,15 +279,26 @@ export function ProductForm({
         <div className="mt-4 flex gap-4">
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.is_featured} onChange={(e) => update("is_featured", e.target.checked)} />
-            Featured
+            Featured badge
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.is_deal} onChange={(e) => update("is_deal", e.target.checked)} />
-            Deal product
+            Deal pricing badge
           </label>
         </div>
       </div>
 
+      <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-neutral-950">Storefront sections</h2>
+        <p className="mt-1 text-xs text-neutral-500">
+          Choose which homepage rows show this product. Categories are separate — this only controls Hot right now, Today&apos;s steals, and Fresh drops.
+        </p>
+        <div className="mt-4">
+          <StorefrontSectionToggles value={sections} onChange={setSections} />
+        </div>
+      </div>
+
+      <ProductEnrichmentEditor value={enrichment} onChange={setEnrichment} />
       <ProductVariantsEditor value={variants} onChange={setVariants} />
 
       {error && <p className="text-sm text-red-600">{error}</p>}

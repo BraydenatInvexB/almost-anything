@@ -9,7 +9,27 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "*.supabase.co",
+        hostname: "**.supabase.co",
+      },
+      {
+        protocol: "https",
+        hostname: "m.media-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.media-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media.takealot.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.takealot.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.alicdn.com",
       },
       // OAuth provider avatars (Google / Facebook)
       {

@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { Truck, PackageCheck, Clock } from "lucide-react";
+import { Truck, PackageCheck, Warehouse } from "lucide-react";
 import { getCurrentStaff, getFulfillmentQueue, listAdminOrders } from "@/services/admin-service";
-import { can, staffCan } from "@/config/rbac";
+import { listProcurement } from "@/lib/admin/operations-persistence";
+import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { OrdersTable } from "@/components/admin/OrdersTable";
+import { OrdersKanban } from "@/components/admin/OrdersKanban";
+import { filterKanbanOrders } from "@/lib/orders/kanban-filters";
 import { PageHeader, StatCard, Panel, WorkflowCard } from "@/components/admin/ui";
 
 export default async function AdminFulfillmentPage() {
@@ -15,8 +18,10 @@ export default async function AdminFulfillmentPage() {
   const canManage = staffCan(staff, "orders.manage");
   const queue = await getFulfillmentQueue();
   const allOrders = await listAdminOrders();
-  const paid = allOrders.filter((o) => o.status === "paid").length;
-  const purchased = allOrders.filter((o) => o.status === "purchased").length;
+  const procurement = await listProcurement();
+  const awaitingInbound = allOrders.filter((o) => o.status === "paid" || o.status === "sourcing").length;
+  const readyToShip = allOrders.filter((o) => o.status === "purchased").length;
+  const inTransitInbound = procurement.filter((p) => p.status === "in_transit").length;
   const shippedToday = allOrders.filter((o) => {
     if (o.status !== "shipped") return false;
     const d = new Date(o.createdAt);
@@ -24,35 +29,44 @@ export default async function AdminFulfillmentPage() {
     return d.toDateString() === today.toDateString();
   }).length;
 
+  const kanbanOrders = filterKanbanOrders(allOrders);
+
   return (
     <>
       <PageHeader
-        title="Fulfillment"
-        subtitle="Pick, pack, and ship orders. This is your daily operations queue for warehouse and logistics teams."
+        title="Operations center"
+        subtitle="Manage the full pipeline: international warehouse → receive at hub → ship to customer."
         action={
           <Link
-            href="/admin/orders?status=paid"
-            className="inline-flex h-9 items-center rounded-lg border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+            href="/admin/procurement"
+            className="inline-flex h-10 items-center rounded-lg border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-800 shadow-sm hover:bg-neutral-50"
           >
-            All orders
+            Inbound stock
           </Link>
         }
       />
 
-      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Awaiting sourcing"
-          value={String(paid)}
-          icon={<Clock className="h-4 w-4" />}
+          label="Awaiting inbound"
+          value={String(awaitingInbound)}
+          icon={<Warehouse className="h-4 w-4" />}
           accent="bg-amber-500"
-          hint="Paid, not yet purchased from supplier"
+          hint="Paid — stock moving from international warehouse"
+        />
+        <StatCard
+          label="Inbound in transit"
+          value={String(inTransitInbound)}
+          icon={<Truck className="h-4 w-4" />}
+          accent="bg-violet-600"
+          hint="Shipments en route to your warehouse"
         />
         <StatCard
           label="Ready to ship"
-          value={String(purchased)}
+          value={String(readyToShip)}
           icon={<PackageCheck className="h-4 w-4" />}
           accent="bg-brand"
-          hint="Purchased and ready for dispatch"
+          hint="Received at hub — pack and dispatch"
         />
         <StatCard
           label="Shipped today"
@@ -64,30 +78,41 @@ export default async function AdminFulfillmentPage() {
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         <WorkflowCard
-          title="Paid orders"
-          count={paid}
-          description="Confirm supplier purchase and move to purchased when stock is secured."
+          title="International warehouse"
+          count={awaitingInbound}
+          description="Confirm supplier orders and track inbound delivery to your hub."
           href="/admin/orders?status=paid"
-          urgent={paid > 5}
+          urgent={awaitingInbound > 0}
         />
         <WorkflowCard
           title="Ready to ship"
-          count={purchased}
-          description="Generate labels, add tracking, and mark orders as shipped."
+          count={readyToShip}
+          description="Add courier tracking and mark orders as shipped to customers."
           href="/admin/orders?status=purchased"
-          urgent={purchased > 3}
+          urgent={readyToShip > 0}
         />
         <WorkflowCard
-          title="In transit"
+          title="Out for delivery"
           count={allOrders.filter((o) => o.status === "shipped").length}
-          description="Monitor deliveries and resolve exceptions with support."
+          description="Monitor customer deliveries and resolve exceptions."
           href="/admin/orders?status=shipped"
         />
       </div>
 
       <Panel
-        title="Active fulfillment queue"
+        title="Drag & drop pipeline"
+        description="Drag orders between columns to update status"
+        className="mb-4"
+      >
+        <div className="p-4">
+          <OrdersKanban orders={kanbanOrders} canManage={canManage} />
+        </div>
+      </Panel>
+
+      <Panel
+        title="Active operations queue"
         description={`${queue.length} orders need action now`}
+        clip
       >
         <OrdersTable orders={queue} canManage={canManage} />
       </Panel>

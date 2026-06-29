@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentStaff } from "@/services/admin-service";
-import { can, staffCan } from "@/config/rbac";
-import { updateCheckoutOrder } from "@/lib/admin/operations-store";
+import { staffCan } from "@/config/rbac";
+import { applyCheckoutOrderOperations } from "@/lib/orders/order-operations";
+import { ensureProcurementForSupabaseOrder } from "@/lib/admin/operations-persistence";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
@@ -71,16 +72,20 @@ export async function PATCH(request: Request) {
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
+
+      if (body.status === "paid" || body.status === "sourcing") {
+        await ensureProcurementForSupabaseOrder(body.id);
+      }
     } catch {
       return NextResponse.json({ error: "Update failed" }, { status: 500 });
     }
-  } else {
-    updateCheckoutOrder(body.id, {
-      status: body.status,
-      carrier: body.carrier,
-      trackingNumber: body.trackingNumber,
-    });
   }
+
+  await applyCheckoutOrderOperations(body.id, {
+    status: body.status,
+    carrier: body.carrier,
+    trackingNumber: body.trackingNumber,
+  });
 
   return NextResponse.json({ ok: true });
 }

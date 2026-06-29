@@ -3,7 +3,7 @@ import { staffCan } from "@/config/rbac";
 import { ROLE_META } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader, Panel, StatCard, StatusBadge, Table, Th, Td } from "@/components/admin/ui";
-import { StaffManager } from "@/components/admin/StaffManager";
+import { StaffDirectorySection } from "@/components/admin/StaffDirectorySection";
 import { HRSubnav } from "@/components/admin/PermissionsMatrix";
 import Link from "next/link";
 import { Shield } from "lucide-react";
@@ -61,9 +61,10 @@ export default async function AdminHRPage() {
         </Table>
       </Panel>
 
-      <Panel title="Employee directory">
-        <StaffManager staff={allStaff} canManage={staffCan(staff, "hr.manage") || staffCan(staff, "staff.manage")} />
-      </Panel>
+      <StaffDirectorySection
+        staff={allStaff}
+        canManage={staffCan(staff, "hr.manage") || staffCan(staff, "staff.manage")}
+      />
     </>
   );
 }

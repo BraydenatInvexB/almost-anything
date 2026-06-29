@@ -197,7 +197,7 @@ export const DEMO_SETTINGS: PlatformSettings = {
   store_name: "Almost Anything",
   support_email: "help@almostanything.co.za",
   currency: "ZAR",
-  default_markup_percent: 18,
+  default_markup_percent: 10,
   min_markup_percent: 8,
   max_markup_percent: 45,
   free_shipping_threshold: 1000,

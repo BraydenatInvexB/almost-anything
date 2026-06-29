@@ -9,6 +9,8 @@ import {
 } from "@/lib/security/api";
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
 import { calculateMarkup } from "@/lib/markup/engine";
+import { buildProductMetadata } from "@/types/product-enrichment";
+import type { ProductVariantsConfig } from "@/types/product-variants";
 import type { Database } from "@/types/database";
 import { z } from "zod";
 
@@ -34,6 +36,21 @@ const ingestSchema = z.object({
       is_exclusive: z.boolean().optional(),
       is_deal: z.boolean().optional(),
       deal_discount_percent: z.number().optional(),
+      metadata: z.record(z.string(), z.unknown()).optional(),
+      highlights: z.array(z.string()).optional(),
+      specifications: z.record(z.string(), z.string()).optional(),
+      summary: z.string().optional(),
+      variants_config: z
+        .object({
+          options: z.array(
+            z.object({
+              name: z.string(),
+              values: z.array(z.string()),
+            }),
+          ),
+          variants: z.array(z.record(z.string(), z.unknown())),
+        })
+        .optional(),
     }),
   ),
 });
@@ -103,6 +120,17 @@ export async function POST(request: NextRequest) {
         is_deal: product.is_deal ?? false,
         deal_discount_percent: product.deal_discount_percent ?? null,
         stock_status: "sourced",
+        metadata: {
+          ...(product.metadata ?? {}),
+          ...buildProductMetadata({
+            variants: product.variants_config
+              ? (product.variants_config as unknown as ProductVariantsConfig)
+              : null,
+            highlights: product.highlights,
+            specifications: product.specifications,
+            summary: product.summary,
+          }),
+        } as ProductInsert["metadata"],
       };
     });
 

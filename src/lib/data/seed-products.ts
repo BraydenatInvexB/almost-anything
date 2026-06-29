@@ -1,5 +1,7 @@
 import type { Product, ProductCardData } from "@/types";
 import type { Json, ProductCategory } from "@/types/database";
+import type { StorefrontSectionId } from "@/config/storefront-sections";
+import { STOREFRONT_SECTION_BY_ID } from "@/config/storefront-sections";
 import type { ProductVariantsConfig } from "@/types/product-variants";
 import { buildVariantMatrix } from "@/types/product-variants";
 
@@ -22,6 +24,12 @@ interface SeedInput {
   exclusive?: boolean;
   /** Deal discount percent (also flags the item as a deal). */
   deal?: number;
+  /** Show in homepage "Hot right now" (defaults from featured). */
+  hot?: boolean;
+  /** Show in homepage "Today's steals" (defaults from deal). */
+  steals?: boolean;
+  /** Show in homepage "Fresh drops". */
+  fresh?: boolean;
   dmin?: number;
   dmax?: number;
   badge?: string;
@@ -69,6 +77,9 @@ function product(p: SeedInput): SeedProduct {
     is_exclusive: p.exclusive ?? false,
     is_deal: p.deal !== undefined,
     deal_discount_percent: p.deal ?? null,
+    show_in_hot: p.hot ?? p.featured ?? false,
+    show_in_steals: p.steals ?? p.deal !== undefined,
+    show_in_fresh_drops: p.fresh ?? p.badge === "New",
     metadata: {
       ...(p.badge ? { badge: p.badge } : {}),
       ...(p.variants ? { variants: p.variants } : {}),
@@ -289,10 +300,11 @@ export interface SeedFilterOptions {
   sort?: SortKey;
   featuredOnly?: boolean;
   dealsOnly?: boolean;
+  section?: StorefrontSectionId;
 }
 
 function applyFilters(options: SeedFilterOptions): Product[] {
-  const { category, query, featuredOnly, dealsOnly } = options;
+  const { category, query, featuredOnly, dealsOnly, section } = options;
   let results = SEEDED;
 
   if (category && category !== "all") {
@@ -300,6 +312,10 @@ function applyFilters(options: SeedFilterOptions): Product[] {
   }
   if (featuredOnly) results = results.filter((p) => p.is_featured);
   if (dealsOnly) results = results.filter((p) => p.is_deal);
+  if (section) {
+    const col = STOREFRONT_SECTION_BY_ID[section].column;
+    results = results.filter((p) => Boolean(p[col]));
+  }
 
   if (query) {
     const q = query.toLowerCase();

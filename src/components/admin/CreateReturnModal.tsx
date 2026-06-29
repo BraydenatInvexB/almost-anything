@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import type { ReturnMethod, ReturnReasonCode } from "@/lib/admin/operations-types";
 import { RETURN_METHODS, RETURN_REASONS } from "@/lib/returns/returns";
 import { BtnPrimary } from "@/components/admin/ui";
+import { AdminEntitySearch } from "@/components/admin/AdminEntitySearch";
 
 export function CreateReturnModal({ onClose }: { onClose: () => void }) {
   const router = useRouter();
@@ -53,7 +54,7 @@ export function CreateReturnModal({ onClose }: { onClose: () => void }) {
           <div>
             <h2 className="text-lg font-bold text-neutral-950">Create return (RMA)</h2>
             <p className="mt-1 text-sm text-neutral-500">
-              Open a return on behalf of a customer using their order number.
+              Search for an order or customer — details fill in automatically.
             </p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100">
@@ -61,32 +62,31 @@ export function CreateReturnModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <form onSubmit={submit} className="space-y-3">
-          <Field label="Order number">
-            <input
-              className="input w-full"
-              value={form.orderNumber}
-              onChange={(e) => setForm({ ...form, orderNumber: e.target.value })}
-              placeholder="AA3915"
-              required
+        <form onSubmit={submit} className="space-y-4">
+          <Field label="Find order">
+            <AdminEntitySearch
+              mode="orders"
+              placeholder="Type order number or customer…"
+              autoFocus
+              onSelectOrder={(o) =>
+                setForm({
+                  ...form,
+                  orderNumber: o.orderNumber,
+                  customerEmail: o.customerEmail,
+                  customerName: o.customerName,
+                })
+              }
             />
           </Field>
-          <Field label="Customer email">
-            <input
-              type="email"
-              className="input w-full"
-              value={form.customerEmail}
-              onChange={(e) => setForm({ ...form, customerEmail: e.target.value })}
-              required
-            />
-          </Field>
-          <Field label="Customer name">
-            <input
-              className="input w-full"
-              value={form.customerName}
-              onChange={(e) => setForm({ ...form, customerName: e.target.value })}
-            />
-          </Field>
+
+          {form.orderNumber && (
+            <div className="rounded-lg bg-neutral-50 p-3 text-sm">
+              <p className="font-semibold text-neutral-950">{form.orderNumber}</p>
+              <p className="text-neutral-600">{form.customerName}</p>
+              <p className="text-neutral-500">{form.customerEmail}</p>
+            </div>
+          )}
+
           <Field label="Reason">
             <select
               className="input w-full"
@@ -94,13 +94,15 @@ export function CreateReturnModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setForm({ ...form, reasonCode: e.target.value as ReturnReasonCode })}
             >
               {RETURN_REASONS.map((r) => (
-                <option key={r.code} value={r.code}>{r.label}</option>
+                <option key={r.code} value={r.code}>
+                  {r.label}
+                </option>
               ))}
             </select>
           </Field>
           <Field label="Details">
             <textarea
-              className="input min-h-[80px] w-full"
+              className="input min-h-[72px] w-full"
               value={form.reason}
               onChange={(e) => setForm({ ...form, reason: e.target.value })}
               required
@@ -113,22 +115,24 @@ export function CreateReturnModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setForm({ ...form, method: e.target.value as ReturnMethod })}
             >
               {RETURN_METHODS.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
               ))}
             </select>
           </Field>
 
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <div className="flex gap-2 pt-2">
-            <BtnPrimary type="submit" disabled={busy} className="flex-1">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Create RMA
-            </BtnPrimary>
-            <button type="button" onClick={onClose} className="btn-secondary h-9 rounded-lg px-4 text-sm font-semibold">
-              Cancel
-            </button>
-          </div>
+          <BtnPrimary type="submit" disabled={busy || !form.orderNumber}>
+            {busy ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Creating…
+              </>
+            ) : (
+              "Create RMA"
+            )}
+          </BtnPrimary>
         </form>
       </div>
     </div>
@@ -138,8 +142,8 @@ export function CreateReturnModal({ onClose }: { onClose: () => void }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{label}</span>
-      <div className="mt-1">{children}</div>
+      <span className="text-xs font-semibold text-neutral-600">{label}</span>
+      <div className="mt-1.5">{children}</div>
     </label>
   );
 }

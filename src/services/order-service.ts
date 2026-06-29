@@ -3,11 +3,10 @@ import type { Json } from "@/types/database";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createCheckoutOrder } from "@/lib/admin/operations-store";
+import { ensureProcurementForSupabaseOrder } from "@/lib/admin/operations-persistence";
 import type { StockOrigin } from "@/lib/admin/operations-types";
-import {
-  generateOrderNumber,
-  normalizeOrderNumber,
-} from "@/lib/orders/order-number";
+import { cartItemToLineItem } from "@/lib/orders/line-items";
+import { generateOrderNumber, normalizeOrderNumber } from "@/lib/orders/order-number";
 
 interface DbOrderItem {
   id: string;
@@ -176,6 +175,11 @@ export async function createOrder(
               quoteRequestId: item.quoteRequestId,
               tier: item.tier,
               supplierName: item.supplierName,
+              productId: item.productId,
+              variantId: item.variantId,
+              variantLabel: item.variantLabel,
+              selectedOptions: item.selectedOptions,
+              sku: item.slug ? `AA-${item.slug.slice(0, 12).toUpperCase()}` : undefined,
             },
           })),
         );
@@ -186,6 +190,10 @@ export async function createOrder(
             .update({ status: "sourcing" })
             .eq("id", orderRow.id);
           order.status = "sourcing";
+        }
+
+        if (["paid", "sourcing", "purchased"].includes(order.status)) {
+          await ensureProcurementForSupabaseOrder(orderRow.id);
         }
       }
     } catch {
@@ -221,11 +229,18 @@ export async function createOrder(
         country: payload.shippingAddress.country,
       },
       lineItems: payload.items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        unitPrice: item.price,
-        imageUrl: item.imageUrl,
+        ...cartItemToLineItem({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          imageUrl: item.imageUrl,
+          productId: item.productId,
+          variantId: item.variantId,
+          variantLabel: item.variantLabel,
+          selectedOptions: item.selectedOptions,
+          slug: item.slug,
+        }),
         stockOrigin: item.type === "quote" ? "overseas" : stockOrigin,
       })),
     });

@@ -8,6 +8,7 @@ import {
   logApiRequest,
 } from "@/lib/security/api";
 import { getProducts } from "@/services/product-service";
+import { logSearchEvent } from "@/services/search-analytics-service";
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
@@ -28,15 +29,29 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { q, category, page, pageSize } = parsed.data;
+  const { q, slugs, category, page, pageSize } = parsed.data;
+  const slugList = slugs
+    ? slugs.split(",").map((s) => s.trim()).filter(Boolean)
+  : undefined;
 
   try {
     const result = await getProducts({
       query: q,
+      slugs: slugList,
       category: category ?? undefined,
       page,
       pageSize,
     });
+
+    if (q?.trim()) {
+      void logSearchEvent({
+        query: q.trim(),
+        inputMethod: "text",
+        source: "products_api",
+        resultCount: result.total,
+        metadata: { category: category ?? null, page },
+      });
+    }
 
     await logApiRequest("/api/products", "GET", ip, 200);
     return secureJsonResponse(result);

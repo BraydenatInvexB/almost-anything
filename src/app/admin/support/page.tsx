@@ -28,6 +28,7 @@ import {
   slaLabel,
   sortTicketsForQueue,
 } from "@/lib/support/helpdesk";
+import { LiveChatInbox } from "@/components/admin/LiveChatInbox";
 import { cn } from "@/lib/utils/cn";
 
 function SlaBadge({ level }: { level: ReturnType<typeof getSlaLevelFromTicket> }) {
@@ -135,6 +136,12 @@ export default async function AdminSupportPage({
           accent="bg-violet-500"
         />
       </div>
+
+      <Panel title="Live chat" description="Real-time conversations from the Help Centre" className="mb-4">
+        <div className="p-4">
+          <LiveChatInbox canManage={staffCan(staff, "support.manage")} />
+        </div>
+      </Panel>
 
       <Suspense fallback={null}>
         <SupportDeskFilters

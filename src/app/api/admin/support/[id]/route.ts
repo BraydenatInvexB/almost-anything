@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
 import { staffCan } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
-import { updateSupportTicket } from "@/lib/admin/operations-store";
+import { updateSupportTicket } from "@/lib/admin/operations-persistence";
 
 const schema = z.object({
   status: z.enum(["open", "pending", "resolved", "closed"]).optional(),

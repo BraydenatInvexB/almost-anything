@@ -1,10 +1,8 @@
 import {
   createItemRequest,
   listItemRequests,
-} from "@/lib/admin/operations-store";
+} from "@/lib/admin/operations-persistence";
 import type { CustomerItemRequest, ItemRequestUrgency } from "@/lib/admin/operations-types";
-import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { generateRequestId } from "@/lib/utils/cn";
 
 export interface SubmitItemRequestInput {
@@ -20,8 +18,10 @@ export async function submitItemRequest(
   const requestId = generateRequestId();
   let userId: string | undefined;
 
+  const { isSupabaseConfigured } = await import("@/lib/supabase/admin");
   if (isSupabaseConfigured()) {
     try {
+      const { createClient } = await import("@/lib/supabase/server");
       const supabase = await createClient();
       const {
         data: { user },
@@ -32,19 +32,7 @@ export async function submitItemRequest(
     }
   }
 
-  const parsedIntent = {
-    query: input.query,
-    keywords: input.query
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 12),
-    budget: input.budget ?? null,
-    email: input.email ?? null,
-    urgency: input.urgency ?? "standard",
-  };
-
-  const request = createItemRequest({
+  return createItemRequest({
     id: requestId,
     query: input.query,
     customerEmail: input.email,
@@ -52,31 +40,13 @@ export async function submitItemRequest(
     urgency: input.urgency,
     userId,
   });
-
-  if (isSupabaseConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    try {
-      const supabase = createServiceClient();
-      await supabase.from("customer_requests").insert({
-        id: requestId,
-        user_id: userId ?? null,
-        query: input.query,
-        parsed_intent: parsedIntent,
-        status: "searching",
-      });
-    } catch {
-      /* demo store is source of truth when Supabase write fails */
-    }
-  }
-
-  return request;
 }
 
-export function listAllItemRequests(): CustomerItemRequest[] {
+export async function listAllItemRequests(): Promise<CustomerItemRequest[]> {
   return listItemRequests();
 }
 
-export function countOpenItemRequests(): number {
-  return listItemRequests().filter(
-    (r) => !["delivered", "failed"].includes(r.status),
-  ).length;
+export async function countOpenItemRequests(): Promise<number> {
+  const requests = await listItemRequests();
+  return requests.filter((r) => !["delivered", "failed"].includes(r.status)).length;
 }

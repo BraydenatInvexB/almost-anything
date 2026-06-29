@@ -1,6 +1,10 @@
 import type { Product, ProductCardData } from "@/types";
 import { SITE_CONFIG } from "@/config/site";
+import { getWarehouseBadgeLabel } from "@/config/product-stock";
 import { getProductBySlugSeed } from "@/lib/data/seed-products";
+import { stockFromMetadata } from "@/lib/catalog/product-stock-label";
+import { parsePricingFromMetadata } from "@/lib/pricing/discovery-pricing";
+import { parseProductEnrichment } from "@/types/product-enrichment";
 
 /**
  * Supabase ingest historically defaulted currency to USD. Prefer seed pricing
@@ -26,11 +30,21 @@ export function resolveStoreProduct(product: Product): Product {
 
 export function resolveStoreProductCard(product: Product): ProductCardData {
   const resolved = resolveStoreProduct(product);
+  const enrichment = parseProductEnrichment(resolved.metadata);
+  const stock = stockFromMetadata(resolved.metadata);
+  const pricing = parsePricingFromMetadata(resolved.metadata);
+  const warehouseLabel = getWarehouseBadgeLabel(resolved.stock_status ?? "in_stock", resolved.metadata);
+  const cardDescription = enrichment.summary || resolved.description || undefined;
+  const unitPriceLabel =
+    pricing.minimumOrderQuantity > 1
+      ? `per ${pricing.unitLabel} · min ${pricing.minimumOrderQuantity}`
+      : undefined;
+
   return {
     id: resolved.id,
     slug: resolved.slug,
     name: resolved.name,
-    description: resolved.description ?? undefined,
+    description: cardDescription,
     price: resolved.retail_price,
     currency: resolved.currency,
     rating: resolved.rating,
@@ -42,5 +56,10 @@ export function resolveStoreProductCard(product: Product): ProductCardData {
       : undefined,
     dealDiscountPercent: resolved.deal_discount_percent ?? undefined,
     isExclusive: resolved.is_exclusive,
+    stockLabel: warehouseLabel,
+    warehouseLabel,
+    quantity: stock?.quantity,
+    unitPriceLabel,
+    minimumOrderQuantity: pricing.minimumOrderQuantity,
   };
 }

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
 import { can, staffCan } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
-import { updateExtendedConfig } from "@/lib/admin/operations-store";
+import { updateExtendedConfig } from "@/lib/admin/operations-persistence";
 import { mergeExtendedConfig } from "@/lib/admin/extended-config-defaults";
 import type { Database, Json } from "@/types/database";
 

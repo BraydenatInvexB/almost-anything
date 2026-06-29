@@ -3,7 +3,7 @@ import "server-only";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { DEMO_SETTINGS } from "@/lib/admin/demo-data";
 import { mergeExtendedConfig } from "@/lib/admin/extended-config-defaults";
-import { getExtendedConfig } from "@/lib/admin/operations-store";
+import { getExtendedConfig } from "@/lib/admin/operations-persistence";
 import type { PlatformSettings } from "@/types/database";
 import type { ExtendedPlatformConfig } from "@/lib/admin/operations-types";
 

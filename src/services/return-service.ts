@@ -3,7 +3,7 @@ import {
   getCheckoutOrder,
   listReturns,
   listReturnsByEmail,
-} from "@/lib/admin/operations-store";
+} from "@/lib/admin/operations-persistence";
 import type {
   ReturnLineItem,
   ReturnMethod,
@@ -132,7 +132,7 @@ export async function submitReturnRequest(
     return { error: eligibility.reason ?? "This order cannot be returned." };
   }
 
-  const existing = listReturns();
+  const existing = await listReturns();
   if (hasOpenReturn(existing, order.id, order.orderNumber)) {
     return { error: "A return is already in progress for this order." };
   }
@@ -142,7 +142,7 @@ export async function submitReturnRequest(
     return { error: "Select at least one item to return." };
   }
 
-  const ret = createReturn({
+  const ret = await createReturn({
     orderId: order.id,
     orderNumber: order.orderNumber,
     customerId: input.userId,
@@ -164,7 +164,7 @@ export async function getCustomerReturns(userId?: string, email?: string): Promi
   if (userId && isSupabaseConfigured()) {
     try {
       const orders = await getOrdersForUser(userId);
-      const all = listReturns();
+      const all = await listReturns();
       const orderIds = new Set(orders.map((o) => o.id));
       const orderNumbers = new Set(orders.map((o) => o.orderNumber));
       return all.filter(
@@ -198,6 +198,6 @@ export async function getAuthenticatedCustomerReturns(): Promise<ReturnRequest[]
   }
 }
 
-export function listAllReturns(): ReturnRequest[] {
+export async function listAllReturns(): Promise<ReturnRequest[]> {
   return listReturns();
 }

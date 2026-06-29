@@ -406,6 +406,7 @@ const initial: OperationsState = {
       orderId: "ord-1001",
       orderNumber: "AA3920",
       productName: "Long Chair",
+      quantity: 1,
       supplier: "Nordic Home Supply",
       supplierCountry: "Netherlands",
       costPrice: 4200,
@@ -415,12 +416,15 @@ const initial: OperationsState = {
       origin: "overseas",
       orderedAt: iso(4),
       expectedAt: iso(-3),
+      supplierOrderRef: "NHS-88421",
+      inboundTracking: "1Z999AA10123456784",
     },
     {
       id: "proc-002",
       orderId: "ord-1002",
       orderNumber: "AA3919",
       productName: "Arc Floor Lamp",
+      quantity: 1,
       supplier: "Joburg Lighting WH",
       supplierCountry: "South Africa",
       costPrice: 680,
@@ -612,6 +616,111 @@ export function listProcurement() {
   return state.procurement;
 }
 
+export function listProcurementByOrder(orderId: string, orderNumber?: string) {
+  return state.procurement.filter(
+    (p) =>
+      p.orderId === orderId ||
+      (orderNumber != null && p.orderNumber === orderNumber),
+  );
+}
+
+export type CreateProcurementInput = Omit<ProcurementRecord, "id"> & { id?: string };
+
+export function createProcurement(input: CreateProcurementInput) {
+  const record: ProcurementRecord = {
+    ...input,
+    id: input.id ?? `proc-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    quantity: input.quantity ?? 1,
+  };
+  state.procurement.unshift(record);
+  return record;
+}
+
+const DEFAULT_SUPPLIERS: Record<StockOrigin, { name: string; country: string }> = {
+  overseas: { name: "International warehouse hub", country: "Netherlands" },
+  sa_warehouse: { name: "Johannesburg DC", country: "South Africa" },
+};
+
+/** Create procurement lines for each order item when payment is confirmed (idempotent). */
+export function ensureProcurementForOrder(order: CheckoutOrderRecord) {
+  const existing = listProcurementByOrder(order.id, order.orderNumber);
+  const created: ProcurementRecord[] = [];
+
+  for (const item of order.lineItems) {
+    const dup = existing.find(
+      (p) => p.orderItemId === item.id || (p.productName === item.name && !p.orderItemId),
+    );
+    if (dup) continue;
+
+    const origin: StockOrigin = order.stockOrigin ?? "overseas";
+    const supplier = DEFAULT_SUPPLIERS[origin];
+    const costEstimate = Number((item.unitPrice * 0.55).toFixed(2));
+
+    const record = createProcurement({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      orderItemId: item.id,
+      productName: item.name,
+      quantity: item.quantity,
+      supplier: supplier.name,
+      supplierCountry: supplier.country,
+      costPrice: costEstimate,
+      sellPrice: item.unitPrice,
+      currency: order.currency,
+      status: "pending",
+      origin,
+      notes: item.variantLabel
+        ? `Variant: ${item.variantLabel}${item.selectedOptions ? ` · ${JSON.stringify(item.selectedOptions)}` : ""}`
+        : undefined,
+    });
+    created.push(record);
+  }
+
+  return created;
+}
+
+export function receiveProcurement(id: string) {
+  const idx = state.procurement.findIndex((p) => p.id === id);
+  if (idx < 0) return null;
+
+  const proc = state.procurement[idx];
+  if (proc.status === "received") return proc;
+
+  const now = new Date().toISOString();
+  state.procurement[idx] = {
+    ...proc,
+    status: "received",
+    receivedAt: now,
+  };
+
+  const invIdx = state.inventory.findIndex(
+    (i) => i.sku && proc.productName.toLowerCase().includes(i.sku.slice(3, 8).toLowerCase()),
+  );
+  if (invIdx >= 0) {
+    state.inventory[invIdx] = {
+      ...state.inventory[invIdx],
+      quantity: state.inventory[invIdx].quantity + proc.quantity,
+      lastCountedAt: now,
+    };
+  }
+
+  const orderProc = listProcurementByOrder(proc.orderId, proc.orderNumber);
+  const allReceived = orderProc.every((p) => p.status === "received");
+  if (allReceived) {
+    const orderIdx = state.checkoutOrders.findIndex(
+      (o) => o.id === proc.orderId || o.orderNumber === proc.orderNumber,
+    );
+    if (orderIdx >= 0 && ["paid", "sourcing"].includes(state.checkoutOrders[orderIdx].status)) {
+      state.checkoutOrders[orderIdx] = {
+        ...state.checkoutOrders[orderIdx],
+        status: "purchased",
+      };
+    }
+  }
+
+  return state.procurement[idx];
+}
+
 export function listItemRequests() {
   return state.itemRequests;
 }
@@ -718,11 +827,21 @@ export function createCustomProduct(input: Omit<AdminProductDraft, "id" | "creat
 export function updateCustomProduct(id: string, patch: Partial<AdminProductDraft>) {
   const idx = state.customProducts.findIndex((p) => p.id === id);
   if (idx < 0) return null;
-  state.customProducts[idx] = {
-    ...state.customProducts[idx],
+  const current = state.customProducts[idx];
+  const base = patch.base_price ?? current.base_price;
+  const markup = patch.markup_percent ?? current.markup_percent;
+  const next: AdminProductDraft = {
+    ...current,
     ...patch,
     updated_at: new Date().toISOString(),
   };
+  if (
+    patch.retail_price === undefined &&
+    (patch.markup_percent !== undefined || patch.base_price !== undefined)
+  ) {
+    next.retail_price = Number((base * (1 + Number(markup) / 100)).toFixed(2));
+  }
+  state.customProducts[idx] = next;
   return state.customProducts[idx];
 }
 
@@ -933,6 +1052,11 @@ export function createCheckoutOrder(input: Omit<CheckoutOrderRecord, "id">) {
   const today = new Date().toISOString().slice(0, 10);
   const day = state.analytics.dailyVisits.find((d) => d.date === today);
   if (day) day.orders += 1;
+
+  if (["paid", "sourcing", "purchased"].includes(order.status)) {
+    ensureProcurementForOrder(order);
+  }
+
   return order;
 }
 

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ArrowDownRight, ArrowUpRight, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { getStockStatusLabel } from "@/config/product-stock";
+import { getOrderStatusLabel } from "@/lib/orders/order-operations";
 
 export function PageHeader({
   title,
@@ -36,7 +37,7 @@ export function PageHeader({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-950">{title}</h1>
-          {subtitle && <p className="mt-1 max-w-2xl text-sm text-neutral-500">{subtitle}</p>}
+          {subtitle && <p className="mt-1 max-w-2xl text-sm leading-relaxed text-neutral-500">{subtitle}</p>}
         </div>
         {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
       </div>
@@ -154,7 +155,7 @@ export function WorkflowCard({
       href={href}
       className={cn(
         "group flex flex-col rounded-xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
-        urgent ? "border-brand/30 bg-brand/[0.02]" : "border-neutral-200/80",
+        urgent ? "border-brand/30 bg-brand/[0.02] ring-1 ring-brand/10" : "border-neutral-200/80",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -229,8 +230,13 @@ const STATUS_STYLES: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   const productLabel = getStockStatusLabel(status);
+  const orderLabel = getOrderStatusLabel(status);
   const label =
-    productLabel !== status.replace(/_/g, " ") ? productLabel : status.replace(/_/g, " ");
+    productLabel !== status.replace(/_/g, " ")
+      ? productLabel
+      : orderLabel !== status.replace(/_/g, " ")
+        ? orderLabel
+        : status.replace(/_/g, " ");
   return (
     <span
       className={cn(
@@ -269,7 +275,7 @@ export function BtnSecondary({
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { href?: string }) {
   const cls = cn(
-    "inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50",
+    "inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50 disabled:opacity-50",
     className,
   );
   if (href) {

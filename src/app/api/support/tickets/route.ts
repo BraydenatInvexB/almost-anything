@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createSupportTicket } from "@/lib/admin/operations-store";
+import { createSupportTicket } from "@/lib/admin/operations-persistence";
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
 
 const schema = z.object({

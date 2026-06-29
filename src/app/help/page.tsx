@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
 import { SupportContactForm } from "@/components/support/SupportContactForm";
+import { HelpLiveChat } from "@/components/support/HelpLiveChat";
 
 const TOPICS = [
   { title: "Placing an order", href: "/products", body: "Browse products or request a specific item, add to cart, and check out." },
@@ -38,6 +39,7 @@ export default function HelpPage() {
           </div>
         </div>
       </main>
+      <HelpLiveChat />
       <SiteFooter />
     </div>
   );

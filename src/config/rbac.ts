@@ -26,6 +26,7 @@ export type Permission =
   | "procurement.view"
   | "procurement.manage"
   | "analytics.view"
+  | "searches.view"
   | "hr.view"
   | "hr.manage"
   | "settings.view"
@@ -57,6 +58,7 @@ const ALL_PERMISSIONS: Permission[] = [
   "procurement.view",
   "procurement.manage",
   "analytics.view",
+  "searches.view",
   "hr.view",
   "hr.manage",
   "settings.view",
@@ -87,6 +89,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
     "procurement.view",
     "procurement.manage",
     "analytics.view",
+    "searches.view",
     "settings.view",
     "activity.view",
   ],
@@ -107,6 +110,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
     "marketing.view",
     "marketing.manage",
     "analytics.view",
+    "searches.view",
   ],
   fulfillment: [
     "dashboard.view",
@@ -117,6 +121,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
     "inventory.manage",
     "procurement.view",
     "procurement.manage",
+    "searches.view",
   ],
   finance: [
     "dashboard.view",
@@ -127,6 +132,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
     "returns.manage",
     "analytics.view",
     "activity.view",
+    "searches.view",
   ],
   hr: [
     "dashboard.view",
@@ -147,6 +153,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
     "analytics.view",
     "settings.view",
     "activity.view",
+    "searches.view",
   ],
 };
 
@@ -339,6 +346,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "HR & Staff", href: "/admin/hr", icon: "Building2", permission: "staff.view", group: "People" },
   { label: "Finance", href: "/admin/finance", icon: "Wallet", permission: "finance.view", group: "Finance" },
   { label: "Marketing", href: "/admin/marketing", icon: "Megaphone", permission: "marketing.view", group: "Growth" },
+  { label: "Searches", href: "/admin/searches", icon: "Search", permission: "searches.view", group: "Growth" },
   { label: "Activity Log", href: "/admin/activity", icon: "ScrollText", permission: "activity.view", group: "System" },
   { label: "Settings", href: "/admin/settings", icon: "Settings", permission: "settings.view", group: "System" },
 ];

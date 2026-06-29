@@ -130,7 +130,12 @@ export function SourcingRequestsDesk({
               {filtered.map((r) => (
                 <tr key={r.id} className="hover:bg-neutral-50">
                   <Td className="max-w-xs">
-                    <p className="font-mono text-xs font-semibold text-neutral-900">{r.requestNumber}</p>
+                    <Link
+                      href={`/admin/requests/${r.id}`}
+                      className="font-mono text-xs font-semibold text-neutral-900 hover:text-brand"
+                    >
+                      {r.requestNumber}
+                    </Link>
                     <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{r.query}</p>
                     {r.quotedAmount != null && r.quotedAmount > 0 && (
                       <p className="mt-1 text-xs font-medium text-emerald-600">

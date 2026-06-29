@@ -95,6 +95,7 @@ export function secureErrorResponse(
 
 export const searchQuerySchema = z.object({
   q: z.string().max(200).optional(),
+  slugs: z.string().max(2000).optional(),
   category: z.string().max(50).optional(),
   page: z.coerce.number().int().min(1).max(100).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(12),

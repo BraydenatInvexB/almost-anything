@@ -24,22 +24,22 @@ export function resolveFulfillment(input: {
     return {
       source: "international",
       label: "International delivery",
-      description: "Shipping outside South Africa — extended lead times apply.",
+      description: "Cross-border shipment — extended lead times may apply.",
       badgeClass: "bg-violet-100 text-violet-800",
     };
   }
   if (input.stockOrigin === "overseas") {
     return {
       source: "overseas",
-      label: "Overseas sourcing",
-      description: "Not in SA warehouse — product will be ordered from an overseas supplier.",
-      badgeClass: "bg-amber-100 text-amber-800",
+      label: "International warehouse",
+      description: "Available from our international warehouse — inbound to SA hub, then customer delivery.",
+      badgeClass: "bg-blue-100 text-blue-800",
     };
   }
   return {
     source: "sa_warehouse",
     label: "SA warehouse",
-    description: "In stock or available from the South Africa warehouse.",
+    description: "Ready from the Johannesburg distribution centre.",
     badgeClass: "bg-emerald-100 text-emerald-800",
   };
 }

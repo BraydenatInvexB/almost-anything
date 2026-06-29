@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Mail, Package } from "lucide-react";
 import { getCurrentStaff, listStaff } from "@/services/admin-service";
-import { getReturn } from "@/lib/admin/operations-store";
+import { getReturn } from "@/lib/admin/operations-persistence";
 import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { ReturnDetailActions } from "@/components/admin/ReturnDetailActions";
@@ -29,7 +29,7 @@ export default async function AdminReturnDetailPage({
 
   const { id } = await params;
   const [ret, agents] = await Promise.all([
-    Promise.resolve(getReturn(id)),
+    getReturn(id),
     listStaff(),
   ]);
   if (!ret) notFound();

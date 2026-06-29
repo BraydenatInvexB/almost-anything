@@ -11,6 +11,7 @@ export interface CartItem {
   variantId?: string;
   variantLabel?: string;
   selectedOptions?: Record<string, string>;
+  minimumOrderQuantity?: number;
   quoteOptionId?: string;
   quoteRequestId?: string;
   tier?: string;

@@ -11,7 +11,13 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+_ROOT = Path(__file__).resolve().parents[2]
+_PYTHON_DIR = Path(__file__).resolve().parents[1]
+
+# Load Next.js env first, then python-local overrides
+load_dotenv(_ROOT / ".env.local")
+load_dotenv(_ROOT / ".env")
+load_dotenv(_PYTHON_DIR / ".env")
 
 
 @dataclass(frozen=True)
@@ -37,6 +43,18 @@ class Config:
     # AI providers
     openai_api_key: str = field(
         default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
+    )
+    anthropic_api_key: str = field(
+        default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", "")
+    )
+    llm_provider: str = field(
+        default_factory=lambda: os.getenv("LLM_PROVIDER", "auto")
+    )
+    openai_model: str = field(
+        default_factory=lambda: os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    )
+    anthropic_model: str = field(
+        default_factory=lambda: os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
     )
 
     # Markup defaults

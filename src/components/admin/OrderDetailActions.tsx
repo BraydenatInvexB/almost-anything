@@ -3,15 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BtnPrimary, BtnSecondary, StatusBadge } from "@/components/admin/ui";
+import { ORDER_STATUS_LABELS, ORDER_STATUSES } from "@/lib/orders/order-operations";
 
-const STATUS_OPTIONS = [
-  "pending",
-  "paid",
-  "purchased",
-  "shipped",
-  "delivered",
-  "cancelled",
-] as const;
+const STATUS_OPTIONS = ORDER_STATUSES.filter((s) => s !== "pending");
 
 export function OrderDetailActions({
   orderId,
@@ -74,38 +68,42 @@ export function OrderDetailActions({
 
   return (
     <div className="space-y-4">
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="rounded-xl border-2 border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <label className="block text-xs font-bold uppercase tracking-wide text-neutral-500">
           Status
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="mt-1.5 h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm capitalize outline-none focus:border-brand/40 focus:ring-2 focus:ring-brand/10"
+            className="mt-1.5 h-10 w-full rounded-lg border-2 border-neutral-200 bg-white px-3 text-sm font-medium outline-none focus:border-brand"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {ORDER_STATUS_LABELS[s]}
               </option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <label className="block text-xs font-bold uppercase tracking-wide text-neutral-500">
           Carrier
           <input
             value={carrier}
             onChange={(e) => setCarrier(e.target.value)}
             placeholder="Aramex, DHL, etc."
-            className="mt-1.5 h-10 w-full rounded-lg border border-neutral-200 px-3 text-sm outline-none focus:border-brand/40 focus:ring-2 focus:ring-brand/10"
+            className="mt-1.5 h-10 w-full rounded-lg border-2 border-neutral-200 px-3 text-sm outline-none focus:border-brand"
           />
         </label>
-        <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <label className="block text-xs font-bold uppercase tracking-wide text-neutral-500">
           Tracking number
           <input
             value={trackingNumber}
             onChange={(e) => setTrackingNumber(e.target.value)}
             placeholder="AWB / tracking ID"
-            className="mt-1.5 h-10 w-full rounded-lg border border-neutral-200 px-3 text-sm outline-none focus:border-brand/40 focus:ring-2 focus:ring-brand/10"
+            className="mt-1.5 h-10 w-full rounded-lg border-2 border-neutral-200 px-3 text-sm outline-none focus:border-brand"
           />
         </label>
       </div>
@@ -113,7 +111,7 @@ export function OrderDetailActions({
         <BtnPrimary onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save changes"}
         </BtnPrimary>
-        <BtnSecondary href={`/admin/fulfillment`}>Fulfillment queue</BtnSecondary>
+        <BtnSecondary href="/admin/fulfillment">Operations queue</BtnSecondary>
         {saved && <span className="text-sm font-medium text-emerald-600">Saved</span>}
       </div>
     </div>

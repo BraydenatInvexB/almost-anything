@@ -26,14 +26,23 @@ const ROLES: StaffRole[] = [
 export function StaffManager({
   staff,
   canManage,
+  suppressInviteButton = false,
+  inviteOpen: inviteOpenProp,
+  onInviteOpenChange,
 }: {
   staff: StaffProfile[];
   canManage: boolean;
+  suppressInviteButton?: boolean;
+  inviteOpen?: boolean;
+  onInviteOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
   const [members, setMembers] = useState(staff);
-  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteOpenInternal, setInviteOpenInternal] = useState(false);
   const [permissionsFor, setPermissionsFor] = useState<StaffProfile | null>(null);
+
+  const inviteOpen = inviteOpenProp ?? inviteOpenInternal;
+  const setInviteOpen = onInviteOpenChange ?? setInviteOpenInternal;
 
   async function updateMember(id: string, updates: Partial<StaffProfile>) {
     setMembers((m) => m.map((s) => (s.id === id ? { ...s, ...updates } : s)));
@@ -51,9 +60,10 @@ export function StaffManager({
 
   return (
     <>
-      {canManage && (
-        <div className="mb-4 flex justify-end">
+      {canManage && !suppressInviteButton && (
+        <div className="mb-4 flex justify-end px-5 pt-5">
           <button
+            type="button"
             onClick={() => setInviteOpen(true)}
             className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white"
           >
@@ -63,7 +73,7 @@ export function StaffManager({
         </div>
       )}
 
-      <div className="rounded-2xl border border-neutral-200 bg-white">
+      <div className={cn("border-neutral-200 bg-white", suppressInviteButton ? "" : "rounded-2xl border")}>
         {members.length === 0 ? (
           <EmptyState
             title="No team members yet"
@@ -78,7 +88,6 @@ export function StaffManager({
               <Th>Department</Th>
               <Th>Status</Th>
               <Th>Last active</Th>
-              {canManage && <Th>Access</Th>}
             </tr>
           </thead>
           <tbody>
@@ -106,28 +115,40 @@ export function StaffManager({
                   </div>
                 </Td>
                 <Td>
-                  {canManage && m.role !== "super_admin" ? (
-                    <select
-                      value={m.role}
-                      onChange={(e) => updateMember(m.id, { role: e.target.value as StaffRole })}
-                      className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-medium focus:outline-none"
-                    >
-                      {ROLES.map((r) => (
-                        <option key={r} value={r}>
-                          {ROLE_META[r].label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span
-                      className={cn(
-                        "inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
-                        ROLE_META[m.role].accent,
-                      )}
-                    >
-                      {ROLE_META[m.role].label}
-                    </span>
-                  )}
+                  <div className="flex flex-col gap-1.5">
+                    {canManage && m.role !== "super_admin" ? (
+                      <select
+                        value={m.role}
+                        onChange={(e) => updateMember(m.id, { role: e.target.value as StaffRole })}
+                        className="w-full max-w-[180px] rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-medium focus:outline-none"
+                      >
+                        {ROLES.map((r) => (
+                          <option key={r} value={r}>
+                            {ROLE_META[r].label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span
+                        className={cn(
+                          "inline-flex w-fit rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+                          ROLE_META[m.role].accent,
+                        )}
+                      >
+                        {ROLE_META[m.role].label}
+                      </span>
+                    )}
+                    {canManage && m.role !== "super_admin" && (
+                      <button
+                        type="button"
+                        onClick={() => setPermissionsFor(m)}
+                        className="inline-flex w-fit items-center gap-1 text-[11px] font-semibold text-neutral-500 hover:text-neutral-800"
+                      >
+                        <Shield className="h-3 w-3" />
+                        Customise modules
+                      </button>
+                    )}
+                  </div>
                 </Td>
                 <Td className="text-neutral-600">{m.title ?? m.department ?? "N/A"}</Td>
                 <Td>
@@ -153,22 +174,6 @@ export function StaffManager({
                       })
                     : "N/A"}
                 </Td>
-                {canManage && (
-                  <Td>
-                    {m.role !== "super_admin" ? (
-                      <button
-                        type="button"
-                        onClick={() => setPermissionsFor(m)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
-                      >
-                        <Shield className="h-3 w-3" />
-                        Modules
-                      </button>
-                    ) : (
-                      <span className="text-xs text-neutral-400">Full access</span>
-                    )}
-                  </Td>
-                )}
               </tr>
             ))}
           </tbody>
@@ -209,7 +214,8 @@ function InviteModal({
   onInvited: (m: StaffProfile) => void;
 }) {
   const [form, setForm] = useState({
-    full_name: "",
+    first_name: "",
+    last_name: "",
     email: "",
     role: "support_agent" as StaffRole,
     title: "",
@@ -225,7 +231,10 @@ function InviteModal({
       const res = await fetch("/api/admin/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          full_name: `${form.first_name.trim()} ${form.last_name.trim()}`.trim(),
+        }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -237,7 +246,7 @@ function InviteModal({
         id: json.staff?.id ?? `tmp-${Date.now()}`,
         user_id: null,
         email: form.email,
-        full_name: form.full_name,
+        full_name: `${form.first_name.trim()} ${form.last_name.trim()}`.trim(),
         role: form.role,
         status: "invited",
         department: null,
@@ -269,14 +278,24 @@ function InviteModal({
           </button>
         </div>
         <form onSubmit={submit} className="flex flex-col gap-3">
-          <Field label="Full name">
-            <input
-              required
-              value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-              className="input"
-            />
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="First name">
+              <input
+                required
+                value={form.first_name}
+                onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                className="input"
+              />
+            </Field>
+            <Field label="Last name">
+              <input
+                required
+                value={form.last_name}
+                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                className="input"
+              />
+            </Field>
+          </div>
           <Field label="Email">
             <input
               required

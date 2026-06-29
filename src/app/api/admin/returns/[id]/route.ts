@@ -6,7 +6,7 @@ import {
   createExpense,
   getReturn,
   updateReturn,
-} from "@/lib/admin/operations-store";
+} from "@/lib/admin/operations-persistence";
 import { computeRefundAmount } from "@/lib/returns/returns";
 import type { ReturnStatus } from "@/lib/admin/operations-types";
 
@@ -22,7 +22,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const ret = getReturn(id);
+  const ret = await getReturn(id);
   if (!ret) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ return: ret });
 }
@@ -37,7 +37,7 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const existing = getReturn(id);
+  const existing = await getReturn(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await request.json().catch(() => null);
@@ -49,8 +49,8 @@ export async function PATCH(
 
   switch (body.action) {
     case "approve": {
-      updateReturn(id, { status: "approved", approvedAt: now });
-      addReturnNote(id, {
+      await updateReturn(id, { status: "approved", approvedAt: now });
+      await addReturnNote(id, {
         body: "Return approved — prepaid label sent to customer.",
         authorName: staff.full_name,
         authorType: "staff",
@@ -62,12 +62,12 @@ export async function PATCH(
       if (!body.rejectionReason?.trim()) {
         return NextResponse.json({ error: "Rejection reason required" }, { status: 400 });
       }
-      updateReturn(id, {
+      await updateReturn(id, {
         status: "rejected",
         rejectionReason: body.rejectionReason.trim(),
         resolvedAt: now,
       });
-      addReturnNote(id, {
+      await addReturnNote(id, {
         body: `Return rejected: ${body.rejectionReason.trim()}`,
         authorName: staff.full_name,
         authorType: "staff",
@@ -76,8 +76,8 @@ export async function PATCH(
       break;
     }
     case "mark_received": {
-      updateReturn(id, { status: "received", receivedAt: now });
-      addReturnNote(id, {
+      await updateReturn(id, { status: "received", receivedAt: now });
+      await addReturnNote(id, {
         body: existing.restockItems
           ? "Items received and queued for restock."
           : "Items received — marked as damaged/non-restockable.",
@@ -90,13 +90,13 @@ export async function PATCH(
     case "refund": {
       const amount =
         body.refundAmount != null ? Number(body.refundAmount) : computeRefundAmount(existing.items);
-      updateReturn(id, {
+      await updateReturn(id, {
         status: "refunded",
         refundAmount: amount,
         resolvedAt: now,
       });
       if (amount > 0) {
-        createExpense({
+        await createExpense({
           label: `Refund ${existing.rmaNumber}`,
           category: "refunds",
           amount,
@@ -106,7 +106,7 @@ export async function PATCH(
           notes: `RMA ${existing.rmaNumber}`,
         });
       }
-      addReturnNote(id, {
+      await addReturnNote(id, {
         body: `Refund of ${amount.toFixed(2)} ${existing.currency} processed to original payment method.`,
         authorName: staff.full_name,
         authorType: "staff",
@@ -118,7 +118,7 @@ export async function PATCH(
       if (!body.note?.trim()) {
         return NextResponse.json({ error: "Note required" }, { status: 400 });
       }
-      addReturnNote(id, {
+      await addReturnNote(id, {
         body: body.note.trim(),
         authorName: staff.full_name,
         authorType: "staff",
@@ -139,7 +139,7 @@ export async function PATCH(
           const amount = Number(body.refundAmount);
           patch.refundAmount = amount;
           if (amount > 0 && existing.status !== "refunded") {
-            createExpense({
+            await createExpense({
               label: `Refund ${existing.rmaNumber}`,
               category: "refunds",
               amount,
@@ -161,8 +161,8 @@ export async function PATCH(
       if (body.assignedTo !== undefined) patch.assignedTo = body.assignedTo || undefined;
       if (body.rejectionReason !== undefined) patch.rejectionReason = body.rejectionReason || undefined;
 
-      updateReturn(id, patch);
-      addReturnNote(id, {
+      await updateReturn(id, patch);
+      await addReturnNote(id, {
         body: "Return record updated by staff.",
         authorName: staff.full_name,
         authorType: "staff",
@@ -174,7 +174,7 @@ export async function PATCH(
       if (!body.message?.trim()) {
         return NextResponse.json({ error: "Message required" }, { status: 400 });
       }
-      addReturnNote(id, {
+      await addReturnNote(id, {
         body: body.message.trim(),
         authorName: staff.full_name,
         authorType: "staff",
@@ -186,5 +186,5 @@ export async function PATCH(
       return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true, return: getReturn(id) });
+  return NextResponse.json({ ok: true, return: await getReturn(id) });
 }

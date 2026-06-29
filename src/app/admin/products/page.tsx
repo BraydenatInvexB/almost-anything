@@ -24,10 +24,7 @@ export default async function AdminProductsPage({
   const canEditMarkup = staffCan(staff, "products.markup");
   const canEdit = staffCan(staff, "products.edit");
 
-  const totalRetail = products.reduce(
-    (s, p) => s + p.base_price * (1 + Number(p.markup_percent) / 100),
-    0,
-  );
+  const totalRetail = products.reduce((s, p) => s + Number(p.retail_price), 0);
   const totalCost = products.reduce((s, p) => s + p.base_price, 0);
   const avgMarkup =
     products.reduce((s, p) => s + Number(p.markup_percent), 0) / (products.length || 1);

@@ -89,6 +89,9 @@ export interface Database {
           is_exclusive: boolean;
           is_deal: boolean;
           deal_discount_percent: number | null;
+          show_in_hot: boolean;
+          show_in_steals: boolean;
+          show_in_fresh_drops: boolean;
           metadata: Json;
           created_at: string;
           updated_at: string;
@@ -116,6 +119,9 @@ export interface Database {
           is_exclusive?: boolean;
           is_deal?: boolean;
           deal_discount_percent?: number | null;
+          show_in_hot?: boolean;
+          show_in_steals?: boolean;
+          show_in_fresh_drops?: boolean;
           metadata?: Json;
           created_at?: string;
           updated_at?: string;

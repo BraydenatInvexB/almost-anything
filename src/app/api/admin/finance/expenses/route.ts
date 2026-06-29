@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
 import { can, staffCan } from "@/config/rbac";
-import { createExpense, listExpenses } from "@/lib/admin/operations-store";
+import { createExpense, listExpenses } from "@/lib/admin/operations-persistence";
 
 const schema = z.object({
   label: z.string().min(2),
@@ -19,7 +19,7 @@ export async function GET() {
   if (!staff || !staffCan(staff, "finance.view")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  return NextResponse.json({ expenses: listExpenses() });
+  return NextResponse.json({ expenses: await listExpenses() });
 }
 
 export async function POST(request: Request) {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
-  const expense = createExpense({
+  const expense = await createExpense({
     ...parsed.data,
     recordedBy: staff.full_name,
   });

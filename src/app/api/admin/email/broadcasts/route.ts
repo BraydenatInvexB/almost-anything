@@ -7,7 +7,7 @@ import {
   createEmailBroadcast,
   listEmailBroadcasts,
   listEmailSubscribers,
-} from "@/lib/admin/operations-store";
+} from "@/lib/admin/operations-persistence";
 
 const schema = z.object({
   subject: z.string().min(2).max(200),
@@ -18,13 +18,13 @@ const schema = z.object({
   createdBy: z.string().min(1),
 });
 
-function countAudience(audience: EmailAudience, customers: Awaited<ReturnType<typeof listCustomers>>) {
+async function countAudience(audience: EmailAudience, customers: Awaited<ReturnType<typeof listCustomers>>) {
   const emails = new Set<string>();
   const add = (email?: string | null) => {
     if (email) emails.add(email.toLowerCase());
   };
 
-  const subscribers = listEmailSubscribers().filter((s) => s.status === "active");
+  const subscribers = (await listEmailSubscribers()).filter((s) => s.status === "active");
 
   if (audience === "subscribers" || audience === "all") {
     subscribers.forEach((s) => add(s.email));
@@ -48,7 +48,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  return NextResponse.json({ broadcasts: listEmailBroadcasts() });
+  return NextResponse.json({ broadcasts: await listEmailBroadcasts() });
 }
 
 export async function POST(request: Request) {
@@ -63,9 +63,9 @@ export async function POST(request: Request) {
   }
 
   const customers = await listCustomers();
-  const recipientCount = parsed.data.send ? countAudience(parsed.data.audience, customers) : 0;
+  const recipientCount = parsed.data.send ? await countAudience(parsed.data.audience, customers) : 0;
 
-  const broadcast = createEmailBroadcast({
+  const broadcast = await createEmailBroadcast({
     subject: parsed.data.subject,
     previewText: parsed.data.previewText,
     body: parsed.data.body,

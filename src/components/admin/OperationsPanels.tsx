@@ -152,7 +152,7 @@ export function InventoryPanel({
               <Td className="font-mono text-xs">{row.sku}</Td>
               <Td className="font-medium">{nameMap[row.productId] ?? row.productId}</Td>
               <Td className={row.quantity <= row.reorderPoint ? "font-bold text-red-600" : ""}>{row.quantity}</Td>
-              <Td><StatusBadge status={row.origin === "sa_warehouse" ? "in_stock" : "sourced"} /></Td>
+              <Td><StatusBadge status={row.origin === "sa_warehouse" ? "in_stock" : "available_international"} /></Td>
               <Td className="text-neutral-500">{row.warehouse}</Td>
               <Td>{row.reorderPoint}</Td>
               {canManage && (
@@ -171,34 +171,83 @@ export function InventoryPanel({
 export function ProcurementPanel({ records, canManage }: { records: ProcurementRecord[]; canManage: boolean }) {
   const router = useRouter();
 
-  async function update(id: string, status: ProcurementRecord["status"]) {
+  async function update(
+    id: string,
+    patch: Partial<ProcurementRecord> & { status?: ProcurementRecord["status"] },
+  ) {
     await fetch("/api/admin/procurement", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
+      body: JSON.stringify({ id, ...patch }),
     });
     router.refresh();
   }
 
   return (
-    <div className="rounded-xl border bg-white shadow-sm">
+    <div className="rounded-xl border border-neutral-200/80 bg-white shadow-sm">
       <Table>
-        <thead><tr><Th>Order</Th><Th>Product</Th><Th>Supplier</Th><Th>Cost</Th><Th>Sell</Th><Th>Origin</Th><Th>Status</Th>{canManage && <Th />}</tr></thead>
+        <thead>
+          <tr>
+            <Th>Order</Th>
+            <Th>Product</Th>
+            <Th>Qty</Th>
+            <Th>Supplier</Th>
+            <Th>Cost</Th>
+            <Th>Origin</Th>
+            <Th>Status</Th>
+            {canManage && <Th />}
+          </tr>
+        </thead>
         <tbody className="divide-y divide-neutral-50">
           {records.map((p) => (
             <tr key={p.id}>
-              <Td className="font-semibold">{p.orderNumber}</Td>
+              <Td>
+                <Link href={`/admin/orders/${p.orderId}`} className="font-bold text-brand hover:underline">
+                  {p.orderNumber}
+                </Link>
+              </Td>
               <Td>{p.productName}</Td>
-              <Td><p>{p.supplier}</p><p className="text-xs text-neutral-400">{p.supplierCountry}</p></Td>
+              <Td>{p.quantity}</Td>
+              <Td>
+                <p>{p.supplier}</p>
+                <p className="text-xs text-neutral-400">{p.supplierCountry}</p>
+              </Td>
               <Td>{formatCurrency(p.costPrice, p.currency)}</Td>
-              <Td>{formatCurrency(p.sellPrice, p.currency)}</Td>
-              <Td>{p.origin === "sa_warehouse" ? "SA stock" : "Overseas"}</Td>
-              <Td><StatusBadge status={p.status} /></Td>
+              <Td>
+                {p.origin === "sa_warehouse" ? "SA warehouse" : "International warehouse"}
+              </Td>
+              <Td>
+                <StatusBadge status={p.status} />
+              </Td>
               {canManage && (
                 <Td>
-                  {p.status === "pending" && <button type="button" onClick={() => update(p.id, "ordered")} className="text-xs font-semibold text-brand">Mark ordered</button>}
-                  {p.status === "ordered" && <button type="button" onClick={() => update(p.id, "in_transit")} className="text-xs font-semibold text-brand">In transit</button>}
-                  {p.status === "in_transit" && <button type="button" onClick={() => update(p.id, "received")} className="text-xs font-semibold text-brand">Received</button>}
+                  {p.status === "pending" && (
+                    <button
+                      type="button"
+                      onClick={() => update(p.id, { status: "ordered" })}
+                      className="text-xs font-bold text-brand"
+                    >
+                      Confirm order
+                    </button>
+                  )}
+                  {p.status === "ordered" && (
+                    <button
+                      type="button"
+                      onClick={() => update(p.id, { status: "in_transit" })}
+                      className="text-xs font-bold text-brand"
+                    >
+                      In transit
+                    </button>
+                  )}
+                  {p.status === "in_transit" && (
+                    <button
+                      type="button"
+                      onClick={() => update(p.id, { status: "received" })}
+                      className="text-xs font-bold text-brand"
+                    >
+                      Received
+                    </button>
+                  )}
                 </Td>
               )}
             </tr>

@@ -78,7 +78,7 @@ function AdminNavList({
     <nav className="flex flex-col gap-5">
       {groups.map(({ group, items }) => (
         <div key={group}>
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
             {group}
           </p>
           <div className="flex flex-col gap-0.5">
@@ -96,11 +96,16 @@ function AdminNavList({
                   className={cn(
                     "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     active
-                      ? "bg-brand text-white shadow-sm"
-                      : "text-neutral-300 hover:bg-white/5 hover:text-white",
+                      ? "bg-brand/10 font-semibold text-brand ring-1 ring-brand/15"
+                      : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900",
                   )}
                 >
-                  <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" />
+                  <Icon
+                    className={cn(
+                      "h-[18px] w-[18px] shrink-0",
+                      active ? "text-brand" : "text-neutral-400 group-hover:text-neutral-600",
+                    )}
+                  />
                   {item.label}
                 </Link>
               );
@@ -184,21 +189,21 @@ export function AdminShell({
   }, [pathname]);
 
   return (
-    <div className="flex min-h-dvh bg-neutral-100 text-neutral-900">
+    <div className="flex min-h-dvh bg-[#f4f6f9] text-neutral-900">
       {/* Sidebar (desktop) */}
-      <aside className="sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 flex-col border-r border-neutral-800 bg-neutral-950 px-4 py-5 lg:flex">
-        <Link href="/admin" className="mb-6 flex items-center gap-3 px-2 py-1">
+      <aside className="sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 flex-col border-r border-neutral-200/80 bg-white px-4 py-5 shadow-[1px_0_0_0_rgba(0,0,0,0.04)] lg:flex">
+        <Link href="/admin" className="mb-5 flex items-center px-1 py-1">
           <Image
             src={SITE_CONFIG.logo}
             alt={SITE_CONFIG.name}
-            width={200}
-            height={48}
-            className="h-10 w-auto brightness-0 invert"
+            width={240}
+            height={56}
+            className="h-14 w-full max-w-[220px] object-contain object-left"
             priority
           />
         </Link>
-        <p className="mb-6 px-3 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-          Operations Console
+        <p className="mb-5 px-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+          Operations console
         </p>
 
         <div className="flex-1 overflow-y-auto">
@@ -207,7 +212,7 @@ export function AdminShell({
 
         <Link
           href="/"
-          className="mt-4 flex items-center gap-2 rounded-lg border border-neutral-800 px-3 py-2.5 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:bg-white/5 hover:text-white"
+          className="mt-4 flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:border-neutral-300 hover:bg-white hover:text-neutral-900"
         >
           <ExternalLink className="h-4 w-4" />
           View storefront
@@ -217,24 +222,32 @@ export function AdminShell({
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 flex h-full w-72 flex-col bg-neutral-950 px-4 py-5 text-white">
-            <div className="mb-6 flex items-center justify-between px-2">
-              <Link href="/admin" onClick={() => setMobileOpen(false)}>
+          <div className="absolute inset-0 bg-neutral-900/20 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute left-0 top-0 flex h-full w-72 flex-col border-r border-neutral-200 bg-white px-4 py-5 shadow-xl">
+            <div className="mb-6 flex items-center justify-between px-1">
+              <Link
+                href="/admin"
+                onClick={() => setMobileOpen(false)}
+                className="flex flex-1 items-center py-1"
+              >
                 <Image
                   src={SITE_CONFIG.logo}
                   alt={SITE_CONFIG.name}
                   width={160}
                   height={40}
-                  className="h-9 w-auto brightness-0 invert"
+                  className="h-9 w-full object-contain object-left"
                 />
               </Link>
-              <button onClick={() => setMobileOpen(false)} aria-label="Close menu">
+              <button
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close menu"
+                className="ml-2 rounded-lg p-2 text-neutral-500 hover:bg-neutral-100"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="mb-4 px-2 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-              Operations Console
+            <p className="mb-4 px-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+              Operations console
             </p>
             <div className="flex-1 overflow-y-auto">
               <AdminNavList
@@ -249,7 +262,7 @@ export function AdminShell({
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white">
+        <header className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/95 backdrop-blur-md">
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
             <button
               className="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 lg:hidden"
@@ -259,7 +272,7 @@ export function AdminShell({
               <Menu className="h-5 w-5" />
             </button>
 
-            <Link href="/admin" className="shrink-0 lg:hidden">
+            <Link href="/admin" className="shrink-0 rounded-lg bg-white px-2 py-1 lg:hidden">
               <Image
                 src={SITE_CONFIG.logo}
                 alt={SITE_CONFIG.name}
@@ -307,7 +320,7 @@ export function AdminShell({
                       className="h-8 w-8 rounded-lg object-cover"
                     />
                   ) : (
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-950 text-xs font-bold text-white">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/10 text-xs font-bold text-brand">
                       {staff.full_name.charAt(0)}
                     </span>
                   )}

@@ -18,8 +18,10 @@ import { ProductGrid } from "@/components/home/ProductGrid";
 import { getProductBySlug, getRelatedProducts } from "@/services/product-service";
 import { getCategory } from "@/config/categories";
 import { formatCurrency, formatRating } from "@/lib/utils/cn";
-import { getStockAvailabilityMessage, getStockStatusLabel } from "@/config/product-stock";
+import { getStockAvailabilityMessage, getWarehouseBadgeLabel } from "@/config/product-stock";
 import { parseVariantsConfig } from "@/types/product-variants";
+import { parseProductEnrichment, customerFacingEnrichment } from "@/types/product-enrichment";
+import { ProductDetailDescription } from "@/components/products/ProductDetailDescription";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -46,6 +48,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
       ? product.retail_price / (1 - product.deal_discount_percent / 100)
       : null;
   const variants = parseVariantsConfig(product.metadata);
+  const rawEnrichment = parseProductEnrichment(product.metadata);
+  const enrichment = customerFacingEnrichment(rawEnrichment);
+  const minimumOrderQuantity = enrichment.minimumOrderQuantity ?? 1;
+  const unitLabel = enrichment.unitLabel ?? "each";
+  const warehouseLabel = getWarehouseBadgeLabel(product.stock_status, product.metadata);
 
   return (
     <div className="flex min-h-full flex-col bg-white">
@@ -78,18 +85,83 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </span>
         </nav>
 
-        <div className="mt-5 grid gap-8 lg:grid-cols-2">
-          <Card padding="none" className="relative aspect-square overflow-hidden bg-neutral-200">
+        {/* Product summary — name, price, description at the top */}
+        <header className="mt-5 border-b border-neutral-100 pb-6">
+          <Link
+            href={`/products?category=${product.category}`}
+            className="text-xs font-semibold uppercase tracking-wide text-neutral-400 hover:text-neutral-700"
+          >
+            {category?.label ?? product.category}
+          </Link>
+
+          <h1 className="mt-2 text-3xl font-bold text-neutral-900 sm:text-4xl">
+            {product.name}
+          </h1>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span className="flex items-center gap-1 text-sm">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              {formatRating(product.rating)}
+              <span className="text-neutral-400"> ({product.review_count} reviews)</span>
+            </span>
+            <span className="text-sm text-neutral-300">·</span>
+            <span className="text-sm text-neutral-500">
+              {warehouseLabel}
+            </span>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-baseline gap-3">
+            <p className="text-4xl font-bold text-neutral-900">
+              {formatCurrency(product.retail_price, product.currency)}
+            </p>
+            {minimumOrderQuantity > 1 ? (
+              <span className="text-sm font-medium text-neutral-500">
+                per {unitLabel}
+              </span>
+            ) : null}
+            {originalPrice && (
+              <p className="text-lg text-neutral-400 line-through">
+                {formatCurrency(originalPrice, product.currency)}
+              </p>
+            )}
+          </div>
+
+          {minimumOrderQuantity > 1 ? (
+            <p className="mt-2 text-sm font-medium text-amber-700">
+              Minimum order: {minimumOrderQuantity} {unitLabel}
+              {enrichment.pricingNote ? ` · ${enrichment.pricingNote}` : ""}
+            </p>
+          ) : null}
+
+          <p
+            className={`mt-2 text-sm ${
+              product.stock_status === "out_of_stock" ? "text-neutral-500" : "text-emerald-600"
+            }`}
+          >
+            {getStockAvailabilityMessage(
+              product.stock_status,
+              product.delivery_days_min,
+              product.delivery_days_max,
+            )}
+          </p>
+        </header>
+
+        <div className="mt-8 grid gap-8 lg:grid-cols-2">
+          <Card padding="none" className="relative aspect-square overflow-hidden bg-neutral-100">
             {imageUrl ? (
               <Image
                 src={imageUrl}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className="object-contain p-3"
                 sizes="(max-width: 768px) 100vw, 50vw"
                 priority
               />
-            ) : null}
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
+                Photo from supplier listing
+              </div>
+            )}
             {product.is_exclusive ? (
               <Badge variant="exclusive" className="absolute left-4 top-4">
                 Exclusive
@@ -103,51 +175,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </Card>
 
           <div>
-            <Link
-              href={`/products?category=${product.category}`}
-              className="text-xs font-semibold uppercase tracking-wide text-neutral-400 hover:text-neutral-700"
-            >
-              {category?.label ?? product.category}
-            </Link>
-
-            <h1 className="mt-2 text-3xl font-bold text-neutral-900">{product.name}</h1>
-
-            <div className="mt-3 flex items-center gap-3">
-              <span className="flex items-center gap-1 text-sm">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                {formatRating(product.rating)}
-                <span className="text-neutral-400"> ({product.review_count} reviews)</span>
-              </span>
-              <span className="text-sm text-neutral-300">·</span>
-              <span className="text-sm text-neutral-500">
-                {getStockStatusLabel(product.stock_status)}
-              </span>
-            </div>
-
-            <div className="mt-6 flex items-baseline gap-3">
-              <p className="text-4xl font-bold">
-                {formatCurrency(product.retail_price, product.currency)}
-              </p>
-              {originalPrice && (
-                <p className="text-lg text-neutral-400 line-through">
-                  {formatCurrency(originalPrice, product.currency)}
-                </p>
-              )}
-            </div>
-            <p
-              className={`mt-1 text-sm ${
-                product.stock_status === "out_of_stock" ? "text-neutral-500" : "text-emerald-600"
-              }`}
-            >
-              {getStockAvailabilityMessage(
-                product.stock_status,
-                product.delivery_days_min,
-                product.delivery_days_max,
-              )}
-            </p>
-
-            <p className="mt-6 leading-relaxed text-neutral-600">{product.description}</p>
-
             <ProductActions
               productId={product.id}
               slug={product.slug}
@@ -158,6 +185,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               rating={product.rating}
               stockStatus={product.stock_status}
               variants={variants}
+              minimumOrderQuantity={minimumOrderQuantity}
             />
 
             {/* Trust badges */}
@@ -172,6 +200,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </div>
               ))}
             </div>
+
+            <ProductDetailDescription
+              enrichment={rawEnrichment}
+              description={product.description}
+            />
           </div>
         </div>
 

@@ -11,7 +11,7 @@ export const SITE_CONFIG = {
     "Almost Anything is an online store with almost everything: furniture, tech, home, and more, at great prices, delivered fast. Browse thousands of quality products at fair prices.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   defaultCurrency: "ZAR",
-  defaultMarkupPercent: 18,
+  defaultMarkupPercent: 10,
   minMarkupPercent: 8,
   maxMarkupPercent: 45,
   supportEmail: "help@almostanything.co.za",

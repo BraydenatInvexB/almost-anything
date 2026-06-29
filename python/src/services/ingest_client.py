@@ -10,6 +10,7 @@ import httpx
 from slugify import slugify
 
 from src.config import config
+from src.core.copy import humanize_copy
 from src.services.markup_engine import MarkupInput, calculate_markup
 
 
@@ -40,16 +41,17 @@ class IngestClient:
             )
         )
 
-        name = listing["name"]
+        name = humanize_copy(str(listing["name"])).rstrip(".")
         slug_base = slugify(name)
+        raw_desc = listing.get(
+            "description",
+            f"Sourced {name} from {listing.get('supplier_name', 'verified supplier')}.",
+        )
 
         return {
             "slug": slug_base,
             "name": name,
-            "description": listing.get(
-                "description",
-                f"AI-sourced {name} from {listing.get('supplier_name', 'verified supplier')}.",
-            ),
+            "description": humanize_copy(str(raw_desc)),
             "category": listing.get("category", "general"),
             "base_price": markup.base_price,
             "image_url": listing.get("image_url"),
@@ -64,6 +66,11 @@ class IngestClient:
             "is_exclusive": listing.get("is_exclusive", False),
             "is_deal": listing.get("is_deal", False),
             "deal_discount_percent": listing.get("deal_discount_percent"),
+            "highlights": listing.get("highlights"),
+            "specifications": listing.get("specifications"),
+            "summary": listing.get("summary"),
+            "variants_config": listing.get("variants_config"),
+            "metadata": listing.get("metadata"),
         }
 
     async def ingest_products(

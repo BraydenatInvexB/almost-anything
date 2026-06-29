@@ -9,23 +9,30 @@ import {
   type DemoCustomer,
 } from "@/lib/admin/demo-data";
 import {
-  getAnalytics,
   getExtendedConfig,
   getOpsTicketMessages,
   getStaffOverrides,
-  listCampaigns,
   listCustomProducts,
-  listExpenses,
-  listInventory,
   listCheckoutOrders,
   getCheckoutOrder,
   listOpsTickets,
-  listPayables,
-  listProcurement,
-  listReturns,
   updateExtendedConfig,
   updateStaffAccess,
 } from "@/lib/admin/operations-store";
+import {
+  ensureProcurementForOrder,
+  ensureProcurementForSupabaseOrder,
+  listProcurementByOrder,
+  listProcurement,
+  listInventory,
+  listReturns,
+  listExpenses,
+  listPayables,
+  listCampaigns,
+  getAnalytics,
+} from "@/lib/admin/operations-persistence";
+import { QUEUE_STATUSES } from "@/lib/orders/order-operations";
+import { parseOrderItemMetadata } from "@/lib/orders/line-items";
 import { resolveFulfillment, type FulfillmentSource } from "@/lib/orders/fulfillment";
 import { toStaffProfile } from "@/lib/staff/profile";
 import { mergeExtendedConfig } from "@/lib/admin/extended-config-defaults";
@@ -207,7 +214,8 @@ export interface DashboardStats {
   lowStock: number;
   activeStaff: number;
   revenueSeries: { label: string; value: number }[];
-  topProducts: { name: string; sold: number; revenue: number }[];
+  topProducts: { name: string; sold: number; revenue: number; category?: string }[];
+  topCategories: { name: string; sold: number; revenue: number }[];
   recentOrders: AdminOrderSummary[];
 }
 
@@ -220,6 +228,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
   const revenueSeries = buildWeeklyRevenueSeries(orders);
   const topProducts = buildTopProductsFromOrders(orders);
+  const topCategories = buildTopCategories(topProducts);
 
   const tickets = await listTickets();
   const staff = await listStaff();
@@ -247,13 +256,28 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .filter((o) => o.status !== "cancelled")
     .reduce((s, o) => s + o.total, 0);
 
+  const priorCustomers = customers.filter((c) => {
+    const d = new Date(c.created_at);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 14);
+    const mid = new Date();
+    mid.setDate(mid.getDate() - 7);
+    return d >= cutoff && d < mid;
+  });
+  const recentCustomers = customers.filter((c) => {
+    const d = new Date(c.created_at);
+    const mid = new Date();
+    mid.setDate(mid.getDate() - 7);
+    return d >= mid;
+  });
+
   return {
     revenue,
     revenueChange: pctChange(priorRevenue, recentRevenue),
     orders: orders.length,
     ordersChange: pctChange(priorOrders.length, recentWeekOrders.length),
     customers: customers.length,
-    customersChange: 5.6,
+    customersChange: pctChange(priorCustomers.length, recentCustomers.length),
     avgOrderValue: orders.length ? revenue / orders.length : 0,
     openTickets: tickets.filter((t) => t.status === "open" || t.status === "pending").length,
     lowStock: (await listAdminProducts()).filter(
@@ -262,6 +286,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     activeStaff: staff.filter((s) => s.status === "active").length,
     revenueSeries,
     topProducts,
+    topCategories,
     recentOrders,
   };
 }
@@ -289,12 +314,60 @@ function buildWeeklyRevenueSeries(orders: AdminOrderSummary[]) {
 }
 
 function buildTopProductsFromOrders(orders: AdminOrderSummary[]) {
-  void orders;
-  return SEED_PRODUCTS.slice(0, 5).map((p, i) => ({
-    name: p.name,
-    sold: Math.max(12, 48 - i * 8),
-    revenue: Number((p.retail_price * Math.max(12, 48 - i * 8)).toFixed(0)),
-  }));
+  const counts = new Map<
+    string,
+    { name: string; sold: number; revenue: number; category?: string }
+  >();
+
+  for (const live of listCheckoutOrders()) {
+    for (const item of live.lineItems) {
+      const cur = counts.get(item.name) ?? { name: item.name, sold: 0, revenue: 0 };
+      cur.sold += item.quantity;
+      cur.revenue += item.unitPrice * item.quantity;
+      const seed = SEED_PRODUCTS.find((p) => p.name === item.name);
+      if (seed) cur.category = seed.category;
+      counts.set(item.name, cur);
+    }
+  }
+
+  for (const o of orders) {
+    if (o.id.startsWith("ord-live-")) continue;
+    const unit = o.itemCount > 0 ? (o.total * 0.88) / o.itemCount : o.total;
+    for (let i = 0; i < Math.max(1, o.itemCount); i++) {
+      const p = SEED_PRODUCTS[i % SEED_PRODUCTS.length];
+      const cur = counts.get(p.name) ?? {
+        name: p.name,
+        sold: 0,
+        revenue: 0,
+        category: p.category,
+      };
+      cur.sold += 1;
+      cur.revenue += unit;
+      counts.set(p.name, cur);
+    }
+  }
+
+  return [...counts.values()]
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 8);
+}
+
+function buildTopCategories(
+  products: { name: string; sold: number; revenue: number; category?: string }[],
+) {
+  const cats = new Map<string, { name: string; sold: number; revenue: number }>();
+  for (const p of products) {
+    const slug = p.category ?? "general";
+    const label = slug
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+    const cur = cats.get(slug) ?? { name: label, sold: 0, revenue: 0 };
+    cur.sold += p.sold;
+    cur.revenue += p.revenue;
+    cats.set(slug, cur);
+  }
+  return [...cats.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 6);
 }
 
 // ---------------------------------------------------------------------------
@@ -349,6 +422,9 @@ export async function listAdminProducts(): Promise<Product[]> {
         is_exclusive: false,
         is_deal: p.is_deal,
         deal_discount_percent: p.deal_discount_percent,
+        show_in_hot: p.show_in_hot ?? false,
+        show_in_steals: p.show_in_steals ?? false,
+        show_in_fresh_drops: p.show_in_fresh_drops ?? false,
         metadata: { stock_origin: p.stock_origin, quantity: p.quantity },
         created_at: p.created_at,
         updated_at: p.updated_at,
@@ -440,6 +516,11 @@ export interface AdminOrderLineItem {
   quantity: number;
   unitPrice: number;
   imageUrl?: string;
+  sku?: string;
+  variantId?: string;
+  variantLabel?: string;
+  selectedOptions?: Record<string, string>;
+  productId?: string;
 }
 
 export interface AdminOrderDetail extends AdminOrderSummary {
@@ -472,10 +553,14 @@ export interface AdminOrderDetail extends AdminOrderSummary {
 export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null> {
   const live = getCheckoutOrder(id);
   if (live) {
+    if (["paid", "sourcing", "purchased"].includes(live.status)) {
+      await ensureProcurementForOrder(live);
+    }
+
     const timeline: AdminOrderDetail["timeline"] = [
       { label: "Order placed", at: live.createdAt },
     ];
-    if (["paid", "purchased", "shipped", "delivered"].includes(live.status)) {
+    if (["paid", "sourcing", "purchased", "shipped", "delivered"].includes(live.status)) {
       timeline.push({
         label: "Payment confirmed",
         at: new Date(new Date(live.createdAt).getTime() + 3600000).toISOString(),
@@ -484,7 +569,7 @@ export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null
     }
     if (live.stockOrigin === "overseas") {
       timeline.push({
-        label: "Sourcing from overseas supplier",
+        label: "International warehouse allocation",
         at: new Date(new Date(live.createdAt).getTime() + 86400000).toISOString(),
       });
     } else {
@@ -520,6 +605,11 @@ export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         imageUrl: item.imageUrl,
+        sku: item.sku,
+        variantId: item.variantId,
+        variantLabel: item.variantLabel,
+        selectedOptions: item.selectedOptions,
+        productId: item.productId,
       })),
       subtotal: live.subtotal,
       shippingCost: live.shippingCost,
@@ -538,6 +628,103 @@ export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null
   const orders = await listAdminOrders();
   const summary = orders.find((o) => o.id === id || o.orderNumber === id);
   if (!summary) return null;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      let row: Record<string, unknown> | null = null;
+      const byId = await supabase
+        .from("orders")
+        .select("*, order_items(*)")
+        .eq("id", id)
+        .maybeSingle();
+      if (byId.data) row = byId.data as Record<string, unknown>;
+      else {
+        const byNum = await supabase
+          .from("orders")
+          .select("*, order_items(*)")
+          .eq("order_number", id)
+          .maybeSingle();
+        if (byNum.data) row = byNum.data as Record<string, unknown>;
+      }
+      if (row) {
+        const addr = (row.shipping_address ?? {}) as Record<string, unknown>;
+        const meta = (row.metadata ?? {}) as Record<string, unknown>;
+        const tracking = (meta.tracking ?? {}) as Record<string, unknown>;
+        const items = (row.order_items ?? []) as Array<{
+          id: string;
+          name: string;
+          quantity: number;
+          unit_price: number;
+          image_url: string | null;
+          metadata: Record<string, unknown> | null;
+        }>;
+        const customer = DEMO_CUSTOMERS.find(
+          (c) => c.email === ((addr.email as string) ?? "").toLowerCase(),
+        );
+        const status = row.status as string;
+        const created = row.created_at as string;
+        const timeline: AdminOrderDetail["timeline"] = [{ label: "Order placed", at: created }];
+        if (["paid", "sourcing", "purchased", "shipped", "delivered"].includes(status)) {
+          timeline.push({
+            label: "Payment confirmed",
+            at: new Date(new Date(created).getTime() + 3600000).toISOString(),
+            note: (row.payment_method as string) ?? undefined,
+          });
+        }
+        if (["paid", "sourcing", "purchased"].includes(status)) {
+          await ensureProcurementForSupabaseOrder(row.id as string);
+        }
+        return {
+          id: row.id as string,
+          orderNumber: row.order_number as string,
+          customerName: (addr.fullName as string) ?? "Customer",
+          customerEmail: (addr.email as string) ?? "",
+          status,
+          total: Number(row.total),
+          currency: row.currency as string,
+          itemCount: items.length,
+          createdAt: created,
+          customerId: customer?.id,
+          paymentMethod: (row.payment_method as string) ?? "Card",
+          courierName: (meta.courierName as string) ?? undefined,
+          stockOrigin: (meta.stockOrigin as "sa_warehouse" | "overseas") ?? undefined,
+          shippingAddress: {
+            fullName: (addr.fullName as string) ?? "",
+            email: (addr.email as string) ?? "",
+            phone: addr.phone as string | undefined,
+            line1: (addr.addressLine1 as string) ?? (addr.line1 as string) ?? "",
+            line2: (addr.addressLine2 as string) ?? (addr.line2 as string) ?? undefined,
+            city: (addr.city as string) ?? "",
+            province: (addr.state as string) ?? (addr.province as string) ?? "",
+            postalCode: (addr.postalCode as string) ?? "",
+            country: (addr.country as string) ?? "",
+          },
+          lineItems: items.map((item) => {
+            const parsed = parseOrderItemMetadata(item.metadata);
+            return {
+              id: item.id,
+              name: item.name,
+              quantity: item.quantity,
+              unitPrice: Number(item.unit_price),
+              imageUrl: item.image_url ?? undefined,
+              ...parsed,
+            };
+          }),
+          subtotal: Number(row.subtotal),
+          shippingCost: Number(row.shipping),
+          shippingInternalCost: Number(meta.shippingInternalCost ?? row.shipping),
+          tax: Number(row.tax),
+          carrier: (tracking.carrier as string) ?? (meta.courierName as string),
+          trackingNumber: tracking.trackingNumber as string | undefined,
+          courierId: (meta.courierId as string) ?? undefined,
+          timeline,
+        };
+      }
+    } catch {
+      /* fall through to demo synthesis */
+    }
+  }
 
   const customer = DEMO_CUSTOMERS.find((c) => c.email === summary.customerEmail);
   const created = new Date(summary.createdAt);
@@ -558,7 +745,10 @@ export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null
     const purchased = new Date(created);
     purchased.setDate(purchased.getDate() + 1);
     timeline.push({
-      label: summary.stockOrigin === "overseas" ? "Sourcing from overseas supplier" : "Picked from SA warehouse",
+      label:
+        summary.stockOrigin === "overseas"
+          ? "International warehouse allocation"
+          : "Picked from SA warehouse",
       at: purchased.toISOString(),
     });
   }
@@ -616,7 +806,11 @@ export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null
 
 export async function getFulfillmentQueue(): Promise<AdminOrderSummary[]> {
   const orders = await listAdminOrders();
-  return orders.filter((o) => o.status === "paid" || o.status === "purchased");
+  return orders.filter((o) => QUEUE_STATUSES.includes(o.status as (typeof QUEUE_STATUSES)[number]));
+}
+
+export async function getOrderProcurement(orderId: string, orderNumber: string) {
+  return listProcurementByOrder(orderId, orderNumber);
 }
 
 export interface ReportsSummary {
@@ -637,7 +831,7 @@ export async function getReportsSummary(): Promise<ReportsSummary> {
   const products = await listAdminProducts();
   const tickets = await listTickets();
 
-  const statuses = ["pending", "paid", "purchased", "shipped", "delivered", "cancelled"];
+  const statuses = ["pending", "paid", "sourcing", "purchased", "shipped", "delivered", "cancelled"];
   const revenueByStatus = statuses.map((status) => {
     const matched = orders.filter((o) => o.status === status);
     return {
@@ -852,11 +1046,14 @@ export async function getTicket(
 }
 
 export async function getFinanceDashboard(): Promise<FinanceDashboardData> {
-  const [orders, settings] = await Promise.all([listAdminOrders(), getSettings()]);
-  const expenses = listExpenses();
-  const returns = listReturns();
-  const procurement = listProcurement();
-  const payables = listPayables();
+  const [orders, settings, expenses, returns, procurement, payables] = await Promise.all([
+    listAdminOrders(),
+    getSettings(),
+    listExpenses(),
+    listReturns(),
+    listProcurement(),
+    listPayables(),
+  ]);
   const checkoutOrders = listCheckoutOrders();
 
   const summary = buildFinanceSummary({
@@ -897,7 +1094,7 @@ export {
   getAnalytics,
   getExtendedConfig,
   updateExtendedConfig,
-};
+} from "@/lib/admin/operations-persistence";
 
 export async function getPlatformExtendedConfig(): Promise<ExtendedPlatformConfig> {
   if (isSupabaseConfigured()) {

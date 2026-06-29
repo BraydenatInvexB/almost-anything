@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentStaff, listStaff } from "@/services/admin-service";
 import { staffCan } from "@/config/rbac";
-import { getItemRequest, updateItemRequest } from "@/lib/admin/operations-store";
+import { getItemRequest, updateItemRequest } from "@/lib/admin/operations-persistence";
 import type { ItemRequestStatus } from "@/lib/admin/operations-types";
 
 const STATUSES: ItemRequestStatus[] = [
@@ -25,7 +25,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const request = getItemRequest(id);
+  const request = await getItemRequest(id);
   if (!request) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ request });
 }
@@ -40,7 +40,7 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const existing = getItemRequest(id);
+  const existing = await getItemRequest(id);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await request.json().catch(() => null);
@@ -72,6 +72,6 @@ export async function PATCH(
     patch.quotedAmount = Number(body.quotedAmount);
   }
 
-  const updated = updateItemRequest(existing.id, patch);
+  const updated = await updateItemRequest(existing.id, patch);
   return NextResponse.json({ request: updated });
 }

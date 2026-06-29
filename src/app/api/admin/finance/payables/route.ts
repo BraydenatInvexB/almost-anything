@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
 import { can, staffCan } from "@/config/rbac";
-import { createPayable, listPayables, updatePayable } from "@/lib/admin/operations-store";
+import { createPayable, listPayables, updatePayable } from "@/lib/admin/operations-persistence";
 
 const createSchema = z.object({
   invoiceNumber: z.string().min(2),
@@ -25,7 +25,7 @@ export async function GET() {
   if (!staff || !staffCan(staff, "finance.view")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  return NextResponse.json({ payables: listPayables() });
+  return NextResponse.json({ payables: await listPayables() });
 }
 
 export async function POST(request: Request) {
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
-  const payable = createPayable({ ...parsed.data, status: "pending" });
+  const payable = await createPayable({ ...parsed.data, status: "pending" });
   return NextResponse.json({ ok: true, payable });
 }
 
@@ -57,7 +57,7 @@ export async function PATCH(request: Request) {
       patch.paidAt = new Date().toISOString();
     }
   }
-  const payable = updatePayable(parsed.data.id, patch);
+  const payable = await updatePayable(parsed.data.id, patch);
   if (!payable) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

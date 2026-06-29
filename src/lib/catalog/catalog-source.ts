@@ -1,24 +1,26 @@
 import { SEED_PRODUCTS } from "@/lib/data/seed-products";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 
-/** Full seed catalog size — live Supabase must match before we switch off seed data. */
+/** Full seed catalog size — used only to decide when to stop showing seed fallbacks on browse pages. */
 export const MIN_LIVE_CATALOG_SIZE = SEED_PRODUCTS.length;
 
 let cachedReady: boolean | null = null;
+let cachedHasAny: boolean | null = null;
 let cachedAt = 0;
-const CACHE_MS = 60_000;
+const CACHE_MS = 30_000;
 
-/**
- * True when Supabase has the full ingested catalog. Uses the service role so
- * auth state (signed in vs guest) never changes the answer.
- */
-export async function isLiveCatalogReady(): Promise<boolean> {
+export function invalidateCatalogCache(): void {
+  cachedReady = null;
+  cachedHasAny = null;
+  cachedAt = 0;
+}
+
+async function refreshCatalogCache(): Promise<void> {
   if (!isSupabaseConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return false;
-  }
-
-  if (cachedReady !== null && Date.now() - cachedAt < CACHE_MS) {
-    return cachedReady;
+    cachedReady = false;
+    cachedHasAny = false;
+    cachedAt = Date.now();
+    return;
   }
 
   try {
@@ -27,11 +29,36 @@ export async function isLiveCatalogReady(): Promise<boolean> {
       .from("products")
       .select("*", { count: "exact", head: true });
 
-    cachedReady = !error && (count ?? 0) >= MIN_LIVE_CATALOG_SIZE;
+    const total = error ? 0 : (count ?? 0);
+    cachedHasAny = total > 0;
+    cachedReady = total >= MIN_LIVE_CATALOG_SIZE;
   } catch {
     cachedReady = false;
+    cachedHasAny = false;
   }
 
   cachedAt = Date.now();
-  return cachedReady;
+}
+
+async function ensureCache(): Promise<void> {
+  if (cachedReady === null || cachedHasAny === null || Date.now() - cachedAt >= CACHE_MS) {
+    await refreshCatalogCache();
+  }
+}
+
+/** True when Supabase has the full ingested catalog (browse pages can skip seed fallback). */
+export async function isLiveCatalogReady(): Promise<boolean> {
+  await ensureCache();
+  return cachedReady === true;
+}
+
+/** True when at least one product exists in Supabase (discovered or ingested). */
+export async function hasSupabaseProducts(): Promise<boolean> {
+  await ensureCache();
+  return cachedHasAny === true;
+}
+
+/** Search and slug lookups always use Supabase when configured. */
+export function shouldQuerySupabase(): boolean {
+  return isSupabaseConfigured() && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 }

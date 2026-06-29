@@ -11,20 +11,20 @@ import { CampaignManager } from "@/components/admin/CampaignManager";
 import { EmailMarketingManager } from "@/components/admin/EmailMarketingManager";
 import { PageHeader, StatCard, Panel } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
-import { listEmailBroadcasts, listEmailSubscribers } from "@/lib/admin/operations-store";
+import { listEmailBroadcasts, listEmailSubscribers } from "@/lib/admin/operations-persistence";
 import Image from "next/image";
 
 export default async function AdminMarketingPage() {
   const staff = await getCurrentStaff();
   if (!staff || !staffCan(staff, "marketing.view")) return <AccessDenied feature="marketing" />;
 
-  const [products, campaigns, customers] = await Promise.all([
+  const [products, campaigns, customers, subscribers, broadcasts] = await Promise.all([
     listAdminProducts(),
-    Promise.resolve(listCampaigns()),
+    listCampaigns(),
     listCustomers(),
+    listEmailSubscribers(),
+    listEmailBroadcasts(),
   ]);
-  const subscribers = listEmailSubscribers();
-  const broadcasts = listEmailBroadcasts();
   const featured = products.filter((p) => p.is_featured).slice(0, 6);
   const deals = products.filter((p) => p.is_deal);
   const liveCampaigns = campaigns.filter((c) => c.status === "live").length;

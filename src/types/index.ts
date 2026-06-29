@@ -22,6 +22,11 @@ export interface ProductCardData {
   dealLabel?: string;
   dealDiscountPercent?: number;
   isExclusive?: boolean;
+  stockLabel?: string;
+  warehouseLabel?: string;
+  quantity?: number;
+  unitPriceLabel?: string;
+  minimumOrderQuantity?: number;
 }
 
 export interface SearchResult {
