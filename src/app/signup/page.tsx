@@ -30,7 +30,6 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null);
 
@@ -63,9 +62,6 @@ export default function SignupPage() {
       return;
     }
 
-    setSuccess(true);
-    setLoading(false);
-    if (result.needsEmailConfirmation) return;
     router.push("/complete-profile");
   }
 
@@ -143,17 +139,7 @@ export default function SignupPage() {
               </Link>
             </p>
 
-            {success ? (
-              <div className="mt-8 rounded-2xl bg-emerald-50 p-5 text-sm text-emerald-800">
-                <p className="font-semibold">Account created!</p>
-                <p className="mt-1">
-                  Check your email to confirm your address, then sign in to finish setting up
-                  your account.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => handleOAuth("google")}
@@ -319,8 +305,6 @@ export default function SignupPage() {
                   <Link href="/privacy" className="underline">Privacy Policy</Link>.
                 </p>
               </form>
-              </>
-            )}
           </div>
         </div>
       </main>

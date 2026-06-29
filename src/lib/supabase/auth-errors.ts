@@ -11,7 +11,7 @@ export function formatAuthError(error: AuthError | null | undefined): string | u
     code === "over_email_send_rate_limit" ||
     message.includes("email rate limit")
   ) {
-    return "We've sent too many confirmation emails recently. Wait about an hour and try again, or sign in if you already confirmed your account.";
+    return "Supabase's email limit for this project has been reached (about 2 emails per hour on the free plan). It applies to all signups, not just one address. Turn off Confirm email under Authentication → Providers → Email in your Supabase dashboard, or wait about an hour and try again.";
   }
 
   const rawMessage = error.message?.trim();

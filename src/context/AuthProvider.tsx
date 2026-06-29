@@ -27,7 +27,7 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (data: SignUpData) => Promise<{ error?: string; needsEmailConfirmation?: boolean }>;
+  signUp: (data: SignUpData) => Promise<{ error?: string }>;
   signInWithProvider: (provider: OAuthProvider) => Promise<{ error?: string }>;
   updateProfile: (data: Record<string, unknown>) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const supabase = createClient();
       const fullName = `${firstName} ${lastName}`.trim();
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -97,10 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
         },
       });
-      return {
-        error: formatAuthError(error),
-        needsEmailConfirmation: !error && !data.session,
-      };
+      return { error: formatAuthError(error) };
     },
     [isConfigured],
   );

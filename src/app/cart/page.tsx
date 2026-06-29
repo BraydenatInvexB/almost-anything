@@ -99,7 +99,7 @@ export default function CartPage() {
                         ) : null}
                       </div>
                       <p className="font-semibold">
-                        {formatCurrency(item.price * item.quantity)}
+                        {formatCurrency(item.price * item.quantity, item.currency ?? currency)}
                       </p>
                     </div>
 

@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
-import { getSettings, getPlatformExtendedConfig } from "@/services/admin-service";
 import { getActiveCouriers } from "@/config/couriers";
+import {
+  getPublicStorefrontConfig,
+  getPublicStorefrontSettings,
+} from "@/services/storefront-settings-service";
 
 export async function GET() {
-  const settings = await getSettings();
-  const config = await getPlatformExtendedConfig();
+  const settings = await getPublicStorefrontSettings();
+  const config = await getPublicStorefrontConfig();
   const couriers = getActiveCouriers(config);
 
   return NextResponse.json({

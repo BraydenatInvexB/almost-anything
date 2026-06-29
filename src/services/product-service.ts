@@ -8,6 +8,8 @@ import {
   getRelatedSeedProducts,
   type SortKey,
 } from "@/lib/data/seed-products";
+import { isLiveCatalogReady } from "@/lib/catalog/catalog-source";
+import { resolveStoreProduct, resolveStoreProductCard } from "@/lib/pricing/resolve-store-product";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
 
@@ -34,7 +36,7 @@ export async function getProducts(
 ): Promise<PaginatedResponse<ProductCardData>> {
   const { page = 1, pageSize = 12 } = options;
 
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && (await isLiveCatalogReady())) {
     try {
       const supabase = await createClient();
       const sortCol = SORT_COLUMNS[options.sort ?? "featured"];
@@ -73,7 +75,7 @@ export async function getProducts(
       if (!error && data && data.length > 0) {
         const total = count ?? data.length;
         return {
-          data: data.map(mapProductToCard),
+          data: data.map(resolveStoreProductCard),
           page,
           pageSize,
           total,
@@ -100,7 +102,7 @@ export async function getProducts(
 export async function getProductBySlug(
   slug: string,
 ): Promise<Product | null> {
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && (await isLiveCatalogReady())) {
     try {
       const supabase = await createClient();
       const { data, error } = await supabase
@@ -109,7 +111,7 @@ export async function getProductBySlug(
         .eq("slug", slug)
         .single();
 
-      if (!error && data) return data;
+      if (!error && data) return resolveStoreProduct(data);
     } catch {
       // Fall through
     }
@@ -123,7 +125,7 @@ export async function getRelatedProducts(
   category: string,
   limit = 4,
 ): Promise<ProductCardData[]> {
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && (await isLiveCatalogReady())) {
     try {
       const supabase = await createClient();
       const { data } = await supabase
@@ -132,7 +134,7 @@ export async function getRelatedProducts(
         .eq("category", category as ProductCategory)
         .neq("slug", slug)
         .limit(limit);
-      if (data && data.length) return data.map(mapProductToCard);
+      if (data && data.length) return data.map(resolveStoreProductCard);
     } catch {
       /* fall through */
     }

@@ -119,14 +119,14 @@ export default function OrdersPage() {
                       <span>
                         {item.name} × {item.quantity}
                       </span>
-                      <span>{formatCurrency(item.price * item.quantity)}</span>
+                      <span>{formatCurrency(item.price * item.quantity, order.currency)}</span>
                     </li>
                   ))}
                 </ul>
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-4">
                   <span className="font-semibold">
-                    Total {formatCurrency(order.total)}
+                    Total {formatCurrency(order.total, order.currency)}
                   </span>
                   <div className="flex flex-wrap gap-2">
                     <Link href={`/track?order=${encodeURIComponent(order.orderNumber)}`}>
