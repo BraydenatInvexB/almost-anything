@@ -9,6 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getOrdersForUser, getOrderByNumber } from "@/services/order-service";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
+import { normalizeOrderNumber } from "@/lib/orders/order-number";
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   const orderNumber = request.nextUrl.searchParams.get("orderNumber");
 
   if (orderNumber) {
-    const order = await getOrderByNumber(orderNumber);
+    const order = await getOrderByNumber(normalizeOrderNumber(orderNumber));
     if (!order) {
       return secureErrorResponse("Order not found", "NOT_FOUND", 404);
     }

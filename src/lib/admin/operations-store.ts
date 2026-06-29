@@ -3,6 +3,8 @@ import { COURIERS } from "@/config/couriers";
 import type { Permission } from "@/config/rbac";
 import type { StaffRole, StaffStatus } from "@/types/database";
 import { DEMO_TICKETS, DEMO_TICKET_MESSAGES } from "@/lib/admin/demo-data";
+import { orderNumbersMatch } from "@/lib/orders/order-number";
+import { DEFAULT_EXTENDED_CONFIG, mergeExtendedConfig } from "@/lib/admin/extended-config-defaults";
 import type { SupportTicket, TicketMessage } from "@/types/database";
 import type {
   AdminProductDraft,
@@ -61,13 +63,7 @@ interface OperationsState {
 }
 
 const initial: OperationsState = {
-  config: {
-    embedShippingInPrice: true,
-    defaultCourierId: "aramex",
-    enabledCourierIds: ["courier_guy", "fastway", "aramex"],
-    currency: "ZAR",
-    couriers: COURIERS.map((c) => ({ ...c })),
-  },
+  config: structuredClone(DEFAULT_EXTENDED_CONFIG),
   staffOverrides: {
     "stf-004": { denied_permissions: ["finance.view", "finance.manage", "hr.view", "hr.manage"] },
     "stf-009": { denied_permissions: ["support.view", "support.manage", "hr.view", "hr.manage"] },
@@ -143,7 +139,7 @@ const initial: OperationsState = {
     },
     {
       id: "exp-003",
-      label: "Refund AA-83915",
+      label: "Refund AA3915",
       category: "refunds",
       amount: 890,
       currency: "ZAR",
@@ -214,7 +210,7 @@ const initial: OperationsState = {
       currency: "ZAR",
       dueDate: iso(-2),
       status: "overdue",
-      orderNumber: "AA-83920",
+      orderNumber: "AA3920",
       procurementId: "proc-001",
       notes: "Long Chair overseas purchase",
       createdAt: iso(4),
@@ -250,7 +246,7 @@ const initial: OperationsState = {
       currency: "ZAR",
       dueDate: iso(-10),
       status: "paid",
-      orderNumber: "AA-83919",
+      orderNumber: "AA3919",
       procurementId: "proc-002",
       createdAt: iso(6),
       paidAt: iso(3),
@@ -261,7 +257,7 @@ const initial: OperationsState = {
       id: "ret-001",
       rmaNumber: "RMA-48291",
       orderId: "ord-1005",
-      orderNumber: "AA-83915",
+      orderNumber: "AA3915",
       customerName: "Marcus Bennett",
       customerEmail: "marcus.bennett@gmail.com",
       reasonCode: "damaged",
@@ -298,7 +294,7 @@ const initial: OperationsState = {
       id: "ret-002",
       rmaNumber: "RMA-48304",
       orderId: "ord-1008",
-      orderNumber: "AA-83912",
+      orderNumber: "AA3912",
       customerName: "Olivia Hughes",
       customerEmail: "olivia.h@proton.me",
       reasonCode: "wrong_item",
@@ -325,7 +321,7 @@ const initial: OperationsState = {
       id: "ret-003",
       rmaNumber: "RMA-48102",
       orderId: "ord-1012",
-      orderNumber: "AA-83908",
+      orderNumber: "AA3908",
       customerName: "James Okonkwo",
       customerEmail: "j.okonkwo@outlook.com",
       reasonCode: "changed_mind",
@@ -408,7 +404,7 @@ const initial: OperationsState = {
     {
       id: "proc-001",
       orderId: "ord-1001",
-      orderNumber: "AA-83920",
+      orderNumber: "AA3920",
       productName: "Long Chair",
       supplier: "Nordic Home Supply",
       supplierCountry: "Netherlands",
@@ -423,7 +419,7 @@ const initial: OperationsState = {
     {
       id: "proc-002",
       orderId: "ord-1002",
-      orderNumber: "AA-83919",
+      orderNumber: "AA3919",
       productName: "Arc Floor Lamp",
       supplier: "Joburg Lighting WH",
       supplierCountry: "South Africa",
@@ -552,7 +548,9 @@ export function getReturn(id: string) {
 
 export function listReturnsByOrder(orderId: string) {
   const q = orderId.trim();
-  return state.returns.filter((r) => r.orderId === q || r.orderNumber === q);
+  return state.returns.filter(
+    (r) => r.orderId === q || orderNumbersMatch(r.orderNumber, q),
+  );
 }
 
 export function listReturnsByEmail(email: string) {
@@ -865,7 +863,7 @@ export function getExtendedConfig() {
 }
 
 export function updateExtendedConfig(patch: Partial<ExtendedPlatformConfig>) {
-  state.config = { ...state.config, ...patch };
+  state.config = mergeExtendedConfig({ ...state.config, ...patch });
   return state.config;
 }
 
@@ -921,7 +919,7 @@ export function listCheckoutOrders() {
 export function getCheckoutOrder(idOrNumber: string) {
   return (
     state.checkoutOrders.find(
-      (o) => o.id === idOrNumber || o.orderNumber === idOrNumber,
+      (o) => o.id === idOrNumber || orderNumbersMatch(o.orderNumber, idOrNumber),
     ) ?? null
   );
 }

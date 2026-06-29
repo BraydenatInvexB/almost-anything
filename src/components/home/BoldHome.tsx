@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Search, Tag, Truck } from "lucide-react";
 import type { ProductCardData } from "@/types";
 import { STORE_CATEGORIES } from "@/config/categories";
+import type { HeroShowcaseConfig } from "@/lib/admin/operations-types";
 import { BoldHero } from "@/components/home/BoldHero";
 import { BoldProducts } from "@/components/home/BoldProducts";
 
@@ -10,9 +11,10 @@ const POP = ["#e30613", "#5BC8FF", "#e30613", "#C7A8FF", "#e30613", "#7DE2A8", "
 interface BoldHomeProps {
   pool: ProductCardData[];
   deals: ProductCardData[];
+  heroShowcase: HeroShowcaseConfig;
 }
 
-export function BoldHome({ pool, deals }: BoldHomeProps) {
+export function BoldHome({ pool, deals, heroShowcase }: BoldHomeProps) {
   const hot = pool.slice(0, 8);
   const steals = (deals.length ? deals : pool.slice(8)).slice(0, 4);
   const fresh = pool.slice(8, 16);
@@ -20,7 +22,7 @@ export function BoldHome({ pool, deals }: BoldHomeProps) {
 
   return (
     <div className="mt-4 flex flex-col gap-6">
-      <BoldHero />
+      <BoldHero showcase={heroShowcase} />
 
       <BrandMarquee />
 

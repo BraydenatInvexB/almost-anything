@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getCurrentStaff, isAdminLiveMode, listTickets } from "@/services/admin-service";
 import { AdminShell } from "@/components/admin/AdminShell";
 
@@ -12,15 +13,19 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = (await headers()).get("x-pathname") ?? "";
+
+  if (pathname.startsWith("/admin/login")) {
+    return children;
+  }
+
   const staff = await getCurrentStaff();
 
-  // In live (Supabase) mode, non-staff are bounced out. In demo mode the
-  // service returns the platform owner so the console is reviewable locally.
   if (!staff) {
     if (isAdminLiveMode()) {
-      redirect("/login?redirect=/admin&reason=staff-only");
+      redirect("/admin/login?redirect=/admin");
     }
-    redirect("/login");
+    redirect("/admin/login");
   }
 
   const tickets = await listTickets();

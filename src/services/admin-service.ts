@@ -57,6 +57,74 @@ export function isAdminLiveMode(): boolean {
 // ---------------------------------------------------------------------------
 // Session / current staff
 // ---------------------------------------------------------------------------
+async function resolveLiveStaffUser(user: {
+  id: string;
+  email?: string | null;
+  user_metadata?: Record<string, unknown>;
+}): Promise<StaffMember | null> {
+  const service = createServiceClient();
+
+  const { data: byUser } = await service
+    .from("staff_members")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (byUser) return byUser as StaffMember;
+
+  const email = user.email?.trim().toLowerCase();
+  if (!email) return null;
+
+  const { data: byEmail } = await service
+    .from("staff_members")
+    .select("*")
+    .ilike("email", email)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (byEmail) {
+    const { data: linked, error } = await service
+      .from("staff_members")
+      .update({ user_id: user.id, last_active_at: new Date().toISOString() })
+      .eq("id", byEmail.id)
+      .select("*")
+      .single();
+
+    if (!error && linked) return linked as StaffMember;
+    return { ...byEmail, user_id: user.id } as StaffMember;
+  }
+
+  const { count } = await service
+    .from("staff_members")
+    .select("*", { count: "exact", head: true });
+
+  if ((count ?? 0) === 0) {
+    const fullName =
+      typeof user.user_metadata?.full_name === "string"
+        ? user.user_metadata.full_name
+        : email.split("@")[0];
+
+    const { data: created, error } = await service
+      .from("staff_members")
+      .insert({
+        user_id: user.id,
+        email,
+        full_name: fullName,
+        role: "super_admin",
+        status: "active",
+        extra_permissions: [],
+        denied_permissions: [],
+      })
+      .select("*")
+      .single();
+
+    if (!error && created) return created as StaffMember;
+  }
+
+  return null;
+}
+
 export async function getCurrentStaff(): Promise<StaffProfile | null> {
   if (!isSupabaseConfigured()) {
     return getStaffProfile(DEMO_SUPER_ADMIN.id);
@@ -69,15 +137,9 @@ export async function getCurrentStaff(): Promise<StaffProfile | null> {
     } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from("staff_members")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
-
-    if (error || !data) return null;
-    return toStaffProfile(data as StaffMember & Record<string, unknown>);
+    const staff = await resolveLiveStaffUser(user);
+    if (!staff) return null;
+    return toStaffProfile(staff as StaffMember & Record<string, unknown>);
   } catch {
     return null;
   }
@@ -658,7 +720,7 @@ function buildDemoOrders(): AdminOrderSummary[] {
     orders.push(
       enrichOrderSummary({
         id: `ord-${1000 + i}`,
-        orderNumber: `AA-${83920 - i}`,
+        orderNumber: `AA${String(3920 - i).padStart(4, "0")}`,
         customerName: cust.full_name,
         customerEmail: cust.email,
         status: statuses[i % statuses.length],

@@ -54,7 +54,6 @@ export function BoldProducts({ products }: { products: ProductCardData[] }) {
                 {formatCurrency(product.price, product.currency)}
               </span>
               <AddToCartButton
-                icon="plus"
                 item={{
                   type: "product",
                   productId: product.id,

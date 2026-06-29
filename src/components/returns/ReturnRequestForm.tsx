@@ -121,7 +121,7 @@ export function ReturnRequestForm({
               className="mt-1 w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm"
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="e.g. AA-83915"
+              placeholder="e.g. AA3915"
               required
             />
           </div>

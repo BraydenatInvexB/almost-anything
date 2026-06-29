@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Plus, ShoppingBag } from "lucide-react";
+import { Check, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartProvider";
 import { cn } from "@/lib/utils/cn";
 import type { CartItem } from "@/types/cart";
@@ -11,23 +11,20 @@ type CartPayload = Omit<CartItem, "id" | "quantity"> & { quantity?: number };
 interface AddToCartButtonProps {
   item: CartPayload;
   className?: string;
-  icon?: "plus" | "bag";
-  variant?: "icon" | "button";
+  variant?: "compact" | "button";
   label?: string;
 }
 
 export function AddToCartButton({
   item,
   className,
-  icon = "plus",
-  variant = "icon",
-  label = "Add to Cart",
+  variant = "compact",
+  label = "Add",
 }: AddToCartButtonProps) {
-  const { addItem, isInCart } = useCart();
+  const { addItem, removeItem, isInCart, items } = useCart();
   const [justAdded, setJustAdded] = useState(false);
   const timerRef = useRef<number | undefined>(undefined);
-  const Icon = icon === "bag" ? ShoppingBag : Plus;
-  const inCart = isInCart(item.slug ?? "");
+  const inCart = isInCart(item.slug ?? "", item.variantId);
 
   useEffect(
     () => () => {
@@ -39,6 +36,19 @@ export function AddToCartButton({
   function handleClick(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+
+    const existing = items.find(
+      (i) =>
+        i.slug === item.slug && (i.variantId ?? "") === (item.variantId ?? ""),
+    );
+
+    if (existing) {
+      removeItem(existing.id);
+      setJustAdded(false);
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      return;
+    }
+
     addItem(item);
     setJustAdded(true);
     if (timerRef.current) window.clearTimeout(timerRef.current);
@@ -68,7 +78,7 @@ export function AddToCartButton({
           </>
         ) : (
           <>
-            <Icon className="h-3.5 w-3.5" />
+            <ShoppingBag className="h-3.5 w-3.5" />
             {label}
           </>
         )}
@@ -81,19 +91,27 @@ export function AddToCartButton({
       type="button"
       onClick={handleClick}
       aria-label={
-        showSuccess ? `${item.name} in cart` : `Add ${item.name} to cart`
+        inCart ? `Remove ${item.name} from cart` : `Add ${item.name} to cart`
       }
       className={cn(
-        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-black text-white transition-colors",
-        showSuccess ? "bg-brand" : "bg-black hover:bg-brand",
+        "inline-flex h-8 shrink-0 items-center gap-1 rounded-md border-2 border-black px-2.5 text-[10px] font-extrabold uppercase tracking-wide shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_0_#000]",
+        showSuccess
+          ? "bg-brand text-white"
+          : "bg-white text-black hover:bg-brand hover:text-white",
         justAdded && "animate-action-success",
         className,
       )}
     >
       {showSuccess ? (
-        <Check className="h-4 w-4" strokeWidth={3} />
+        <>
+          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+          {justAdded ? "Added" : "In cart"}
+        </>
       ) : (
-        <Icon className="h-4 w-4" />
+        <>
+          <ShoppingBag className="h-3.5 w-3.5" strokeWidth={2.25} />
+          {label}
+        </>
       )}
     </button>
   );

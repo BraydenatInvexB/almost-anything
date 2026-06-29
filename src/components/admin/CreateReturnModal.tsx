@@ -67,7 +67,7 @@ export function CreateReturnModal({ onClose }: { onClose: () => void }) {
               className="input w-full"
               value={form.orderNumber}
               onChange={(e) => setForm({ ...form, orderNumber: e.target.value })}
-              placeholder="AA-83915"
+              placeholder="AA3915"
               required
             />
           </Field>

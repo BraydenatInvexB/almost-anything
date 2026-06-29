@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   Check,
+  Home,
   Loader2,
   Plus,
   Store,
@@ -13,26 +14,21 @@ import {
   Globe,
 } from "lucide-react";
 import { Panel } from "@/components/admin/ui";
+import { HeroShowcaseEditor } from "@/components/admin/HeroShowcaseEditor";
 import { cn } from "@/lib/utils/cn";
 import type { PlatformSettings } from "@/types/database";
-import type { ConfigCourier } from "@/lib/admin/operations-types";
+import type { ExtendedPlatformConfig, ConfigCourier } from "@/lib/admin/operations-types";
 
-type SettingsTab = "general" | "pricing" | "shipping" | "couriers" | "automation";
+type SettingsTab = "general" | "homepage" | "pricing" | "shipping" | "couriers" | "automation";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "general", label: "General", icon: <Store className="h-4 w-4" /> },
+  { id: "homepage", label: "Homepage hero", icon: <Home className="h-4 w-4" /> },
   { id: "pricing", label: "Pricing & markup", icon: <Percent className="h-4 w-4" /> },
   { id: "shipping", label: "Shipping & tax", icon: <Truck className="h-4 w-4" /> },
   { id: "couriers", label: "Courier partners", icon: <Globe className="h-4 w-4" /> },
   { id: "automation", label: "Automation", icon: <Zap className="h-4 w-4" /> },
 ];
-
-interface ExtendedConfig {
-  embedShippingInPrice: boolean;
-  defaultCourierId: string;
-  enabledCourierIds: string[];
-  couriers: ConfigCourier[];
-}
 
 export function SettingsConsole({
   settings,
@@ -41,7 +37,7 @@ export function SettingsConsole({
 }: {
   settings: PlatformSettings;
   canManage: boolean;
-  extendedConfig: ExtendedConfig;
+  extendedConfig: ExtendedPlatformConfig;
 }) {
   const [tab, setTab] = useState<SettingsTab>("general");
   const [form, setForm] = useState(settings);
@@ -157,6 +153,25 @@ export function SettingsConsole({
               <Field label="Currency code">
                 <input disabled={disabled} value={form.currency} onChange={(e) => update("currency", e.target.value)} className="input disabled:opacity-60" />
               </Field>
+            </div>
+          </Panel>
+        )}
+
+        {tab === "homepage" && (
+          <Panel
+            title="Homepage hero showcase"
+            description="Edit the rotating product cards, images, prices, and badges on the homepage hero."
+          >
+            <div className="p-5">
+              <HeroShowcaseEditor
+                value={extConfig.heroShowcase}
+                onChange={(heroShowcase) => {
+                  setExtConfig((c) => ({ ...c, heroShowcase }));
+                  setState("idle");
+                }}
+                disabled={disabled}
+                currency={form.currency}
+              />
             </div>
           </Panel>
         )}

@@ -1,4 +1,5 @@
 import type { OrderStatus } from "@/types/cart";
+import { findOrderByNumber } from "@/lib/orders/order-number";
 
 export interface TrackedItem {
   name: string;
@@ -29,12 +30,12 @@ const IMG = (id: string) => `https://images.unsplash.com/${id}?w=200&h=200&fit=c
  */
 export const DEMO_TRACKED_ORDERS: TrackedOrder[] = [
   {
-    orderNumber: "AA-2026-4821",
+    orderNumber: "AA4821",
     status: "shipped",
     placedAt: "2026-06-24T10:12:00Z",
     estimatedDelivery: "2026-06-29",
     carrier: "Aramex",
-    trackingNumber: "AWB 7741 9920 18",
+    trackingNumber: "77419920",
     items: [
       { name: "SilentPro ANC Headphones", quantity: 1, price: 4035.6, imageUrl: IMG("photo-1505740420928-5e560c06d30e") },
       { name: "BoltCharge 65W GaN Charger", quantity: 1, price: 637.2, imageUrl: IMG("photo-1588872657578-7efd1f1555ed") },
@@ -44,12 +45,12 @@ export const DEMO_TRACKED_ORDERS: TrackedOrder[] = [
     total: 4771.8,
   },
   {
-    orderNumber: "AA-2026-4790",
+    orderNumber: "AA4790",
     status: "purchased",
     placedAt: "2026-06-26T08:40:00Z",
     estimatedDelivery: "2026-07-02",
     carrier: "The Courier Guy",
-    trackingNumber: "TCG 5582 0031",
+    trackingNumber: "55820031",
     items: [
       { name: "AeroBook 14 Ultrabook", quantity: 1, price: 16142.4, imageUrl: IMG("photo-1496181133206-80ce9b88a853") },
     ],
@@ -58,12 +59,12 @@ export const DEMO_TRACKED_ORDERS: TrackedOrder[] = [
     total: 16142.4,
   },
   {
-    orderNumber: "AA-2026-4715",
+    orderNumber: "AA4715",
     status: "delivered",
     placedAt: "2026-06-18T14:05:00Z",
     estimatedDelivery: "2026-06-23",
     carrier: "Aramex",
-    trackingNumber: "AWB 7740 1188 02",
+    trackingNumber: "77401188",
     items: [
       { name: "Crema Espresso Machine", quantity: 1, price: 6014.4, imageUrl: IMG("photo-1517668808822-9ebb02f2a0e6") },
     ],
@@ -74,6 +75,5 @@ export const DEMO_TRACKED_ORDERS: TrackedOrder[] = [
 ];
 
 export function findDemoOrder(orderNumber: string): TrackedOrder | undefined {
-  const q = orderNumber.trim().toLowerCase();
-  return DEMO_TRACKED_ORDERS.find((o) => o.orderNumber.toLowerCase() === q);
+  return findOrderByNumber(DEMO_TRACKED_ORDERS, orderNumber, (o) => o.orderNumber);
 }

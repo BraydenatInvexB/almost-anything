@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,24 +8,14 @@ import { ArrowRight, Check, ImagePlus, Mic, MicOff, Search, X } from "lucide-rea
 import { formatCurrency } from "@/lib/utils/cn";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { readImageFile, storeSearchPhoto } from "@/lib/utils/search-photo";
+import type { HeroShowcaseConfig } from "@/lib/admin/operations-types";
+import { getHeroItems, HERO_STICKER_ROTATE, HERO_STICKER_STYLES } from "@/lib/hero/showcase-styles";
 
-const IMG = (id: string) => `https://images.unsplash.com/${id}?w=600&h=600&fit=crop`;
+interface BoldHeroProps {
+  showcase: HeroShowcaseConfig;
+}
 
-const DESIRES = [
-  { q: "louis vuitton neverfull", name: "Louis Vuitton Neverfull", price: 11400, days: "3 to 5", img: IMG("photo-1584917865442-de89df76afd3") },
-  { q: "playstation 5 console", name: "PlayStation 5 Console", price: 8999, days: "2 to 4", img: IMG("photo-1606813907291-d86efa9b94db") },
-  { q: "nike air max sneakers", name: "Nike Air Max", price: 2499, days: "3 to 6", img: IMG("photo-1542291026-7eec264c27ff") },
-  { q: "tag heuer carrera watch", name: "Tag Heuer Carrera", price: 42000, days: "4 to 7", img: IMG("photo-1524592094714-0f0654e20314") },
-  { q: "nespresso coffee machine", name: "Nespresso Vertuo", price: 3200, days: "2 to 4", img: IMG("photo-1517668808822-9ebb02f2a0e6") },
-];
-
-const STICKERS = [
-  { label: "1,000s in stock", bg: "bg-brand text-white", rotate: "-rotate-2" },
-  { label: "Delivered fast", bg: "bg-[#5BC8FF]", rotate: "rotate-2" },
-  { label: "One simple price", bg: "bg-brand text-white", rotate: "-rotate-1" },
-];
-
-export function BoldHero() {
+export function BoldHero({ showcase }: BoldHeroProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
@@ -38,22 +28,28 @@ export function BoldHero() {
   const { supported: voiceSupported, listening, error: voiceError, start, stop, clearError } =
     useSpeechRecognition();
 
+  const carousel = useMemo(() => {
+    const valid = getHeroItems(showcase);
+    return valid.length > 0 ? valid : showcase.items;
+  }, [showcase]);
+
   useEffect(() => {
-    const full = DESIRES[idx].q;
+    if (!carousel.length) return;
+    const full = carousel[idx % carousel.length].searchQuery;
     let char = 0;
     const typer = setInterval(() => {
       char += 1;
       setTyped(full.slice(0, char));
       if (char >= full.length) clearInterval(typer);
     }, 55);
-    const advance = setTimeout(() => setIdx((i) => (i + 1) % DESIRES.length), 4200);
+    const advance = setTimeout(() => setIdx((i) => (i + 1) % carousel.length), 4200);
     return () => {
       clearInterval(typer);
       clearTimeout(advance);
     };
-  }, [idx]);
+  }, [idx, carousel]);
 
-  const item = DESIRES[idx];
+  const item = carousel[idx % carousel.length];
 
   function clearPhoto() {
     setPhotoPreview(null);
@@ -217,10 +213,10 @@ export function BoldHero() {
 
           {/* Sticker badges */}
           <div className="mt-7 flex flex-wrap gap-3">
-            {STICKERS.map((s) => (
+            {showcase.stickers.map((s) => (
               <span
-                key={s.label}
-                className={`${s.bg} ${s.rotate} inline-flex items-center rounded-full border-2 border-black px-3.5 py-1.5 text-xs font-extrabold uppercase shadow-[3px_3px_0_0_#000]`}
+                key={s.id}
+                className={`${HERO_STICKER_STYLES[s.color]} ${HERO_STICKER_ROTATE[s.rotate]} inline-flex items-center rounded-full border-2 border-black px-3.5 py-1.5 text-xs font-extrabold uppercase shadow-[3px_3px_0_0_#000]`}
               >
                 {s.label}
               </span>
@@ -235,7 +231,7 @@ export function BoldHero() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-60" />
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
             </span>
-            Just found for shoppers
+            {showcase.panelLabel}
           </div>
 
           {/* Faux query */}
@@ -254,22 +250,26 @@ export function BoldHero() {
           >
             <div className="flex items-center gap-4">
               <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border-2 border-black bg-neutral-100">
-                <Image src={item.img} alt={item.name} fill className="object-cover" sizes="96px" />
+                <Image src={item.imageUrl} alt={item.name} fill className="object-cover" sizes="96px" />
               </div>
               <div className="min-w-0 flex-1">
                 <span className="inline-flex items-center gap-1 rounded-full border-2 border-black bg-black px-2 py-0.5 text-[10px] font-extrabold uppercase text-white">
-                  <Check className="h-3 w-3" /> In stock
+                  <Check className="h-3 w-3" /> {item.stockLabel ?? (item.inStock ? "In stock" : "On order")}
                 </span>
                 <p className="mt-1.5 truncate text-sm font-extrabold text-black">{item.name}</p>
-                <p className="text-2xl font-black text-black">{formatCurrency(item.price)}</p>
-                <p className="text-xs font-semibold text-neutral-500">Delivered in {item.days} days</p>
+                <p className="text-2xl font-black text-black">
+                  {formatCurrency(item.price, item.currency)}
+                </p>
+                <p className="text-xs font-semibold text-neutral-500">
+                  Delivered in {item.deliveryDays} days
+                </p>
               </div>
             </div>
             <Link
-              href={`/products?q=${encodeURIComponent(item.q)}`}
+              href={`/products?q=${encodeURIComponent(item.searchQuery)}`}
               className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-black bg-black py-2.5 text-xs font-extrabold uppercase text-white transition-colors hover:bg-brand hover:text-white"
             >
-              Buy it now
+              {showcase.buyButtonLabel}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>

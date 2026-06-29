@@ -124,7 +124,7 @@ export function SupportContactForm() {
             className="input w-full"
             value={form.order_id}
             onChange={(e) => setForm({ ...form, order_id: e.target.value })}
-            placeholder="e.g. AA-83915"
+            placeholder="e.g. AA3915"
           />
         </label>
         <label className="block sm:col-span-2">

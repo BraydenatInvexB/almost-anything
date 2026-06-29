@@ -4,6 +4,10 @@ import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server";
 import { createCheckoutOrder } from "@/lib/admin/operations-store";
 import type { StockOrigin } from "@/lib/admin/operations-types";
+import {
+  generateOrderNumber,
+  normalizeOrderNumber,
+} from "@/lib/orders/order-number";
 
 interface DbOrderItem {
   id: string;
@@ -55,12 +59,6 @@ function mapDbOrder(o: DbOrderRow): Order {
     createdAt: o.created_at,
     userId: o.user_id ?? undefined,
   };
-}
-
-function generateOrderNumber(): string {
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `AA-${ts}-${rand}`;
 }
 
 function calculateTotals(items: CartItem[]) {
@@ -259,17 +257,22 @@ export async function getOrdersForUser(userId?: string | null): Promise<Order[]>
 }
 
 export async function getOrderByNumber(orderNumber: string): Promise<Order | null> {
+  const normalized = normalizeOrderNumber(orderNumber);
+  const candidates = [...new Set([orderNumber.trim(), normalized].filter(Boolean))];
+
   if (isSupabaseConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     try {
       const supabase = createServiceClient();
-      const { data: o, error } = await supabase
-        .from("orders")
-        .select("*, order_items(*)")
-        .eq("order_number", orderNumber)
-        .single();
+      for (const candidate of candidates) {
+        const { data: o, error } = await supabase
+          .from("orders")
+          .select("*, order_items(*)")
+          .eq("order_number", candidate)
+          .maybeSingle();
 
-      if (!error && o) {
-        return mapDbOrder(o as DbOrderRow);
+        if (!error && o) {
+          return mapDbOrder(o as DbOrderRow);
+        }
       }
     } catch {
       return null;

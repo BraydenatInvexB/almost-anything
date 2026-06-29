@@ -9,6 +9,50 @@ import type { Database, Json } from "@/types/database";
 
 type SettingsUpdate = Database["public"]["Tables"]["platform_settings"]["Update"];
 
+const heroShowcaseItemSchema = z.object({
+  id: z.string(),
+  searchQuery: z.string(),
+  name: z.string(),
+  price: z.number().min(0),
+  currency: z.string(),
+  deliveryDays: z.string(),
+  imageUrl: z.string(),
+  inStock: z.boolean(),
+  stockLabel: z.string().optional(),
+});
+
+const extendedConfigSchema = z.object({
+  embedShippingInPrice: z.boolean(),
+  defaultCourierId: z.string(),
+  enabledCourierIds: z.array(z.string()),
+  couriers: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        baseCost: z.number(),
+        etaLabel: z.string(),
+        regions: z.array(z.string()),
+      }),
+    )
+    .optional(),
+  heroShowcase: z
+    .object({
+      panelLabel: z.string(),
+      buyButtonLabel: z.string(),
+      items: z.array(heroShowcaseItemSchema).min(1),
+      stickers: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          color: z.enum(["brand", "blue", "purple", "green"]),
+          rotate: z.enum(["left", "right", "none"]),
+        }),
+      ),
+    })
+    .optional(),
+});
+
 const schema = z.object({
   store_name: z.string().min(1).optional(),
   support_email: z.string().email().optional(),
@@ -21,24 +65,7 @@ const schema = z.object({
   tax_rate: z.number().min(0).max(1).optional(),
   auto_publish_sourced: z.boolean().optional(),
   maintenance_mode: z.boolean().optional(),
-  extendedConfig: z
-    .object({
-      embedShippingInPrice: z.boolean(),
-      defaultCourierId: z.string(),
-      enabledCourierIds: z.array(z.string()),
-      couriers: z
-        .array(
-          z.object({
-            id: z.string(),
-            name: z.string(),
-            baseCost: z.number(),
-            etaLabel: z.string(),
-            regions: z.array(z.string()),
-          }),
-        )
-        .optional(),
-    })
-    .optional(),
+  extendedConfig: extendedConfigSchema.optional(),
 });
 
 export async function PATCH(request: Request) {

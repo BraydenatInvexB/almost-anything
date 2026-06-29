@@ -1,4 +1,5 @@
 import { getProducts } from "@/services/product-service";
+import { getPublicStorefrontConfig } from "@/services/storefront-settings-service";
 import { BoldHome } from "@/components/home/BoldHome";
 import { ProductGrid } from "@/components/home/ProductGrid";
 
@@ -8,10 +9,12 @@ interface HomeBentoGridProps {
 }
 
 export async function HomeBentoGrid({ category, query }: HomeBentoGridProps) {
-  const [{ data: products }, { data: featured }, { data: deals }] = await Promise.all([
+  const [{ data: products }, { data: featured }, { data: deals }, storefrontConfig] =
+    await Promise.all([
     getProducts({ category, query, pageSize: 12 }),
     getProducts({ featuredOnly: true, pageSize: 8 }),
     getProducts({ dealsOnly: true, pageSize: 6 }),
+    getPublicStorefrontConfig(),
   ]);
 
   const seen = new Set<string>();
@@ -54,5 +57,5 @@ export async function HomeBentoGrid({ category, query }: HomeBentoGridProps) {
   }
 
   /* ── Landing ── */
-  return <BoldHome pool={pool} deals={deals} />;
+  return <BoldHome pool={pool} deals={deals} heroShowcase={storefrontConfig.heroShowcase} />;
 }

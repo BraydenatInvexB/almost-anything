@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCheckoutOrder } from "@/lib/admin/operations-store";
 import { getOrderByNumber } from "@/services/order-service";
 import { findDemoOrder } from "@/lib/orders/demo-track";
+import { normalizeOrderNumber } from "@/lib/orders/order-number";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
 
 export async function GET(request: NextRequest) {
-  const orderNumber = request.nextUrl.searchParams.get("orderNumber")?.trim();
+  const orderNumber = normalizeOrderNumber(
+    request.nextUrl.searchParams.get("orderNumber") ?? "",
+  );
   if (!orderNumber) {
     return NextResponse.json({ error: "Order number required" }, { status: 400 });
   }

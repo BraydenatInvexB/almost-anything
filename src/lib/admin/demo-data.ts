@@ -236,7 +236,7 @@ export const DEMO_CUSTOMERS: DemoCustomer[] = [
 ];
 
 export const DEMO_TICKETS: SupportTicket[] = [
-  { id: "tkt-001", ticket_number: "TKT-10421", customer_id: null, customer_email: "gabriela@consolidated.co", customer_name: "Gabriela Christiansen", subject: "Where is my order #AA-83920?", category: "Shipping", status: "open", priority: "high", assigned_to: "stf-004", order_id: null, last_reply_at: iso(0, 2), resolved_at: null, created_at: iso(0, 5), updated_at: iso(0, 2) },
+  { id: "tkt-001", ticket_number: "TKT-10421", customer_id: null, customer_email: "gabriela@consolidated.co", customer_name: "Gabriela Christiansen", subject: "Where is my order #AA3920?", category: "Shipping", status: "open", priority: "high", assigned_to: "stf-004", order_id: null, last_reply_at: iso(0, 2), resolved_at: null, created_at: iso(0, 5), updated_at: iso(0, 2) },
   { id: "tkt-002", ticket_number: "TKT-10420", customer_id: null, customer_email: "marcus.bennett@gmail.com", customer_name: "Marcus Bennett", subject: "Request refund for damaged lamp", category: "Returns", status: "pending", priority: "urgent", assigned_to: "stf-004", order_id: null, last_reply_at: iso(0, 4), resolved_at: null, created_at: iso(1), updated_at: iso(0, 4) },
   { id: "tkt-003", ticket_number: "TKT-10419", customer_id: null, customer_email: "yuki.tanaka@outlook.com", customer_name: "Yuki Tanaka", subject: "Can I change my delivery address?", category: "Orders", status: "open", priority: "normal", assigned_to: null, order_id: null, last_reply_at: iso(1), resolved_at: null, created_at: iso(1, 3), updated_at: iso(1) },
   { id: "tkt-004", ticket_number: "TKT-10418", customer_id: null, customer_email: "olivia.h@proton.me", customer_name: "Olivia Hughes", subject: "Discount code not applying at checkout", category: "Billing", status: "pending", priority: "normal", assigned_to: "stf-004", order_id: null, last_reply_at: iso(2), resolved_at: null, created_at: iso(2, 4), updated_at: iso(2) },
@@ -247,7 +247,7 @@ export const DEMO_TICKETS: SupportTicket[] = [
 
 export const DEMO_TICKET_MESSAGES: Record<string, TicketMessage[]> = {
   "tkt-001": [
-    { id: "msg-1", ticket_id: "tkt-001", author_type: "customer", author_id: null, author_name: "Gabriela Christiansen", body: "Hi, I placed order #AA-83920 five days ago and it still shows 'processing'. Can you tell me when it will ship?", is_internal: false, created_at: iso(0, 5) },
+    { id: "msg-1", ticket_id: "tkt-001", author_type: "customer", author_id: null, author_name: "Gabriela Christiansen", body: "Hi, I placed order #AA3920 five days ago and it still shows 'processing'. Can you tell me when it will ship?", is_internal: false, created_at: iso(0, 5) },
     { id: "msg-2", ticket_id: "tkt-001", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Hi Gabriela! Thanks for reaching out. Let me check on that order for you right away.", is_internal: false, created_at: iso(0, 4) },
     { id: "msg-3", ticket_id: "tkt-001", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Supplier confirmed dispatch is delayed by 1 day. Offering free express upgrade.", is_internal: true, created_at: iso(0, 3) },
     { id: "msg-4", ticket_id: "tkt-001", author_type: "staff", author_id: "stf-004", author_name: "Priya Nair", body: "Good news, your order ships tomorrow and we've upgraded you to free express delivery at no charge. You'll have it within 2 days!", is_internal: false, created_at: iso(0, 2) },
@@ -262,7 +262,7 @@ export const DEMO_TICKET_MESSAGES: Record<string, TicketMessage[]> = {
 export const DEMO_ACTIVITY: StaffActivity[] = [
   { id: "act-1", staff_id: "stf-005", staff_name: "Leo Schmidt", action: "Marked product as featured", entity_type: "product", entity_id: "long-chair-curved", details: {}, created_at: iso(0, 1) },
   { id: "act-2", staff_id: "stf-003", staff_name: "Diego Martín", action: "Updated markup to 22%", entity_type: "product", entity_id: "scandi-dining-table", details: { from: 18, to: 22 }, created_at: iso(0, 2) },
-  { id: "act-3", staff_id: "stf-006", staff_name: "Fatima Zahra", action: "Marked order shipped", entity_type: "order", entity_id: "AA-83918", details: {}, created_at: iso(0, 3) },
+  { id: "act-3", staff_id: "stf-006", staff_name: "Fatima Zahra", action: "Marked order shipped", entity_type: "order", entity_id: "AA3918", details: {}, created_at: iso(0, 3) },
   { id: "act-4", staff_id: "stf-004", staff_name: "Priya Nair", action: "Resolved support ticket", entity_type: "ticket", entity_id: "TKT-10417", details: {}, created_at: iso(0, 4) },
   { id: "act-5", staff_id: "stf-002", staff_name: "Amara Okafor", action: "Invited new staff member", entity_type: "staff", entity_id: "stf-007", details: { role: "analyst" }, created_at: iso(1) },
   { id: "act-6", staff_id: "stf-004", staff_name: "Priya Nair", action: "Reset customer password", entity_type: "customer", entity_id: "cus-007", details: {}, created_at: iso(1, 2) },

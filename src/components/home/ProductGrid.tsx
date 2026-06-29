@@ -93,7 +93,6 @@ export function ProductGrid({ products }: ProductGridProps) {
                 {formatCurrency(product.price, product.currency)}
               </span>
               <AddToCartButton
-                icon="bag"
                 item={{
                   type: "product",
                   productId: product.id,

@@ -10,6 +10,12 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
 import { TrackTimeline } from "@/components/orders/TrackTimeline";
 import { findDemoOrder, type TrackedOrder } from "@/lib/orders/demo-track";
+import {
+  extractOrderDigits,
+  formatOrderNumber,
+  ORDER_NUMBER_PREFIX,
+  TRACK_DIGITS_STORAGE_KEY,
+} from "@/lib/orders/order-number";
 import { formatCurrency } from "@/lib/utils/cn";
 
 function formatDate(iso: string) {
@@ -23,20 +29,40 @@ function formatDate(iso: string) {
 function TrackInner() {
   const params = useSearchParams();
   const orderParam = params.get("order") ?? "";
-  const [input, setInput] = useState(orderParam);
+  const [digits, setDigits] = useState("");
   const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (orderParam) lookup(orderParam);
+    const fromUrl = orderParam ? extractOrderDigits(orderParam) : "";
+    const fromStorage =
+      typeof window !== "undefined" ? localStorage.getItem(TRACK_DIGITS_STORAGE_KEY) ?? "" : "";
+    const initial = fromUrl || fromStorage;
+    setDigits(initial);
+    if (fromUrl) lookup(fromUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderParam]);
 
+  function persistDigits(value: string) {
+    setDigits(value);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(TRACK_DIGITS_STORAGE_KEY, value);
+    }
+  }
+
   async function lookup(value: string) {
-    const trimmed = value.trim();
-    if (!trimmed) return;
+    const cleaned = value.replace(/\D/g, "").slice(0, 4);
+    if (cleaned.length !== 4) {
+      setOrder(null);
+      setNotFound(cleaned.length > 0);
+      return;
+    }
+
+    const orderNumber = formatOrderNumber(cleaned);
+    persistDigits(cleaned);
+
     try {
-      const res = await fetch(`/api/orders/track?orderNumber=${encodeURIComponent(trimmed)}`);
+      const res = await fetch(`/api/orders/track?orderNumber=${encodeURIComponent(orderNumber)}`);
       if (res.ok) {
         const data = await res.json();
         setOrder(data);
@@ -47,7 +73,7 @@ function TrackInner() {
       /* network error */
     }
     if (process.env.NODE_ENV === "development") {
-      const found = findDemoOrder(trimmed);
+      const found = findDemoOrder(orderNumber);
       if (found) {
         setOrder(found);
         setNotFound(false);
@@ -55,7 +81,7 @@ function TrackInner() {
       }
     }
     setOrder(null);
-    setNotFound(trimmed.length > 0);
+    setNotFound(true);
   }
 
   return (
@@ -69,35 +95,43 @@ function TrackInner() {
           Track your package
         </h1>
         <p className="mt-2 text-sm text-neutral-500">
-          Enter your order number to see exactly where it is.
+          Enter the 4 digits from your order number — we&apos;ll add the {ORDER_NUMBER_PREFIX} for
+          you.
         </p>
       </div>
 
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          lookup(input);
+          lookup(digits);
         }}
         className="mx-auto mt-7 flex max-w-xl items-center gap-2 rounded-full border border-neutral-200 bg-white p-1.5 pl-5 shadow-sm focus-within:border-neutral-300"
       >
         <Search className="h-5 w-5 shrink-0 text-neutral-400" />
+        <span className="shrink-0 font-mono text-[15px] font-semibold tracking-wide text-neutral-900">
+          {ORDER_NUMBER_PREFIX}
+        </span>
         <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="e.g. AA-2026-4821"
-          aria-label="Order number"
-          className="h-11 min-w-0 flex-1 bg-transparent text-[15px] text-neutral-900 outline-none placeholder:text-neutral-400"
+          value={digits}
+          onChange={(e) => persistDigits(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          placeholder="1034"
+          inputMode="numeric"
+          pattern="\d{4}"
+          maxLength={4}
+          aria-label="Order number digits"
+          className="h-11 min-w-0 flex-1 bg-transparent font-mono text-[15px] text-neutral-900 outline-none placeholder:font-sans placeholder:text-neutral-400"
         />
         <button
           type="submit"
-          className="h-11 shrink-0 rounded-full bg-neutral-900 px-6 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
+          disabled={digits.length !== 4}
+          className="h-11 shrink-0 rounded-full bg-neutral-900 px-6 text-sm font-semibold text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Track
         </button>
       </form>
 
       <p className="mt-3 text-center text-xs text-neutral-400">
-        Try a sample: AA-2026-4821, AA-2026-4790, or AA-2026-4715
+        Try a sample: 4821, 4790, or 4715
       </p>
 
       {notFound && (
@@ -105,7 +139,8 @@ function TrackInner() {
           <PackageSearch className="mx-auto h-10 w-10 text-neutral-300" />
           <p className="mt-3 font-medium text-neutral-900">No order found</p>
           <p className="mt-1 text-sm text-neutral-500">
-            Double-check your order number, it&apos;s in your confirmation email.
+            Double-check your 4-digit order number — it&apos;s in your confirmation email as{" "}
+            {ORDER_NUMBER_PREFIX}####.
           </p>
         </Card>
       )}

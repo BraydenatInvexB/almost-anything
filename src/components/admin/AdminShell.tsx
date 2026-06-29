@@ -120,7 +120,7 @@ export function AdminSearch() {
     e.preventDefault();
     const q = query.trim();
     if (!q) return;
-    if (/^AA-/i.test(q) || /^\d/.test(q)) {
+    if (/^AA\d/i.test(q) || /^\d{4}$/.test(q)) {
       router.push(`/admin/orders?q=${encodeURIComponent(q)}`);
       return;
     }
