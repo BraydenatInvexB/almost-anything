@@ -28,6 +28,7 @@ function AdminLoginForm() {
       .then((data) => {
         if (data.staff) {
           router.replace(redirect.startsWith("/admin") ? redirect : "/admin");
+          router.refresh();
         }
       })
       .finally(() => setCheckingStaff(false));
@@ -56,7 +57,8 @@ function AdminLoginForm() {
       return;
     }
 
-    router.push(redirect.startsWith("/admin") ? redirect : "/admin");
+    router.replace(redirect.startsWith("/admin") ? redirect : "/admin");
+    router.refresh();
   }
 
   if (authLoading || checkingStaff) {
