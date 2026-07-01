@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
+import { CarrierSelect, type CourierSelectOption } from "@/components/admin/CarrierSelect";
 import { Table, Th, Td, EmptyState } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { AdminOrderSummary } from "@/services/admin-service";
@@ -33,7 +34,7 @@ interface RowState {
 function defaultRow(order: AdminOrderSummary): RowState {
   return {
     status: order.status,
-    carrier: "",
+    carrier: order.courierName ?? "",
     trackingNumber: "",
     saving: false,
     saved: false,
@@ -44,9 +45,11 @@ function defaultRow(order: AdminOrderSummary): RowState {
 export function OrdersTable({
   orders,
   canManage,
+  couriers,
 }: {
   orders: AdminOrderSummary[];
   canManage: boolean;
+  couriers: CourierSelectOption[];
 }) {
   const [rows, setRows] = useState<Record<string, RowState>>(() =>
     Object.fromEntries(orders.map((o) => [o.id, defaultRow(o)])),
@@ -198,10 +201,10 @@ export function OrdersTable({
                     <div className="flex flex-wrap items-end gap-3">
                       <label className="flex flex-col gap-1 text-xs text-neutral-500">
                         Carrier
-                        <input
+                        <CarrierSelect
                           value={row.carrier}
-                          onChange={(e) => update(o.id, { carrier: e.target.value })}
-                          placeholder="e.g. Aramex"
+                          onChange={(name) => update(o.id, { carrier: name })}
+                          couriers={couriers}
                           className="h-9 w-44 rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-neutral-400"
                         />
                       </label>

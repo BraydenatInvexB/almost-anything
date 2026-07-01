@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { Truck, PackageCheck, Warehouse } from "lucide-react";
-import { getCurrentStaff, getFulfillmentQueue, listAdminOrders } from "@/services/admin-service";
+import { getCurrentStaff, getFulfillmentQueue, listAdminOrders, listAdminCouriers } from "@/services/admin-service";
 import { listProcurement } from "@/lib/admin/operations-persistence";
 import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { OrdersTable } from "@/components/admin/OrdersTable";
-import { OrdersKanban } from "@/components/admin/OrdersKanban";
-import { filterKanbanOrders } from "@/lib/orders/kanban-filters";
+import { filterPipelineOrders } from "@/lib/orders/pipeline-filters";
 import { PageHeader, StatCard, Panel, WorkflowCard } from "@/components/admin/ui";
 
 export default async function AdminFulfillmentPage() {
@@ -16,8 +15,11 @@ export default async function AdminFulfillmentPage() {
   }
 
   const canManage = staffCan(staff, "orders.manage");
-  const queue = await getFulfillmentQueue();
-  const allOrders = await listAdminOrders();
+  const [queue, allOrders, couriers] = await Promise.all([
+    getFulfillmentQueue(),
+    listAdminOrders(),
+    listAdminCouriers(),
+  ]);
   const procurement = await listProcurement();
   const awaitingInbound = allOrders.filter((o) => o.status === "paid" || o.status === "sourcing").length;
   const readyToShip = allOrders.filter((o) => o.status === "purchased").length;
@@ -29,7 +31,7 @@ export default async function AdminFulfillmentPage() {
     return d.toDateString() === today.toDateString();
   }).length;
 
-  const kanbanOrders = filterKanbanOrders(allOrders);
+  const pipelineOrders = filterPipelineOrders(allOrders);
 
   return (
     <>
@@ -100,13 +102,12 @@ export default async function AdminFulfillmentPage() {
       </div>
 
       <Panel
-        title="Drag & drop pipeline"
-        description="Drag orders between columns to update status"
+        title="Fulfillment pipeline"
+        description="Update status, carrier, and tracking from each row"
         className="mb-4"
+        clip
       >
-        <div className="p-4">
-          <OrdersKanban orders={kanbanOrders} canManage={canManage} />
-        </div>
+        <OrdersTable orders={pipelineOrders} canManage={canManage} couriers={couriers} />
       </Panel>
 
       <Panel
@@ -114,7 +115,7 @@ export default async function AdminFulfillmentPage() {
         description={`${queue.length} orders need action now`}
         clip
       >
-        <OrdersTable orders={queue} canManage={canManage} />
+        <OrdersTable orders={queue} canManage={canManage} couriers={couriers} />
       </Panel>
     </>
   );

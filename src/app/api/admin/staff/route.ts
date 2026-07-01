@@ -5,7 +5,9 @@ import { staffCan } from "@/config/rbac";
 import type { Permission } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { toStaffProfile } from "@/lib/staff/profile";
+import { provisionStaffAuthUser } from "@/lib/staff/invite-auth";
 import type { StaffMember } from "@/types/database";
+import type { Json } from "@/types/database";
 
 const roleEnum = z.enum([
   "super_admin",
@@ -85,31 +87,73 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createServiceClient();
-    const { data, error } = await supabase
+    const email = parsed.data.email.trim().toLowerCase();
+    const title = parsed.data.title?.trim() || null;
+
+    const { data: existing } = await supabase
       .from("staff_members")
-      .insert({
-        ...parsed.data,
-        status: "invited",
-        created_by: staff.id,
-        extra_permissions: [],
-        denied_permissions: [],
-      })
       .select("*")
-      .single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existing && existing.status !== "invited") {
+      return NextResponse.json({ error: "A staff member with this email already exists" }, { status: 409 });
+    }
+
+    const auth = await provisionStaffAuthUser(supabase, email, parsed.data.full_name);
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: 500 });
+    }
+
+    const row = {
+      email,
+      full_name: parsed.data.full_name,
+      role: parsed.data.role,
+      department: parsed.data.department ?? title,
+      title,
+      status: auth.emailSent ? ("invited" as const) : ("active" as const),
+      user_id: auth.userId,
+      created_by: staff.id,
+      extra_permissions: [] as Json,
+      denied_permissions: [] as Json,
+    };
+
+    let data: StaffMember;
+    if (existing) {
+      const { data: updated, error } = await supabase
+        .from("staff_members")
+        .update({
+          ...row,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id)
+        .select("*")
+        .single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      data = updated as StaffMember;
+    } else {
+      const { data: inserted, error } = await supabase
+        .from("staff_members")
+        .insert(row)
+        .select("*")
+        .single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      data = inserted as StaffMember;
+    }
 
     await supabase.from("staff_activity_log").insert({
       staff_id: staff.id,
       staff_name: staff.full_name,
-      action: "Invited new staff member",
+      action: auth.emailSent ? "Invited new staff member" : "Added existing auth user as staff",
       entity_type: "staff",
       entity_id: data.id,
-      details: { role: parsed.data.role },
+      details: { role: parsed.data.role, emailSent: auth.emailSent },
     });
 
     return NextResponse.json({
       ok: true,
       staff: toStaffProfile(data as StaffMember & Record<string, unknown>),
+      emailSent: auth.emailSent,
     });
   } catch (err) {
     return NextResponse.json(

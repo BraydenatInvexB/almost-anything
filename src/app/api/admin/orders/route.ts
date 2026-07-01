@@ -5,6 +5,7 @@ import { applyCheckoutOrderOperations } from "@/lib/orders/order-operations";
 import { ensureProcurementForSupabaseOrder } from "@/lib/admin/operations-persistence";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { isUuid } from "@/lib/utils/uuid";
 import type { Database, Json } from "@/types/database";
 
 type OrderUpdate = Database["public"]["Tables"]["orders"]["Update"];
@@ -46,9 +47,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  // Persist to Supabase when connected; otherwise this is a demo no-op that
-  // still confirms success so the admin UI behaves consistently.
-  if (isSupabaseConfigured()) {
+  // Persist to Supabase when connected; demo / local checkout ids are not UUIDs.
+  if (isSupabaseConfigured() && isUuid(body.id)) {
     try {
       const supabase = await createClient();
       const update: OrderUpdate = {};

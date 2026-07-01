@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCurrentStaff, getAdminOrder, getOrderProcurement } from "@/services/admin-service";
+import { getCurrentStaff, getAdminOrder, getOrderProcurement, listAdminCouriers } from "@/services/admin-service";
 import { listReturnsByOrder } from "@/lib/admin/operations-persistence";
 import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
@@ -28,7 +28,7 @@ export default async function AdminOrderDetailPage({
   if (!staff || !staffCan(staff, "orders.view")) return <AccessDenied feature="orders" />;
 
   const { id } = await params;
-  const order = await getAdminOrder(id);
+  const [order, couriers] = await Promise.all([getAdminOrder(id), listAdminCouriers()]);
   if (!order) notFound();
 
   const canManage = staffCan(staff, "orders.manage");
@@ -114,9 +114,10 @@ export default async function AdminOrderDetailPage({
               <OrderDetailActions
                 orderId={order.id}
                 initialStatus={order.status}
-                initialCarrier={order.carrier}
+                initialCarrier={order.carrier ?? order.courierName ?? ""}
                 initialTracking={order.trackingNumber}
                 canManage={canManage}
+                couriers={couriers}
               />
             </div>
           </Panel>

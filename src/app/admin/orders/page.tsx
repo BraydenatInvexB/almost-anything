@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentStaff, listAdminOrders } from "@/services/admin-service";
+import { getCurrentStaff, listAdminOrders, listAdminCouriers } from "@/services/admin-service";
 import { can, staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader, StatCard, Panel } from "@/components/admin/ui";
@@ -19,7 +19,8 @@ export default async function AdminOrdersPage({
   const canManage = staffCan(staff, "orders.manage");
 
   const { status = "all", q = "" } = await searchParams;
-  let orders = await listAdminOrders();
+  const [allOrders, couriers] = await Promise.all([listAdminOrders(), listAdminCouriers()]);
+  let orders = allOrders;
   if (q.trim()) {
     const query = q.trim().toLowerCase();
     orders = orders.filter(
@@ -93,7 +94,7 @@ export default async function AdminOrdersPage({
       </div>
 
       <Panel>
-        <OrdersTable orders={filtered} canManage={canManage} />
+        <OrdersTable orders={filtered} canManage={canManage} couriers={couriers} />
       </Panel>
     </>
   );

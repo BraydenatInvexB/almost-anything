@@ -34,6 +34,7 @@ import {
 import { QUEUE_STATUSES } from "@/lib/orders/order-operations";
 import { parseOrderItemMetadata } from "@/lib/orders/line-items";
 import { resolveFulfillment, type FulfillmentSource } from "@/lib/orders/fulfillment";
+import { getAllCouriers } from "@/config/couriers";
 import { toStaffProfile } from "@/lib/staff/profile";
 import { mergeExtendedConfig } from "@/lib/admin/extended-config-defaults";
 import type { ExtendedPlatformConfig } from "@/lib/admin/operations-types";
@@ -64,6 +65,34 @@ export function isAdminLiveMode(): boolean {
 // ---------------------------------------------------------------------------
 // Session / current staff
 // ---------------------------------------------------------------------------
+async function activateStaffOnLogin(
+  service: ReturnType<typeof createServiceClient>,
+  row: StaffMember,
+  userId: string,
+): Promise<StaffMember> {
+  const patch: {
+    user_id: string;
+    last_active_at: string;
+    status?: StaffMember["status"];
+  } = {
+    user_id: userId,
+    last_active_at: new Date().toISOString(),
+  };
+  if (row.status === "invited") {
+    patch.status = "active";
+  }
+
+  const { data: updated, error } = await service
+    .from("staff_members")
+    .update(patch)
+    .eq("id", row.id)
+    .select("*")
+    .single();
+
+  if (!error && updated) return updated as StaffMember;
+  return { ...row, user_id: userId, status: row.status === "invited" ? "active" : row.status } as StaffMember;
+}
+
 async function resolveLiveStaffUser(user: {
   id: string;
   email?: string | null;
@@ -75,10 +104,12 @@ async function resolveLiveStaffUser(user: {
     .from("staff_members")
     .select("*")
     .eq("user_id", user.id)
-    .eq("status", "active")
     .maybeSingle();
 
-  if (byUser) return byUser as StaffMember;
+  if (byUser) {
+    if (byUser.status === "suspended") return null;
+    return activateStaffOnLogin(service, byUser as StaffMember, user.id);
+  }
 
   const email = user.email?.trim().toLowerCase();
   if (!email) return null;
@@ -87,19 +118,11 @@ async function resolveLiveStaffUser(user: {
     .from("staff_members")
     .select("*")
     .ilike("email", email)
-    .eq("status", "active")
+    .in("status", ["active", "invited"])
     .maybeSingle();
 
   if (byEmail) {
-    const { data: linked, error } = await service
-      .from("staff_members")
-      .update({ user_id: user.id, last_active_at: new Date().toISOString() })
-      .eq("id", byEmail.id)
-      .select("*")
-      .single();
-
-    if (!error && linked) return linked as StaffMember;
-    return { ...byEmail, user_id: user.id } as StaffMember;
+    return activateStaffOnLogin(service, byEmail as StaffMember, user.id);
   }
 
   const { count } = await service
@@ -377,12 +400,12 @@ export async function listStaff(): Promise<StaffProfile[]> {
   if (isSupabaseConfigured()) {
     try {
       const supabase = await createClient();
-      const { data } = await supabase
+      const res = await supabase
         .from("staff_members")
         .select("*")
         .order("created_at", { ascending: true });
-      if (data && data.length) {
-        return (data as StaffMember[]).map((row) =>
+      if (!res.error) {
+        return ((res.data ?? []) as StaffMember[]).map((row) =>
           toStaffProfile(row as StaffMember & Record<string, unknown>),
         );
       }
@@ -972,11 +995,11 @@ export async function listAdminOrders(): Promise<AdminOrderSummary[]> {
         created_at: string;
         order_items: { id: string }[] | null;
       }>;
-      if (data.length) {
-        return data.map((o) => {
+      if (!res.error) {
+        const fromDb = data.map((o) => {
           const addr = (o.shipping_address ?? {}) as Record<string, unknown>;
           const meta = (o.metadata ?? {}) as Record<string, unknown>;
-          return {
+          return enrichOrderSummary({
             id: o.id,
             orderNumber: o.order_number,
             customerName: (addr.fullName as string) ?? "Customer",
@@ -989,8 +1012,15 @@ export async function listAdminOrders(): Promise<AdminOrderSummary[]> {
             paymentMethod: o.payment_method ?? undefined,
             courierName: (meta.courierName as string) ?? undefined,
             stockOrigin: (meta.stockOrigin as "sa_warehouse" | "overseas") ?? undefined,
-          };
+            shippingCountry: (addr.country as string) ?? undefined,
+          });
         });
+        const live = listCheckoutOrders()
+          .map((o) => checkoutToSummary(o)!)
+          .filter((o) => !fromDb.some((d) => d.orderNumber === o.orderNumber));
+        return [...fromDb, ...live].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
       }
     } catch {
       /* fall through */
@@ -1115,6 +1145,11 @@ export async function getPlatformExtendedConfig(): Promise<ExtendedPlatformConfi
     }
   }
   return mergeExtendedConfig(getExtendedConfig());
+}
+
+export async function listAdminCouriers(): Promise<{ id: string; name: string }[]> {
+  const config = await getPlatformExtendedConfig();
+  return getAllCouriers(config).map((c) => ({ id: c.id, name: c.name }));
 }
 
 // ---------------------------------------------------------------------------

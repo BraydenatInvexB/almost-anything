@@ -58,6 +58,37 @@ export function StaffManager({
     }
   }
 
+  async function resendInvite(member: StaffProfile) {
+    try {
+      const res = await fetch("/api/admin/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: member.email,
+          full_name: member.full_name,
+          role: member.role,
+          title: member.title ?? undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json.error ?? "Could not resend invitation");
+        return;
+      }
+      if (json.staff) {
+        setMembers((prev) => prev.map((s) => (s.id === member.id ? json.staff : s)));
+      }
+      alert(
+        json.emailSent
+          ? `Invitation email resent to ${member.email}`
+          : `${member.email} is linked to an existing account and can sign in at /admin/login`,
+      );
+      router.refresh();
+    } catch {
+      alert("Network error while resending invitation");
+    }
+  }
+
   return (
     <>
       {canManage && !suppressInviteButton && (
@@ -148,6 +179,15 @@ export function StaffManager({
                         Customise modules
                       </button>
                     )}
+                    {canManage && m.status === "invited" && !m.user_id && (
+                      <button
+                        type="button"
+                        onClick={() => resendInvite(m)}
+                        className="inline-flex w-fit text-[11px] font-semibold text-brand hover:underline"
+                      >
+                        Resend invitation
+                      </button>
+                    )}
                   </div>
                 </Td>
                 <Td className="text-neutral-600">{m.title ?? m.department ?? "N/A"}</Td>
@@ -222,11 +262,13 @@ function InviteModal({
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setSuccess(null);
     try {
       const res = await fetch("/api/admin/staff", {
         method: "POST",
@@ -242,25 +284,33 @@ function InviteModal({
         setSubmitting(false);
         return;
       }
-      onInvited({
-        id: json.staff?.id ?? `tmp-${Date.now()}`,
-        user_id: null,
-        email: form.email,
-        full_name: `${form.first_name.trim()} ${form.last_name.trim()}`.trim(),
-        role: form.role,
-        status: "invited",
-        department: null,
-        title: form.title || null,
-        phone: null,
-        avatar_url: null,
-        notes: null,
-        created_by: null,
-        last_active_at: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        extra_permissions: [],
-        denied_permissions: [],
-      });
+      const profile = json.staff as StaffProfile | undefined;
+      const message = json.emailSent
+        ? `Invitation email sent to ${form.email.trim().toLowerCase()}. They can set a password from the email, then sign in at /admin/login.`
+        : `Staff access granted for ${form.email.trim().toLowerCase()}. They already have an account and can sign in at /admin/login.`;
+      setSuccess(message);
+      const invited =
+        profile ?? {
+          id: `tmp-${Date.now()}`,
+          user_id: null,
+          email: form.email.trim().toLowerCase(),
+          full_name: `${form.first_name.trim()} ${form.last_name.trim()}`.trim(),
+          role: form.role,
+          status: json.emailSent ? ("invited" as const) : ("active" as const),
+          department: form.title.trim() || null,
+          title: form.title.trim() || null,
+          phone: null,
+          avatar_url: null,
+          notes: null,
+          created_by: null,
+          last_active_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          extra_permissions: [],
+          denied_permissions: [],
+        };
+      window.setTimeout(() => onInvited(invited), 1400);
+      setSubmitting(false);
     } catch {
       setError("Network error");
       setSubmitting(false);
@@ -326,6 +376,7 @@ function InviteModal({
             </select>
           </Field>
           {error && <p className="text-sm text-red-500">{error}</p>}
+          {success && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</p>}
           <button
             type="submit"
             disabled={submitting}

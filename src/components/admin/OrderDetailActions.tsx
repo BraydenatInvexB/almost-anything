@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CarrierSelect, type CourierSelectOption } from "@/components/admin/CarrierSelect";
 import { BtnPrimary, BtnSecondary, StatusBadge } from "@/components/admin/ui";
 import { ORDER_STATUS_LABELS, ORDER_STATUSES } from "@/lib/orders/order-operations";
 
@@ -13,12 +14,14 @@ export function OrderDetailActions({
   initialCarrier = "",
   initialTracking = "",
   canManage,
+  couriers,
 }: {
   orderId: string;
   initialStatus: string;
   initialCarrier?: string;
   initialTracking?: string;
   canManage: boolean;
+  couriers: CourierSelectOption[];
 }) {
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
@@ -90,11 +93,11 @@ export function OrderDetailActions({
         </label>
         <label className="block text-xs font-bold uppercase tracking-wide text-neutral-500">
           Carrier
-          <input
+          <CarrierSelect
             value={carrier}
-            onChange={(e) => setCarrier(e.target.value)}
-            placeholder="Aramex, DHL, etc."
-            className="mt-1.5 h-10 w-full rounded-lg border-2 border-neutral-200 px-3 text-sm outline-none focus:border-brand"
+            onChange={setCarrier}
+            couriers={couriers}
+            className="mt-1.5 h-10 w-full rounded-lg border-2 border-neutral-200 bg-white px-3 text-sm outline-none focus:border-brand"
           />
         </label>
         <label className="block text-xs font-bold uppercase tracking-wide text-neutral-500">
