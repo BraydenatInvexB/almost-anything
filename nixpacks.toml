@@ -1,3 +1,0 @@
-# Railway uses Nixpacks/Railpack. Next.js 16 requires Node >=20.9; the Nixpacks default is 18.
-[variables]
-NIXPACKS_NODE_VERSION = "22"
