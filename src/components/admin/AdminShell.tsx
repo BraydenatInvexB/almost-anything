@@ -347,10 +347,10 @@ export function AdminShell({
                         </span>
                       </div>
                       <Link
-                        href="/account"
+                        href="/admin/settings"
                         className="mt-1 block rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
                       >
-                        My account
+                        Admin settings
                       </Link>
                       <button
                         onClick={() => signOut()}

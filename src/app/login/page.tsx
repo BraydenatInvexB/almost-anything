@@ -35,7 +35,17 @@ function LoginForm() {
       return;
     }
 
-    router.push(redirect.startsWith("/") ? redirect : "/account");
+    const sessionRes = await fetch("/api/admin/session");
+    const session = await sessionRes.json();
+    const explicitRedirect = searchParams.get("redirect");
+    const destination = redirect.startsWith("/") ? redirect : "/account";
+
+    if (session.staff && !explicitRedirect) {
+      router.push("/admin");
+      return;
+    }
+
+    router.push(destination);
   }
 
   async function handleOAuth(provider: OAuthProvider) {
@@ -140,6 +150,13 @@ function LoginForm() {
         Don&apos;t have an account?{" "}
         <Link href="/signup" className="font-medium text-neutral-900 hover:underline">
           Sign up
+        </Link>
+      </p>
+
+      <p className="mt-4 text-center text-sm text-neutral-500">
+        Staff member?{" "}
+        <Link href="/admin/login" className="font-medium text-neutral-900 hover:underline">
+          Admin sign in
         </Link>
       </p>
     </Card>

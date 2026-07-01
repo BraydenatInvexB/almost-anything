@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Package, Heart, LogOut, User, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Package, Heart, LogOut, User, RotateCcw, Shield } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
@@ -18,6 +19,18 @@ export default function AccountPage() {
   const { user, signOut, loading, isConfigured } = useAuth();
   const { favoriteCount } = useFavorites();
   const { itemCount } = useCart();
+  const [isStaff, setIsStaff] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setIsStaff(false);
+      return;
+    }
+    fetch("/api/admin/session")
+      .then((res) => res.json())
+      .then((data) => setIsStaff(Boolean(data.staff)))
+      .catch(() => setIsStaff(false));
+  }, [user]);
 
   async function handleSignOut() {
     await signOut();
@@ -31,6 +44,23 @@ export default function AccountPage() {
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 sm:px-6">
         <AccountSubNav current="/account" />
         <h1 className="text-2xl font-bold text-neutral-900">My Account</h1>
+
+        {isStaff ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand/20 bg-brand/5 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Shield className="h-5 w-5 text-brand" />
+              <p className="text-sm text-neutral-700">
+                You&apos;re signed in as staff. This page is for customer orders and favorites.
+              </p>
+            </div>
+            <Link
+              href="/admin"
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90"
+            >
+              Open admin console
+            </Link>
+          </div>
+        ) : null}
 
         {!isConfigured || (!loading && !user) ? (
           <Card variant="elevated" className="mt-8 max-w-lg bg-white p-8 text-center">
