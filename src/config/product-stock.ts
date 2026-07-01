@@ -16,13 +16,13 @@ export const STOCK_STATUS_OPTIONS: {
   {
     value: "in_stock",
     label: "In stock (SA warehouse)",
-    description: "Available now from the South Africa warehouse.",
+    description: "Available now from the South Africa warehouse — typically 2 to 5 business days.",
     origin: "sa_warehouse",
   },
   {
     value: "available_international",
     label: "In stock (international warehouse)",
-    description: "In stock at our international warehouse — ships to customers after hub processing.",
+    description: "In stock at our international warehouse — typically 5 to 7 business days after dispatch.",
     origin: "overseas",
   },
   {

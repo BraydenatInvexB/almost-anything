@@ -13,6 +13,7 @@ interface AddToCartButtonProps {
   className?: string;
   variant?: "compact" | "button";
   label?: string;
+  disabled?: boolean;
 }
 
 export function AddToCartButton({
@@ -20,6 +21,7 @@ export function AddToCartButton({
   className,
   variant = "compact",
   label = "Add",
+  disabled = false,
 }: AddToCartButtonProps) {
   const { addItem, removeItem, isInCart, items } = useCart();
   const [justAdded, setJustAdded] = useState(false);
@@ -36,6 +38,7 @@ export function AddToCartButton({
   function handleClick(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (disabled) return;
 
     const existing = items.find(
       (i) =>
@@ -62,8 +65,10 @@ export function AddToCartButton({
       <button
         type="button"
         onClick={handleClick}
+        disabled={disabled}
         className={cn(
           "inline-flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-black px-4 py-2 text-sm font-extrabold uppercase text-white shadow-[3px_3px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_#000]",
+          disabled && "cursor-not-allowed opacity-40 hover:translate-x-0 hover:translate-y-0",
           showSuccess
             ? "bg-brand hover:bg-brand"
             : "bg-black hover:bg-brand",
@@ -90,11 +95,17 @@ export function AddToCartButton({
     <button
       type="button"
       onClick={handleClick}
+      disabled={disabled}
       aria-label={
-        inCart ? `Remove ${item.name} from cart` : `Add ${item.name} to cart`
+        disabled
+          ? `${item.name} — price on request`
+          : inCart
+            ? `Remove ${item.name} from cart`
+            : `Add ${item.name} to cart`
       }
       className={cn(
         "inline-flex h-8 shrink-0 items-center gap-1 rounded-md border-2 border-black px-2.5 text-[10px] font-extrabold uppercase tracking-wide shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_0_#000]",
+        disabled && "cursor-not-allowed opacity-40 hover:translate-x-0 hover:translate-y-0",
         showSuccess
           ? "bg-brand text-white"
           : "bg-white text-black hover:bg-brand hover:text-white",

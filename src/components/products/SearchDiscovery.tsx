@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { CUSTOMER_WAREHOUSE_FINDING_MESSAGES } from "@/config/warehouse-copy";
+import { postDiscoverOnce } from "@/lib/search/discover-client";
 import type { PaginatedResponse, ProductCardData } from "@/types";
 
 type Props = {
@@ -16,13 +18,26 @@ type DiscoveryResponse = {
   slugs?: string[];
 };
 
-const POLL_MS = 2500;
+const POLL_MS = 4000;
+const MAX_WAIT_MS = 120_000;
 
-const FINDING_MESSAGES = [
-  "Searching South African suppliers…",
-  "Scanning trade & wholesale catalogues…",
-  "Checking international wholesalers…",
-];
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const id = window.setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        window.clearTimeout(id);
+        reject(new DOMException("Aborted", "AbortError"));
+      },
+      { once: true },
+    );
+  });
+}
 
 export function SearchDiscovery({
   query,
@@ -40,7 +55,7 @@ export function SearchDiscovery({
   useEffect(() => {
     if (status !== "finding") return;
     const id = setInterval(() => {
-      setMessageIndex((i) => (i + 1) % FINDING_MESSAGES.length);
+      setMessageIndex((i) => (i + 1) % CUSTOMER_WAREHOUSE_FINDING_MESSAGES.length);
     }, 3200);
     return () => clearInterval(id);
   }, [status]);
@@ -48,12 +63,13 @@ export function SearchDiscovery({
   useEffect(() => {
     if (!query.trim() || initialCount > 0) return;
 
-    let cancelled = false;
+    const pollAbort = new AbortController();
+    let pollInFlight = false;
 
     async function fetchByQuery(): Promise<PaginatedResponse<ProductCardData> | null> {
       const res = await fetch(
         `/api/products?q=${encodeURIComponent(query)}&pageSize=16`,
-        { cache: "no-store" },
+        { cache: "no-store", signal: pollAbort.signal },
       );
       if (!res.ok) return null;
       return res.json() as Promise<PaginatedResponse<ProductCardData>>;
@@ -63,27 +79,52 @@ export function SearchDiscovery({
       if (!slugs.length) return null;
       const res = await fetch(
         `/api/products?slugs=${encodeURIComponent(slugs.join(","))}&pageSize=16`,
-        { cache: "no-store" },
+        { cache: "no-store", signal: pollAbort.signal },
       );
       if (!res.ok) return null;
       return res.json() as Promise<PaginatedResponse<ProductCardData>>;
     }
 
-    async function publishIfReady(result: PaginatedResponse<ProductCardData> | null) {
-      if (cancelled || !result?.data.length) return false;
+    function finish(searching: boolean, next: "idle" | "error") {
+      onSearchingChange?.(searching);
+      setStatus(next);
+    }
+
+    async function publishIfReady(result: PaginatedResponse<ProductCardData> | null): Promise<boolean> {
+      if (pollAbort.signal.aborted || !result?.data.length) return false;
       onProductsLoadedRef.current?.(result);
-      onSearchingChange?.(false);
-      setStatus("idle");
+      finish(false, "idle");
+
+      if (result.data.some((p) => !p.imageUrl?.trim())) {
+        void pollForProductImages(result.data.map((p) => p.slug));
+      }
       return true;
     }
 
-    async function loadDiscovered(slugs: string[]) {
-      const byQuery = await fetchByQuery();
-      if (await publishIfReady(byQuery)) return true;
+    async function pollForProductImages(slugs: string[]): Promise<void> {
+      for (let attempt = 0; attempt < 12 && !pollAbort.signal.aborted; attempt += 1) {
+        await sleep(3000, pollAbort.signal).catch(() => undefined);
+        const result = await fetchByQuery();
+        if (!result?.data.length) continue;
+        const hasNewImage = result.data.some(
+          (p) => p.imageUrl?.trim() && slugs.includes(p.slug),
+        );
+        if (hasNewImage) {
+          onProductsLoadedRef.current?.(result);
+        }
+        if (result.data.every((p) => p.imageUrl?.trim())) return;
+      }
+    }
 
-      const bySlugs = await fetchBySlugs(slugs);
-      if (await publishIfReady(bySlugs)) return true;
-
+    async function loadDiscovered(slugs: string[]): Promise<boolean> {
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        if (pollAbort.signal.aborted) return false;
+        if (await publishIfReady(await fetchByQuery())) return true;
+        if (await publishIfReady(await fetchBySlugs(slugs))) return true;
+        if (attempt < 5) {
+          await sleep(600 + attempt * 400, pollAbort.signal).catch(() => undefined);
+        }
+      }
       return false;
     }
 
@@ -91,61 +132,69 @@ export function SearchDiscovery({
       setStatus("finding");
       onSearchingChange?.(true);
 
-      const discoverPromise = fetch("/api/sourcing/discover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-      });
-
-      const pollId = setInterval(async () => {
-        if (cancelled) return;
-        const result = await fetchByQuery();
-        if (await publishIfReady(result)) {
-          clearInterval(pollId);
-        }
-      }, POLL_MS);
+      const deadline = Date.now() + MAX_WAIT_MS;
+      const discoverPromise = postDiscoverOnce(query);
+      let discoverHandled = false;
 
       try {
-        const res = await discoverPromise;
-        clearInterval(pollId);
-        if (cancelled) return;
+        while (Date.now() < deadline && !pollAbort.signal.aborted) {
+          const raced = await Promise.race([
+            discoverPromise.then((res) => ({ kind: "discover" as const, res })),
+            sleep(POLL_MS, pollAbort.signal).then(() => ({ kind: "poll" as const })),
+          ]);
 
-        if (!res.ok) {
-          onSearchingChange?.(false);
-          setStatus("error");
-          return;
-        }
+          if (raced.kind === "poll") {
+            if (!pollInFlight) {
+              pollInFlight = true;
+              try {
+                if (await publishIfReady(await fetchByQuery())) return;
+              } finally {
+                pollInFlight = false;
+              }
+            }
+            continue;
+          }
 
-        const data = (await res.json()) as DiscoveryResponse;
-        const slugs = data.slugs ?? [];
+          const res = raced.res;
+          if (!res.ok) {
+            if (!discoverHandled) finish(false, "error");
+            return;
+          }
 
-        if (await loadDiscovered(slugs)) return;
+          discoverHandled = true;
+          const data = (await res.json()) as DiscoveryResponse;
+          const slugs = data.slugs ?? [];
 
-        if ((data.discovered ?? 0) > 0) {
-          await new Promise((resolve) => window.setTimeout(resolve, 600));
           if (await loadDiscovered(slugs)) return;
+
+          if ((data.discovered ?? 0) > 0) {
+            if (await loadDiscovered(slugs)) return;
+          }
+
+          // Discover finished with no rows — keep polling until the overall deadline.
+          continue;
         }
 
-        setStatus("error");
-        onSearchingChange?.(false);
-      } catch {
-        clearInterval(pollId);
-        if (!cancelled) {
-          setStatus("error");
-          onSearchingChange?.(false);
+        if (!pollAbort.signal.aborted) {
+          if (await loadDiscovered([])) return;
+          finish(false, "error");
         }
+      } catch (err) {
+        if (pollAbort.signal.aborted) return;
+        finish(false, "error");
       }
     }
 
     void run();
     return () => {
-      cancelled = true;
+      pollAbort.abort();
+      onSearchingChange?.(false);
     };
-  }, [query, initialCount]);
+  }, [query, initialCount, onSearchingChange]);
 
   if (status === "idle") return null;
 
-  const findingMessage = FINDING_MESSAGES[messageIndex];
+  const findingMessage = CUSTOMER_WAREHOUSE_FINDING_MESSAGES[messageIndex];
 
   return (
     <div className="mb-6 flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">

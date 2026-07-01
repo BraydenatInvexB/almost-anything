@@ -32,6 +32,24 @@ export const FOOTER_NAV = [
       { label: "Request a Product", href: "/request" },
     ],
   },
+  {
+    title: "Company",
+    links: [
+      { label: "About Us", href: "/about" },
+      { label: "Contact Us", href: `mailto:${SITE_CONFIG.supportEmail}` },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms & Conditions", href: "/terms" },
+      { label: "Refund Policy", href: "/refund-policy" },
+      { label: "Cookie Policy", href: "/cookies" },
+      { label: "Shipping Policy", href: "/help/shipping" },
+      { label: "Returns Policy", href: "/help/returns" },
+    ],
+  },
 ] as const;
 
 /** Full category list for the footer "Shop by category" section. */
@@ -48,12 +66,6 @@ export const FOOTER_PAYMENTS = [
   "PayPal",
   "Apple Pay",
   "Google Pay",
-] as const;
-
-export const FOOTER_POLICIES = [
-  { label: "Refund Policy", href: "/refund-policy" },
-  { label: "Privacy Policy", href: "/privacy" },
-  { label: "Terms & Conditions", href: "/terms" },
 ] as const;
 
 export const FOOTER_SOCIALS: readonly { label: string; href: string; svg?: string }[] = [];

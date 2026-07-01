@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ChevronRight } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -9,6 +10,9 @@ import {
   ProductsSearchSubtitle,
 } from "@/components/products/ProductsSearchProvider";
 import { ProductSort } from "@/components/products/ProductSort";
+import { CategoryFilterRail } from "@/components/products/CategoryFilterRail";
+import { ProductsCategorySidebar } from "@/components/products/ProductsCategorySidebar";
+import { ActiveFilterChips } from "@/components/products/ActiveFilterChips";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { getProducts } from "@/services/product-service";
@@ -16,7 +20,6 @@ import { STORE_CATEGORIES, getCategory } from "@/config/categories";
 import type { SortKey } from "@/lib/data/seed-products";
 import type { StorefrontSectionId } from "@/config/storefront-sections";
 import { STOREFRONT_SECTION_BY_ID } from "@/config/storefront-sections";
-import { cn } from "@/lib/utils/cn";
 
 interface ProductsPageProps {
   searchParams: Promise<{
@@ -36,6 +39,29 @@ function buildQuery(base: Record<string, string | undefined>) {
   }
   const s = params.toString();
   return s ? `?${s}` : "";
+}
+
+function CategoryNavFallback() {
+  return (
+    <div className="flex gap-2 overflow-hidden">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-10 w-24 shrink-0 animate-pulse rounded-full bg-neutral-200"
+        />
+      ))}
+    </div>
+  );
+}
+
+function SidebarFallback() {
+  return (
+    <div className="hidden w-64 shrink-0 space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 xl:w-72 lg:block">
+      {Array.from({ length: 10 }).map((_, i) => (
+        <div key={i} className="h-9 animate-pulse rounded-xl bg-neutral-100" />
+      ))}
+    </div>
+  );
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
@@ -66,118 +92,186 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         ? "Today's Deals"
         : activeCat?.label ?? "All Products";
 
-  const subtitleBlurb = activeCat?.blurb ?? "Almost everything you need, all in one place.";
+  const subtitleBlurb =
+    activeCat?.blurb ??
+    sectionMeta?.kicker ??
+    "Almost everything you need, all in one place.";
+
+  const filterChips: { label: string; clearHref: string }[] = [];
+  if (activeCat) {
+    filterChips.push({
+      label: activeCat.label,
+      clearHref: `/products${buildQuery({ q: params.q, sort: params.sort, deals: params.deals, section: params.section })}`,
+    });
+  }
+  if (dealsOnly && !sectionMeta) {
+    filterChips.push({
+      label: "Deals",
+      clearHref: `/products${buildQuery({ category: params.category, q: params.q, sort: params.sort })}`,
+    });
+  }
+  if (sectionMeta) {
+    filterChips.push({
+      label: sectionMeta.title,
+      clearHref: `/products${buildQuery({ category: params.category, q: params.q, sort: params.sort })}`,
+    });
+  }
 
   const pageBody = (
     <>
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">{heading}</h1>
-          {params.q ? (
-            <ProductsSearchSubtitle blurb={subtitleBlurb} />
-          ) : (
-            <p className="mt-1 text-sm text-neutral-500">
-              {subtitleBlurb} · {total} {total === 1 ? "product" : "products"}
-            </p>
-          )}
-        </div>
-        <ProductSort />
-      </div>
-
-      {/* Category rail */}
-      <div className="mt-5 -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-        <div className="flex w-max gap-2">
-          <Link
-            href={buildQuery({ q: params.q, sort: params.sort })}
-            className={cn(
-              "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              !params.category
-                ? "bg-neutral-900 text-white"
-                : "bg-white text-neutral-600 shadow-sm hover:bg-neutral-50",
+      {/* Page hero */}
+      <header className="rounded-2xl border border-neutral-200 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            {activeCat ? (
+              <span
+                className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide"
+                style={{
+                  backgroundColor: `${activeCat.color}18`,
+                  color: activeCat.color,
+                }}
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: activeCat.color }}
+                />
+                {activeCat.label}
+              </span>
+            ) : null}
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
+              {heading}
+            </h1>
+            {params.q ? (
+              <ProductsSearchSubtitle blurb={subtitleBlurb} />
+            ) : (
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500 sm:text-base">
+                {subtitleBlurb}
+                <span className="mt-1 block text-neutral-400 sm:mt-0 sm:inline">
+                  {" "}
+                  · {total} {total === 1 ? "product" : "products"}
+                </span>
+              </p>
             )}
-          >
-            All
-          </Link>
-          {STORE_CATEGORIES.map((cat) => (
-            <Link
-              key={cat.slug}
-              href={`/products${buildQuery({ category: cat.slug, q: params.q, sort: params.sort })}`}
-              className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                params.category === cat.slug
-                  ? "bg-neutral-900 text-white"
-                  : "bg-white text-neutral-600 shadow-sm hover:bg-neutral-50",
-              )}
+          </div>
+          <div className="shrink-0">
+            <ProductSort />
+          </div>
+        </div>
+
+        <ActiveFilterChips chips={filterChips} />
+
+        {/* Mobile category rail */}
+        <div className="mt-5 lg:hidden">
+          <Suspense fallback={<CategoryNavFallback />}>
+            <CategoryFilterRail activeCategory={params.category} />
+          </Suspense>
+        </div>
+      </header>
+
+      <div className="mt-8 flex gap-10">
+        {/* Desktop sidebar */}
+        <Suspense fallback={<SidebarFallback />}>
+          <aside className="hidden w-64 shrink-0 xl:w-72 lg:block">
+            <ProductsCategorySidebar activeCategory={params.category} />
+          </aside>
+        </Suspense>
+
+        <div className="min-w-0 flex-1">
+          {params.q ? (
+            <ProductsSearchSection
+              query={params.q}
+              initialProducts={products}
+              initialTotal={total}
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+              <ProductGrid products={products} />
+            </div>
+          )}
+
+          {(page > 1 || hasMore) && products.length > 0 && (
+            <nav
+              className="mt-12 flex items-center justify-center gap-3"
+              aria-label="Pagination"
             >
-              {cat.label}
-            </Link>
-          ))}
+              {page > 1 ? (
+                <Link
+                  href={`/products${buildQuery({
+                    category: params.category,
+                    q: params.q,
+                    sort: params.sort,
+                    deals: params.deals,
+                    section: params.section,
+                    page: String(page - 1),
+                  })}`}
+                >
+                  <Button variant="secondary">Previous</Button>
+                </Link>
+              ) : null}
+              <span className="min-w-[5rem] text-center text-sm font-medium text-neutral-500">
+                Page {page}
+              </span>
+              {hasMore ? (
+                <Link
+                  href={`/products${buildQuery({
+                    category: params.category,
+                    q: params.q,
+                    sort: params.sort,
+                    deals: params.deals,
+                    section: params.section,
+                    page: String(page + 1),
+                  })}`}
+                >
+                  <Button>Next</Button>
+                </Link>
+              ) : null}
+            </nav>
+          )}
+
+          {products.length === 0 && !params.q ? (
+            <Card variant="elevated" className="mt-4 border border-dashed border-neutral-300 bg-white py-20 text-center shadow-none">
+              <p className="text-lg font-semibold text-neutral-900">
+                No products in this category yet
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
+                We are always sourcing new stock. Try another category or browse the full catalog.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                <Link href="/products">
+                  <Button>Browse all products</Button>
+                </Link>
+                {STORE_CATEGORIES.slice(0, 4).map((cat) => (
+                  <Link key={cat.slug} href={`/products?category=${cat.slug}`}>
+                    <Button variant="secondary">{cat.label}</Button>
+                  </Link>
+                ))}
+              </div>
+            </Card>
+          ) : null}
         </div>
       </div>
-
-      {params.q ? (
-        <ProductsSearchSection
-          query={params.q}
-          initialProducts={products}
-          initialTotal={total}
-        />
-      ) : (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <ProductGrid products={products} />
-        </div>
-      )}
-
-      {(page > 1 || hasMore) && products.length > 0 && (
-        <div className="mt-10 flex items-center justify-center gap-3">
-          {page > 1 ? (
-            <Link
-              href={`/products${buildQuery({ category: params.category, q: params.q, sort: params.sort, page: String(page - 1) })}`}
-            >
-              <Button variant="secondary">Previous</Button>
-            </Link>
-          ) : null}
-          <span className="text-sm text-neutral-500">Page {page}</span>
-          {hasMore ? (
-            <Link
-              href={`/products${buildQuery({ category: params.category, q: params.q, sort: params.sort, page: String(page + 1) })}`}
-            >
-              <Button>Next</Button>
-            </Link>
-          ) : null}
-        </div>
-      )}
-
-      {products.length === 0 && !params.q ? (
-        <Card variant="elevated" className="mt-8 bg-white py-16 text-center">
-          <p className="text-neutral-600">No products in this view yet.</p>
-          <p className="mt-1 text-sm text-neutral-400">
-            Try a different category or browse the full catalog.
-          </p>
-          <Link href="/products" className="mt-5 inline-block">
-            <Button>Browse all products</Button>
-          </Link>
-        </Card>
-      ) : null}
     </>
   );
 
   return (
-    <div className="flex min-h-full flex-col bg-white">
-      <SiteHeader activeCategory={params.category} searchQuery={params.q} />
+    <div className="flex min-h-full flex-col bg-neutral-50">
+      <SiteHeader activeCategory={params.category} searchQuery={params.q} variant="page" />
 
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-          <Link href="/" className="hover:text-neutral-700">
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6 lg:py-8">
+        <nav
+          className="mb-5 flex items-center gap-1.5 text-xs text-neutral-400"
+          aria-label="Breadcrumb"
+        >
+          <Link href="/" className="transition-colors hover:text-neutral-700">
             Home
           </Link>
-          <ChevronRight className="h-3 w-3" />
-          <Link href="/products" className="hover:text-neutral-700">
+          <ChevronRight className="h-3 w-3" aria-hidden />
+          <Link href="/products" className="transition-colors hover:text-neutral-700">
             Shop
           </Link>
           {activeCat && (
             <>
-              <ChevronRight className="h-3 w-3" />
+              <ChevronRight className="h-3 w-3" aria-hidden />
               <span className="font-medium text-neutral-700">{activeCat.label}</span>
             </>
           )}

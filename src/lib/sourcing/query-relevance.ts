@@ -18,6 +18,11 @@ const SEARCH_STOP_WORDS = new Set([
   "south",
   "africa",
   "za",
+  "by",
+  "from",
+  "of",
+  "edition",
+  "ed",
 ]);
 
 export function significantSearchTokens(query: string): string[] {
@@ -94,7 +99,24 @@ export function isRelevantProductHit(
   url?: string,
   minScore = 30,
 ): boolean {
-  return queryRelevanceScore(query, title, snippet, url) >= minScore;
+  if (queryRelevanceScore(query, title, snippet, url) >= minScore) return true;
+
+  const q = query.toLowerCase();
+  if (/\bsolder/i.test(q)) {
+    const blob = `${title} ${snippet}`.toLowerCase();
+    if (blob.includes("solder") && /\b(gun|iron|station|pencil|wire)\b/.test(blob)) {
+      return true;
+    }
+  }
+
+  if (/\bpencil/i.test(q) && /\bcase\b/i.test(q)) {
+    const blob = `${title} ${snippet}`.toLowerCase();
+    if (/\bpencil\b/.test(blob) && /\b(case|pouch|bag|holder|box)\b/.test(blob)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function rankHitsByRelevance<T extends { title: string; snippet: string; url: string; score: number; estimatedPriceZar?: number }>(

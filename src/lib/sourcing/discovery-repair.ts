@@ -1,11 +1,11 @@
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { resolveProductCategory } from "@/lib/catalog/category-resolver";
 import { calculateDiscoveryPrice, isLikelyMicroProduct } from "@/lib/pricing/discovery-pricing";
-import type { DiscoveredProductDraft } from "@/lib/sourcing/product-intelligence";
-import { extractProductIntelligence } from "@/lib/sourcing/product-intelligence";
 import { resolveProductImage } from "@/lib/sourcing/image-pipeline";
 import { isInvalidProductImageUrl, isStockPlaceholderUrl } from "@/lib/sourcing/product-image-url";
-import { parseProductEnrichment } from "@/types/product-enrichment";
+import { customerFacingDescription, customerFacingHighlights, isBoilerplateDescription, parseProductEnrichment } from "@/types/product-enrichment";
+import { containsSearchSnippetJunk, isPollutedListingCopy } from "@/lib/sourcing/listing-copy-sanitizer";
+import { isCatalogPageTitle, isSupplierBrandedCatalogTitle, normalizeCustomerProductTitle } from "@/lib/sourcing/wholesale-listing-quality";
 import { stockFromMetadata } from "@/lib/catalog/product-stock-label";
 import {
   stockOriginFromSupplierRegion,
@@ -13,11 +13,151 @@ import {
 } from "@/lib/sourcing/supplier-stock";
 import type { Database } from "@/types/database";
 
+function needsDescriptionRepair(description: string): boolean {
+  const trimmed = description.trim();
+  if (!trimmed) return true;
+  return (
+    isBoilerplateDescription(trimmed) ||
+    isPollutedListingCopy(trimmed) ||
+    containsSearchSnippetJunk(trimmed)
+  );
+}
+
+function repairDescription(name: string, description: string): string | null {
+  const cleaned = customerFacingDescription(description);
+  if (cleaned.length >= 24) return null;
+  const lead = name.trim();
+  if (!lead) return null;
+  return `${lead}. Available to order with fast local fulfilment.`;
+}
+
+/** Patch boilerplate copy and missing images without wiping the catalog row. */
+export async function repairProductListingIfNeeded(slugs: string[]): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+
+  const supabase = createServiceClient();
+  for (const slug of slugs) {
+    const { data } = await supabase.from("products").select("*").eq("slug", slug).maybeSingle();
+    if (!data) continue;
+
+    const updates: Record<string, unknown> = {};
+    const meta = (data.metadata ?? {}) as Record<string, unknown>;
+    const name = String(data.name ?? "");
+    const description = String(data.description ?? "");
+    const sourcing = meta.sourcing as { query?: string } | undefined;
+    const query = sourcing?.query ?? name;
+
+    const sourceUrl = String(data.source_url ?? "");
+    const domain = sourceUrl.includes("://")
+      ? new URL(sourceUrl).hostname.replace(/^www\./, "")
+      : "";
+
+    if (isCatalogPageTitle(name) || isSupplierBrandedCatalogTitle(name, domain)) {
+      const fixedName = normalizeCustomerProductTitle(query, name, domain ? [domain] : []);
+      if (fixedName && fixedName !== name) updates.name = fixedName;
+    }
+
+    const displayName = String(updates.name ?? name);
+
+    if (needsDescriptionRepair(description)) {
+      const fixed = repairDescription(displayName, description);
+      if (fixed) updates.description = fixed;
+    }
+
+    const enrichment = parseProductEnrichment(meta);
+    const cleanedHighlights = customerFacingHighlights(enrichment.highlights);
+    const summaryJunk =
+      enrichment.summary &&
+      (!customerFacingDescription(enrichment.summary) ||
+        containsSearchSnippetJunk(enrichment.summary));
+
+    if (
+      cleanedHighlights.length !== enrichment.highlights.length ||
+      enrichment.highlights.some((h) => containsSearchSnippetJunk(h)) ||
+      summaryJunk
+    ) {
+      updates.metadata = {
+        ...meta,
+        highlights: cleanedHighlights,
+        ...(summaryJunk ? { summary: undefined } : {}),
+      };
+    }
+
+    if (Object.keys(updates).length) {
+      await supabase
+        .from("products")
+        .update(updates as Database["public"]["Tables"]["products"]["Update"])
+        .eq("slug", slug);
+    }
+  }
+
+  void repairProductImagesIfNeeded(slugs);
+}
+
+/** Fast image-only repair — never re-runs full discovery search. */
+export async function repairMissingProductImages(
+  slugs: string[],
+  budgetMs = 50_000,
+): Promise<void> {
+  if (!isSupabaseConfigured() || !slugs.length) return;
+
+  const deadline = Date.now() + budgetMs;
+  const supabase = createServiceClient();
+
+  for (const slug of slugs) {
+    if (Date.now() > deadline) break;
+
+    const { data } = await supabase.from("products").select("*").eq("slug", slug).maybeSingle();
+    if (!data) continue;
+
+    const current = (data.enhanced_image_url ?? data.image_url) as string | null;
+    if (!isInvalidProductImageUrl(current) && current?.includes("/discovered/")) continue;
+
+    const meta = (data.metadata ?? {}) as Record<string, unknown>;
+    const sourcing = meta.sourcing as { query?: string } | undefined;
+    const query = sourcing?.query ?? (data.name as string);
+    const enrichment = parseProductEnrichment(meta);
+
+    const supplierUrl = (data.source_url as string | null) ?? "";
+    const supplierName = (data.source_name as string | null) ?? "Supplier";
+    const supplierUrls = [
+      supplierUrl,
+      enrichment.supplierIntel?.primary?.supplierUrl,
+      ...(enrichment.supplierIntel?.alternates?.map((a) => a.supplierUrl) ?? []),
+    ].filter((u): u is string => typeof u === "string" && u.startsWith("http"));
+
+    if (!supplierUrls.length) continue;
+
+    let fixed: Awaited<ReturnType<typeof resolveProductImage>> | null = null;
+    for (const url of [...new Set(supplierUrls)]) {
+      fixed = await resolveProductImage({
+        name: data.name as string,
+        slug: data.slug as string,
+        category: data.category as string,
+        supplierUrl: url,
+        supplierName,
+        searchQuery: query,
+      });
+      if (fixed?.enhancedImageUrl || fixed?.imageUrl) break;
+    }
+
+    if (!fixed?.imageUrl) continue;
+
+    await supabase
+      .from("products")
+      .update({
+        image_url: fixed.imageUrl,
+        enhanced_image_url: fixed.enhancedImageUrl ?? fixed.imageUrl,
+        ...(fixed.listingUrl ? { source_url: fixed.listingUrl } : {}),
+      } as Database["public"]["Tables"]["products"]["Update"])
+      .eq("slug", slug);
+  }
+}
+
 export async function repairProductImagesIfNeeded(slugs: string[]): Promise<void> {
   if (!isSupabaseConfigured()) return;
 
   const supabase = createServiceClient();
-  const draftCache = new Map<string, Map<string, DiscoveredProductDraft>>();
 
   for (const slug of slugs) {
     const { data } = await supabase.from("products").select("*").eq("slug", slug).maybeSingle();
@@ -69,39 +209,10 @@ export async function repairProductImagesIfNeeded(slugs: string[]): Promise<void
         !data.enhanced_image_url.includes("/discovered/"));
 
     if (needsImageRepair) {
-      const sourceIsPlaceholder =
-        !supplierUrl || supplierUrl.includes("almostanything.store/sourced");
-
-      if (sourceIsPlaceholder && query.length > 2) {
-        if (!draftCache.has(query)) {
-          const drafts = await extractProductIntelligence(query);
-          draftCache.set(query, new Map(drafts.map((d) => [d.slug, d])));
-        }
-        const draft = draftCache.get(query)?.get(slug);
-        if (draft) {
-          supplierUrl = draft.supplierUrl;
-          supplierName = draft.supplierName;
-          candidateUrl = draft.candidateImageUrl;
-          if (draft.supplierUrl && draft.supplierUrl !== data.source_url) {
-            updates.source_url = draft.supplierUrl;
-            updates.source_name = draft.supplierName;
-          }
-          if (draft.supplierIntel) {
-            const region = draft.supplierIntel.primary.region;
-            updates.stock_status = stockStatusFromSupplierRegion(region);
-            updates.metadata = {
-              ...((updates.metadata ?? meta) as Record<string, unknown>),
-              supplierIntel: draft.supplierIntel,
-              stock_origin: stockOriginFromSupplierRegion(region),
-            };
-          }
-        }
-      }
-
       const enrichment = parseProductEnrichment(meta);
       const supplierUrls = [
         supplierUrl,
-        enrichment.supplierIntel?.primary.supplierUrl,
+        enrichment.supplierIntel?.primary?.supplierUrl,
         ...(enrichment.supplierIntel?.alternates.map((a) => a.supplierUrl) ?? []),
         candidateUrl,
       ].filter((u): u is string => typeof u === "string" && u.length > 10);

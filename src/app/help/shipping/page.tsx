@@ -2,6 +2,11 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
+import {
+  INTERNATIONAL_WAREHOUSE_DELIVERY_DAYS,
+  SA_WAREHOUSE_DELIVERY_DAYS,
+  formatDeliveryWindow,
+} from "@/config/delivery";
 
 export default function ShippingHelpPage() {
   return (
@@ -9,7 +14,10 @@ export default function ShippingHelpPage() {
       title="Shipping & Delivery"
       sections={[
         { heading: "Processing", text: "After you place an order, we prepare your item for dispatch. This typically takes 1 to 3 business days." },
-        { heading: "Delivery windows", text: "Standard delivery is 3 to 7 business days depending on your location. Express options are available at checkout on select items." },
+        {
+          heading: "Delivery windows",
+          text: `South Africa warehouse orders typically arrive in ${formatDeliveryWindow(SA_WAREHOUSE_DELIVERY_DAYS.min, SA_WAREHOUSE_DELIVERY_DAYS.max)} business days. International warehouse orders take ${formatDeliveryWindow(INTERNATIONAL_WAREHOUSE_DELIVERY_DAYS.min, INTERNATIONAL_WAREHOUSE_DELIVERY_DAYS.max)} business days after dispatch.`,
+        },
         { heading: "Tracking", text: "You'll receive a tracking number by email once your order ships. Track your package anytime from the Track Order page or your account order history." },
         { heading: "Free shipping", text: "Orders over R1,000 qualify for free standard shipping nationwide." },
       ]}

@@ -4,7 +4,6 @@ import { SITE_CONFIG } from "@/config/site";
 import { SiteLogo } from "@/components/layout/SiteLogo";
 import {
   FOOTER_NAV,
-  FOOTER_POLICIES,
   FOOTER_SOCIALS,
   FOOTER_PAYMENTS,
   FOOTER_CATEGORIES,
@@ -20,8 +19,8 @@ function FooterColumn({
 }) {
   return (
     <div className="flex min-w-0 flex-col">
-      <h3 className="text-sm font-semibold text-brand">{title}</h3>
-      <div className="mt-3 flex-1">{children}</div>
+      <h3 className="text-sm font-semibold tracking-wide text-brand">{title}</h3>
+      <div className="mt-4 flex-1">{children}</div>
     </div>
   );
 }
@@ -36,7 +35,7 @@ function FooterLink({
   external?: boolean;
 }) {
   const className =
-    "text-sm text-neutral-600 transition-colors hover:text-neutral-900";
+    "text-sm leading-relaxed text-neutral-600 transition-colors hover:text-neutral-900";
 
   if (external || href.startsWith("mailto:")) {
     return (
@@ -85,12 +84,12 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-auto border-t border-neutral-200 bg-white text-neutral-900">
-      <div className="mx-auto max-w-7xl px-6 py-12 lg:py-14">
-        <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-14 xl:gap-20">
+      <div className="mx-auto max-w-[1400px] px-8 py-14 lg:px-12 lg:py-16">
+        <div className="flex flex-col gap-14 lg:flex-row lg:items-start lg:gap-16 xl:gap-24">
           {/* Brand column — logo, contact, socials */}
-          <div className="w-full shrink-0 lg:w-70 xl:w-80">
+          <div className="w-full shrink-0 lg:w-72 xl:w-80">
             <SiteLogo variant="full" />
-            <p className="mt-8 text-sm font-semibold text-neutral-900">Contact</p>
+            <p className="mt-10 text-sm font-semibold text-neutral-900">Contact</p>
             <a
               href={`mailto:${SITE_CONFIG.supportEmail}`}
               className="mt-2 block text-sm text-neutral-600 transition-colors hover:text-neutral-900"
@@ -119,11 +118,11 @@ export function SiteFooter() {
           </div>
 
           {/* Nav + newsletter — top-aligned with logo */}
-          <div className="flex min-w-0 flex-1 flex-col gap-10 lg:gap-12">
-            <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-x-10">
+          <div className="flex min-w-0 flex-1 flex-col gap-12 lg:gap-14">
+            <div className="grid grid-cols-2 gap-x-10 gap-y-12 sm:grid-cols-3 sm:gap-x-12 lg:grid-cols-3 lg:gap-y-14 xl:grid-cols-6 xl:gap-x-10 2xl:gap-x-14">
               {FOOTER_NAV.map((col) => (
                 <FooterColumn key={col.title} title={col.title}>
-                  <ul className="space-y-2.5">
+                  <ul className="space-y-3.5">
                     {col.links.map((link) => (
                       <li key={link.label}>
                         <FooterLink href={link.href} external={link.href.startsWith("mailto:")}>
@@ -136,7 +135,7 @@ export function SiteFooter() {
               ))}
 
               <FooterColumn title="Categories">
-                <ul className="space-y-2.5">
+                <ul className="space-y-3.5">
                   {topCategories.map((cat) => (
                     <li key={cat.href}>
                       <FooterLink href={cat.href}>{cat.label}</FooterLink>
@@ -144,7 +143,7 @@ export function SiteFooter() {
                   ))}
                   <li>
                     <Link
-                      href="/products"
+                      href="/categories"
                       className="text-sm font-medium text-brand transition-colors hover:text-brand/80"
                     >
                       All categories
@@ -154,12 +153,12 @@ export function SiteFooter() {
               </FooterColumn>
             </div>
 
-            <div className="max-w-lg">
-              <p className="text-sm font-semibold text-brand">Stay in the loop</p>
-              <p className="mt-1.5 text-sm text-neutral-600">
+            <div className="max-w-xl pt-2">
+              <p className="text-sm font-semibold tracking-wide text-brand">Stay in the loop</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-600">
                 New arrivals, member deals, and exclusive offers.
               </p>
-              <div className="mt-4">
+              <div className="mt-5">
                 <FooterNewsletter />
               </div>
             </div>
@@ -169,28 +168,13 @@ export function SiteFooter() {
 
       {/* Bottom bar */}
       <div className="border-t border-neutral-200">
-        <div className="mx-auto max-w-7xl px-6 py-6">
-          <div className="flex flex-col items-center gap-4 text-center lg:flex-row lg:justify-between lg:text-left">
+        <div className="mx-auto max-w-[1400px] px-8 py-7 lg:px-12">
+          <div className="flex flex-col items-center gap-5 text-center lg:flex-row lg:justify-between lg:text-left">
             <p className="text-xs text-neutral-500">
               © {year} {SITE_CONFIG.name}. All rights reserved.
             </p>
 
-            <nav
-              aria-label="Legal"
-              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1"
-            >
-              {FOOTER_POLICIES.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-xs text-neutral-500 transition-colors hover:text-neutral-900"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="flex flex-wrap items-center justify-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               {FOOTER_PAYMENTS.map((p) => (
                 <span
                   key={p}

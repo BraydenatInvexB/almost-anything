@@ -10,6 +10,7 @@ import {
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
 import { calculateMarkup } from "@/lib/markup/engine";
 import { buildProductMetadata } from "@/types/product-enrichment";
+import { INTERNATIONAL_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
 import type { ProductVariantsConfig } from "@/types/product-variants";
 import type { Database } from "@/types/database";
 import { z } from "zod";
@@ -111,8 +112,8 @@ export async function POST(request: NextRequest) {
         enhanced_image_url: product.enhanced_image_url ?? null,
         source_url: product.source_url,
         source_name: product.source_name,
-        delivery_days_min: product.delivery_days_min ?? 5,
-        delivery_days_max: product.delivery_days_max ?? 14,
+        delivery_days_min: product.delivery_days_min ?? INTERNATIONAL_WAREHOUSE_DELIVERY_DAYS.min,
+        delivery_days_max: product.delivery_days_max ?? INTERNATIONAL_WAREHOUSE_DELIVERY_DAYS.max,
         rating: product.rating ?? 4.5,
         review_count: product.review_count ?? 0,
         is_featured: product.is_featured ?? false,

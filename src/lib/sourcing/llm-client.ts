@@ -13,6 +13,17 @@ function anthropicClient(): Anthropic | null {
   return new Anthropic({ apiKey: key });
 }
 
+function parseJsonFromLlm(text: string): Record<string, unknown> {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const raw = fenced?.[1]?.trim() ?? trimmed;
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
 async function openaiJson(system: string, user: string): Promise<Record<string, unknown>> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return {};
@@ -40,7 +51,7 @@ async function openaiJson(system: string, user: string): Promise<Record<string, 
     choices?: { message?: { content?: string } }[];
   };
   try {
-    return JSON.parse(data.choices?.[0]?.message?.content ?? "{}") as Record<string, unknown>;
+    return parseJsonFromLlm(data.choices?.[0]?.message?.content ?? "{}");
   } catch {
     return {};
   }
@@ -66,7 +77,7 @@ async function anthropicJson(system: string, user: string): Promise<Record<strin
       .map((block) => block.text)
       .join("");
 
-    return JSON.parse(text || "{}") as Record<string, unknown>;
+    return parseJsonFromLlm(text);
   } catch {
     return {};
   }

@@ -4,6 +4,8 @@ import type { ProductSupplierIntel } from "@/types/supplier-sourcing";
 import {
   isPollutedListingCopy,
   sanitizeHighlightBullets,
+  containsSearchSnippetJunk,
+  stripSearchSnippetNoise,
 } from "@/lib/sourcing/listing-copy-sanitizer";
 
 export interface ProductEnrichment {
@@ -39,6 +41,8 @@ export function isBoilerplateDescription(text: string): boolean {
   if (/^Trade-priced .+ with competitive storefront pricing\.?$/i.test(t)) return true;
   if (/^.+ sourced at trade pricing from a South African supplier\.?$/i.test(t)) return true;
   if (/^.+ sourced from a South African supplier listing with fast local fulfilment\.?$/i.test(t)) return true;
+  if (/at competitive trade pricing/i.test(t)) return true;
+  if (/wholesale sourced, ready to order/i.test(t)) return true;
   return false;
 }
 
@@ -52,7 +56,8 @@ function isInternalHighlightLine(item: string): boolean {
 
 export function customerFacingDescription(text: string | undefined | null): string {
   if (!text?.trim()) return "";
-  const trimmed = text.trim();
+  const trimmed = stripSearchSnippetNoise(text.trim());
+  if (!trimmed || containsSearchSnippetJunk(trimmed)) return "";
   if (isBoilerplateDescription(trimmed) || isPollutedListingCopy(trimmed)) return "";
   return trimmed.length > 500 ? `${trimmed.slice(0, 500).trim()}…` : trimmed;
 }
@@ -72,7 +77,7 @@ export function customerFacingSpecifications(
 export function customerFacingHighlights(highlights: string[]): string[] {
   return sanitizeHighlightBullets(
     expandHighlightBullets(highlights.filter((item) => !isInternalHighlightLine(item))),
-  ).filter((item) => !isPollutedListingCopy(item));
+  ).filter((item) => !isPollutedListingCopy(item) && !containsSearchSnippetJunk(item));
 }
 
 function firstSentence(text: string): string {
@@ -105,9 +110,18 @@ export function buildCustomerProductCopy(
     highlights = expandHighlightBullets([rawDesc]);
   }
 
-  const descOk = rawDesc && !isBoilerplateDescription(rawDesc) && !isPollutedListingCopy(rawDesc) ? rawDesc : "";
+  const descOk =
+    rawDesc &&
+    !isBoilerplateDescription(rawDesc) &&
+    !isPollutedListingCopy(rawDesc) &&
+    !containsSearchSnippetJunk(rawDesc)
+      ? rawDesc
+      : "";
   const summaryOk =
-    rawSummary && !isBoilerplateDescription(rawSummary) && !isPollutedListingCopy(rawSummary)
+    rawSummary &&
+    !isBoilerplateDescription(rawSummary) &&
+    !isPollutedListingCopy(rawSummary) &&
+    !containsSearchSnippetJunk(rawSummary)
       ? rawSummary
       : "";
 

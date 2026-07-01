@@ -5,6 +5,7 @@ import {
   sanitizeHighlightBullets,
   sanitizeListingCopy,
 } from "@/lib/sourcing/listing-copy-sanitizer";
+import { isJunkProductTitle } from "@/lib/sourcing/wholesale-supplier-url";
 import { parseFaithfulToNatureMarkdown } from "@/lib/sourcing/listing-parsers/faithful-to-nature";
 import {
   buildDescriptionFromBullets,
@@ -15,9 +16,15 @@ import {
   upgradeProductImageUrl,
 } from "@/lib/sourcing/listing-parsers/shared";
 import { isTakealotUrl, parseTakealotMarkdown } from "@/lib/sourcing/listing-parsers/takealot";
+import {
+  extractStructuredData,
+  validateImageUrl,
+} from "@/lib/sourcing/advanced/structured-data-extractor";
 
 const JINA_READER = "https://r.jina.ai/";
 const USER_AGENT = "Mozilla/5.0 (compatible; AlmostAnythingBot/1.0)";
+
+import { ZAR_PER_USD } from "@/lib/pricing/discovery-pricing";
 
 import type { EnrichedListing } from "@/lib/sourcing/listing-parsers/types";
 
@@ -84,7 +91,7 @@ function parseDefaultDescription(
     };
   }
 
-  const fallback = `${title} sourced from a South African supplier listing with fast local fulfilment.`;
+  const fallback = `${title}. Available to order with local fulfilment.`;
   return { description: fallback, summary: fallback.slice(0, 140), highlights: [] };
 }
 
@@ -102,17 +109,17 @@ function parseImageFromMarkdown(
     const url = match[2];
     if (/logo|favicon|icon|cart|truck|banner|return|seller|\.svg/i.test(url)) continue;
     if (!/jpe?g|png|webp/i.test(url)) continue;
-    if (/\/128\/128\/|\/36\/36\/|\/42\/42\/|\/100\/100\//.test(url)) continue;
-    if (!url.includes("rukmini") && !url.includes("/asset/") && !url.includes("faithful-to-nature")) {
-      continue;
-    }
+    if (/\/(?:128|36|42|100)\/(?:128|36|42|100)\//.test(url)) continue;
 
-    let score = 0;
+    let score = 40;
+    if (/rukmini|cdn\.shopify|woocommerce|wp-content\/uploads|cloudfront|alicdn|media-amazon/i.test(url)) {
+      score += 80;
+    }
+    if (/\/asset\/|faithful-to-nature|product/i.test(url)) score += 40;
     const dim = url.match(/\/fccp\/(\d+)\/(\d+)\//);
     if (dim) score += Number(dim[1]) + Number(dim[2]);
-    if (/air-fryer|product|original/i.test(url)) score += 50;
-    if (titleToken && alt.toLowerCase().includes(titleToken)) score += 200;
-    if (alt.length > 12 && !/makro|easy 14-day/i.test(alt)) score += 60;
+    if (titleToken && alt.toLowerCase().includes(titleToken)) score += 120;
+    if (alt.length > 12 && !/makro|easy 14-day/i.test(alt)) score += 30;
     candidates.push({ url: upgradeProductImageUrl(url), score });
   }
 
@@ -137,10 +144,11 @@ export function parseListingMarkdown(markdown: string, pageUrl: string): Enriche
   const title = parseTitleFromMarkdown(markdown);
   const priceZar = pickListingPrice(parsePricesFromMarkdown(markdown));
   const imageUrl = parseImageFromMarkdown(markdown, pageUrl, title);
-  const copy = parseDefaultDescription(markdown, title);
 
-  if (!title || title.length < 4) return null;
+  if (!title || title.length < 4 || isJunkProductTitle(title)) return null;
   if (!priceZar) return null;
+
+  const copy = parseDefaultDescription(markdown, title);
 
   return {
     title,
@@ -152,7 +160,63 @@ export function parseListingMarkdown(markdown: string, pageUrl: string): Enriche
   };
 }
 
+async function fetchListingHtml(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(9000),
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return res.text();
+  } catch {
+    return null;
+  }
+}
+
+async function enrichFromStructuredHtml(html: string): Promise<EnrichedListing | null> {
+  const structured = extractStructuredData(html);
+  if (!structured.title || structured.price === null) return null;
+
+  let imageUrl: string | null | undefined = structured.imageUrl;
+  if (imageUrl) {
+    const imageOk = await validateImageUrl(imageUrl);
+    if (!imageOk) imageUrl = undefined;
+  }
+
+  const title = structured.title.trim();
+  if (!title || title.length < 4 || isJunkProductTitle(title)) return null;
+
+  const rate =
+    structured.currency && structured.currency !== "ZAR"
+      ? structured.currency === "USD"
+        ? ZAR_PER_USD
+        : 1
+      : 1;
+  const priceZar = Math.round(structured.price * rate * 100) / 100;
+  if (!priceZar) return null;
+
+  const description =
+    structured.description?.trim() ||
+    `${title}. Available to order with verified supplier pricing.`;
+
+  return {
+    title,
+    priceZar,
+    imageUrl: imageUrl ?? undefined,
+    description,
+    summary: description.slice(0, 140),
+    highlights: [],
+  };
+}
+
 export async function enrichListingFromUrl(url: string): Promise<EnrichedListing | null> {
+  const html = await fetchListingHtml(url);
+  if (html) {
+    const structured = await enrichFromStructuredHtml(html);
+    if (structured) return structured;
+  }
+
   try {
     const res = await fetch(`${JINA_READER}${url}`, {
       headers: { Accept: "text/plain", "User-Agent": USER_AGENT },

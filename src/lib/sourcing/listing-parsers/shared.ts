@@ -1,3 +1,5 @@
+import { ZAR_PER_USD } from "@/lib/pricing/discovery-pricing";
+
 export function cleanListingText(text: string): string {
   return text
     .replace(/\uFFFD/g, "")
@@ -30,18 +32,40 @@ export function parseTitleFromMarkdown(markdown: string): string {
   return title;
 }
 
+function extractPriceRichMarkdown(markdown: string): string {
+  const lines = markdown.split("\n");
+  const priceLines = lines.filter((line) =>
+    /(?:US\$|R\s*[\d,]{1,}|\$\s*[\d,]{1,}|USD\s*[\d,]{1,}|FOB|MOQ|\/piece|ex\s*vat|incl\s*vat)/i.test(
+      line,
+    ),
+  );
+  if (priceLines.length) return priceLines.join("\n");
+  return markdown.slice(0, 25_000);
+}
+
 export function parsePricesFromMarkdown(markdown: string): number[] {
-  const header = markdown.slice(0, 5000);
+  const header = extractPriceRichMarkdown(markdown);
   const prices: number[] = [];
 
   for (const match of header.matchAll(/R\s*([\d,]+)\s+(\d{2})(?:\s|$|\)|,)/g)) {
     const n = Number(`${match[1].replace(/,/g, "")}.${match[2]}`);
-    if (Number.isFinite(n) && n >= 29 && n <= 500_000) prices.push(n);
+    if (Number.isFinite(n) && n >= 8 && n <= 500_000) prices.push(n);
   }
 
   for (const match of header.matchAll(/R\s*([\d,]+(?:\.\d{2})?)/gi)) {
     const n = Number(match[1].replace(/,/g, ""));
-    if (Number.isFinite(n) && n >= 29 && n <= 500_000) prices.push(n);
+    if (Number.isFinite(n) && n >= 8 && n <= 500_000) prices.push(n);
+  }
+
+  for (const match of header.matchAll(
+    /(?:US\$|\$\s*|USD\s*)([\d,]+(?:\.\d{1,2})?)(?:\s*[-–]\s*(?:US\$|\$)?([\d,]+(?:\.\d{1,2})?))?/gi,
+  )) {
+    const low = Number((match[1] ?? "").replace(/,/g, ""));
+    const high = match[2] ? Number(match[2].replace(/,/g, "")) : undefined;
+    const usd = Number.isFinite(high) ? Math.min(low, high!) : low;
+    if (Number.isFinite(usd) && usd >= 0.1 && usd <= 50_000) {
+      prices.push(Math.round(usd * ZAR_PER_USD * 100) / 100);
+    }
   }
 
   return prices;
@@ -50,9 +74,11 @@ export function parsePricesFromMarkdown(markdown: string): number[] {
 export function pickListingPrice(prices: number[]): number | undefined {
   if (!prices.length) return undefined;
   const sorted = [...new Set(prices)].sort((a, b) => a - b);
+  const micro = sorted.filter((p) => p >= 8 && p <= 250);
+  if (micro.length) return micro[0];
   const shelf = sorted.filter((p) => p >= 199);
   if (shelf.length) return shelf[0];
-  const fallback = sorted.filter((p) => p >= 99);
+  const fallback = sorted.filter((p) => p >= 15);
   return fallback[0] ?? sorted[0];
 }
 

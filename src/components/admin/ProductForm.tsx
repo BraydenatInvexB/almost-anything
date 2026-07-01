@@ -7,6 +7,7 @@ import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor"
 import { ProductEnrichmentEditor } from "@/components/admin/ProductEnrichmentEditor";
 import { ProductSupplierPanel } from "@/components/admin/ProductSupplierPanel";
 import { ProductImageField } from "@/components/admin/ProductImageField";
+import { STORE_CATEGORIES } from "@/config/categories";
 import {
   StorefrontSectionToggles,
   flagsFromProduct,
@@ -15,6 +16,7 @@ import {
   STOCK_STATUS_OPTIONS,
   getStockStatusOrigin,
 } from "@/config/product-stock";
+import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
 import type { ProductVariantsConfig } from "@/types/product-variants";
 import { emptyVariantsConfig, parseVariantsConfig } from "@/types/product-variants";
 import type { ProductEnrichment } from "@/types/product-enrichment";
@@ -69,8 +71,8 @@ export function ProductForm({
     image_url: product?.image_url ?? "",
     source_name: product?.source_name ?? "",
     source_url: product?.source_url ?? "",
-    delivery_days_min: product ? String(product.delivery_days_min) : "3",
-    delivery_days_max: product ? String(product.delivery_days_max) : "7",
+    delivery_days_min: product ? String(product.delivery_days_min) : String(SA_WAREHOUSE_DELIVERY_DAYS.min),
+    delivery_days_max: product ? String(product.delivery_days_max) : String(SA_WAREHOUSE_DELIVERY_DAYS.max),
     is_featured: product?.is_featured ?? false,
     is_deal: product?.is_deal ?? false,
   });
@@ -194,9 +196,9 @@ export function ProductForm({
             <input className="input" value={form.slug} onChange={(e) => update("slug", e.target.value)} required />
           </Field>
           <Field label="Category" className="sm:col-span-2">
-            <select className="input capitalize" value={form.category} onChange={(e) => update("category", e.target.value)}>
-              {["general", "electronics", "furniture", "home", "fashion", "kitchen", "gaming"].map((c) => (
-                <option key={c} value={c}>{c}</option>
+            <select className="input" value={form.category} onChange={(e) => update("category", e.target.value)}>
+              {STORE_CATEGORIES.map((c) => (
+                <option key={c.slug} value={c.slug}>{c.label}</option>
               ))}
             </select>
           </Field>

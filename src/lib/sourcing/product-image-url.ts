@@ -2,6 +2,31 @@
 
 const STOCK_HOSTS = ["images.unsplash.com", "placeholder.com", "placehold.co"];
 
+/** Hosts configured in next.config — use next/image. Supplier listing URLs use native `<img>`. */
+const NEXT_IMAGE_HOST_SUFFIXES = [
+  "images.unsplash.com",
+  "supabase.co",
+  "media-amazon.com",
+  "takealot.com",
+  "alicdn.com",
+  "shopify.com",
+  "wp.com",
+  "googleusercontent.com",
+  "fbsbx.com",
+  "fbcdn.net",
+];
+
+export function shouldUseNextImage(src: string): boolean {
+  try {
+    const host = new URL(src).hostname.toLowerCase();
+    return NEXT_IMAGE_HOST_SUFFIXES.some(
+      (suffix) => host === suffix || host.endsWith(`.${suffix}`),
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function isStockPlaceholderUrl(url: string | null | undefined): boolean {
   if (!url) return false;
   try {

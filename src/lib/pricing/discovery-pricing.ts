@@ -35,7 +35,8 @@ export function isLikelyMicroProduct(query: string, name: string, category?: str
   const text = `${query} ${name}`.toLowerCase();
   const hardware =
     /\bscrew|\bbolt|\bfastener|\bm2\b|\bm3\b|\bm4\b|\bnut\b|\bwasher|\brivet/i.test(text);
-  return hardware || category === "garden" && /\bscrew|\bm2\b/i.test(text);
+  const solder = /\bsolder(ing)?\s*wire|\bsolder\s*wire|\bflux\b|\brosin\b/i.test(text);
+  return hardware || solder || (category === "garden" && /\bscrew|\bm2\b/i.test(text));
 }
 
 function microOrderQuantity(wholesaleZar: number): number {

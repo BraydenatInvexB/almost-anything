@@ -26,24 +26,24 @@ export async function fetchPageMarkdown(pageUrl: string): Promise<string> {
 export async function fetchDuckDuckGoMarkdown(searchQuery: string): Promise<string> {
   const liteUrl = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(searchQuery)}`;
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const res = await fetch(liteUrl, {
-        headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
-        signal: AbortSignal.timeout(18000),
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const html = await res.text();
-        if (html.length > 400 && (html.includes("uddg=") || /PLID\d+/i.test(html))) {
-          return html;
-        }
-      }
-    } catch {
-      /* retry */
-    }
-    await new Promise((resolve) => setTimeout(resolve, 800 * (attempt + 1)));
+  const jinaMarkdown = await fetchPageMarkdown(liteUrl);
+  if (jinaMarkdown.length > 200 && jinaMarkdown.includes("uddg=")) {
+    return jinaMarkdown;
   }
 
-  return fetchPageMarkdown(liteUrl);
+  try {
+    const res = await fetch(liteUrl, {
+      headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
+      signal: AbortSignal.timeout(8000),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const html = await res.text();
+      if (html.length > 400 && html.includes("uddg=")) return html;
+    }
+  } catch {
+    /* direct DDG unavailable — keep Jina output */
+  }
+
+  return jinaMarkdown;
 }

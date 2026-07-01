@@ -5,7 +5,7 @@ import { STORE_CATEGORIES } from "@/config/categories";
 import type { HeroShowcaseConfig } from "@/lib/admin/operations-types";
 import { STOREFRONT_SECTION_BY_ID } from "@/config/storefront-sections";
 import { BoldHero } from "@/components/home/BoldHero";
-import { BoldProducts } from "@/components/home/BoldProducts";
+import { HomeProductRail } from "@/components/home/HomeProductRail";
 
 const POP = ["#e30613", "#5BC8FF", "#e30613", "#C7A8FF", "#e30613", "#7DE2A8", "#e30613", "#9BE7FF"];
 
@@ -23,7 +23,7 @@ export function BoldHome({ hot, steals, fresh, heroShowcase }: BoldHomeProps) {
   const freshSection = STOREFRONT_SECTION_BY_ID.fresh;
 
   return (
-    <div className="mt-4 flex flex-col gap-6">
+    <div className="mt-4 flex flex-col gap-8 sm:gap-10">
       <BoldHero showcase={heroShowcase} />
 
       <BrandMarquee />
@@ -57,12 +57,9 @@ export function BoldHome({ hot, steals, fresh, heroShowcase }: BoldHomeProps) {
             href={hotSection.shopHref}
             cta={hotSection.shopCta}
           />
-          <BoldProducts products={hot} />
+          <HomeProductRail products={hot} />
         </>
       ) : null}
-
-      {/* How it works */}
-      <HowItWorksBold />
 
       {/* Today's steals */}
       {steals.length ? (
@@ -73,7 +70,7 @@ export function BoldHome({ hot, steals, fresh, heroShowcase }: BoldHomeProps) {
             href={stealsSection.shopHref}
             cta={stealsSection.shopCta}
           />
-          <BoldProducts products={steals} />
+          <HomeProductRail products={steals} />
         </>
       ) : null}
 
@@ -86,9 +83,12 @@ export function BoldHome({ hot, steals, fresh, heroShowcase }: BoldHomeProps) {
             href={freshSection.shopHref}
             cta={freshSection.shopCta}
           />
-          <BoldProducts products={fresh} />
+          <HomeProductRail products={fresh} />
         </>
       ) : null}
+
+      {/* How it works — after product discovery */}
+      <HowItWorksBold />
 
       <BoldCTA />
     </div>

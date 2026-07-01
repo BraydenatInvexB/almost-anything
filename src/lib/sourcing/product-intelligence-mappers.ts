@@ -5,10 +5,34 @@ import {
   isPollutedListingCopy,
   sanitizeHighlightBullets,
   sanitizeListingCopy,
+  containsSearchSnippetJunk,
+  stripSearchSnippetNoise,
 } from "@/lib/sourcing/listing-copy-sanitizer";
 import { validateProductAttributes } from "@/lib/sourcing/product-attribute-validator";
-import { buildSupplierIntel, isValidProductName } from "@/lib/sourcing/wholesale-supplier-search";
+import { deliveryDaysForSupplierRegion } from "@/config/delivery";
+import {
+  isAccessoryListing,
+  isCatalogPageTitle,
+  isSupplierBrandedCatalogTitle,
+  isNonProductListing,
+  isPlausibleWholesalePrice,
+  normalizeCustomerProductTitle,
+  productNameMatchesQuery,
+  refineProductTitle,
+  zarFromUsd,
+} from "@/lib/sourcing/wholesale-listing-quality";
+import {
+  isSaCommonlyStockedProduct,
+  isSaSupplierHit,
+  isSaSupplierUrl,
+} from "@/lib/sourcing/wholesale-sa-priority";
 import { isRelevantProductHit, rankHitsByRelevance } from "@/lib/sourcing/query-relevance";
+import {
+  buildSupplierIntel,
+  isJunkProductTitle,
+  isRetailPriceSource,
+  isValidProductName,
+} from "@/lib/sourcing/wholesale-supplier-search";
 import type { ProductSupplierIntel, WholesaleSearchHit } from "@/types/supplier-sourcing";
 import type { ProductVariantsConfig } from "@/types/product-variants";
 import { buildVariantMatrix } from "@/types/product-variants";
@@ -59,8 +83,21 @@ function wholesaleUsdFromHit(hit: WholesaleSearchHit): number {
 
 function cleanListingField(text: string | undefined, max = 500): string {
   if (!text?.trim()) return "";
-  const cleaned = sanitizeListingCopy(text.trim(), max);
+  const stripped = stripSearchSnippetNoise(text.trim());
+  if (!stripped || containsSearchSnippetJunk(stripped)) return "";
+  const cleaned = sanitizeListingCopy(stripped, max);
   return isPollutedListingCopy(cleaned) ? "" : cleaned;
+}
+
+function customerFacingListingCopy(
+  sources: Array<string | undefined>,
+  productName: string,
+): string {
+  for (const raw of sources) {
+    const cleaned = cleanListingField(raw, 420);
+    if (cleaned) return humanize(cleaned);
+  }
+  return `${productName} available to order.`;
 }
 
 function applyAttributeValidation(
@@ -96,39 +133,60 @@ export function mapHitToDraft(
   index: number,
   allHits: WholesaleSearchHit[],
 ): DiscoveredProductDraft | null {
-  const title = hit.title.slice(0, 100) || query;
-  if (!isValidProductName(title)) return null;
-  if (!isRelevantProductHit(query, title, hit.snippet, hit.url)) return null;
+  const rawTitle = hit.title.slice(0, 120) || query;
+  const listingSnippet = hit.listingSummary ?? hit.listingDescription ?? hit.snippet;
+  if (isAccessoryListing(query, rawTitle, listingSnippet)) return null;
+  if (isNonProductListing(rawTitle, hit.url, listingSnippet)) return null;
+  if (isCatalogPageTitle(rawTitle)) return null;
+  if (isSupplierBrandedCatalogTitle(rawTitle, hit.domain)) return null;
+  if (!isValidProductName(rawTitle)) return null;
+  if (isRetailPriceSource(hit.domain) || hit.tier === "retail") return null;
+  if (!isRelevantProductHit(query, rawTitle, hit.snippet, hit.url)) return null;
 
-  const category = resolveProductCategory(query, hit.title);
+  let title = refineProductTitle(query, rawTitle, listingSnippet);
+  if (isJunkProductTitle(title) && productNameMatchesQuery(query, query.trim())) {
+    title = query.trim();
+  }
+  if (isNonProductListing(title, hit.url, listingSnippet) || !isValidProductName(title)) return null;
+
+  const category = resolveProductCategory(query, title);
   const intel = buildSupplierIntel(query, allHits, index);
-  const minPrice = hit.region === "south_africa" ? 15 : 49;
-  if (!hit.estimatedPriceZar || hit.estimatedPriceZar < minPrice) return null;
+  const priceZar =
+    hit.estimatedPriceZar ??
+    (hit.estimatedPriceUsd ? zarFromUsd(hit.estimatedPriceUsd) : 0);
+  if (!isPlausibleWholesalePrice(query, priceZar)) return null;
 
   const listingDescription = cleanListingField(hit.listingDescription, 420);
   const listingHighlights = sanitizeHighlightBullets(hit.listingHighlights ?? []).filter(
-    (h) => !isPollutedListingCopy(h),
+    (h) => !isPollutedListingCopy(h) && !containsSearchSnippetJunk(h),
   );
+
+  const supplierLabel = hit.domain.replace(/^www\./, "");
+  const productName = normalizeCustomerProductTitle(query, title, [supplierLabel]);
+  if (!productNameMatchesQuery(query, productName)) return null;
+  if (isCatalogPageTitle(productName) || isJunkProductTitle(productName)) return null;
+  if (isSupplierBrandedCatalogTitle(productName, supplierLabel)) return null;
+
+  const description = customerFacingListingCopy(
+    [listingDescription, hit.listingSummary, hit.snippet],
+    productName,
+  );
+  const summary =
+    cleanListingField(hit.listingSummary, 140) ||
+    (description.length > 140 ? `${productName} — ready to order.` : description);
 
   return applyAttributeValidation(
     {
-      name: humanize(title),
-      slug: slugify(title),
-      description: humanize(
-        listingDescription ||
-          `${title} sourced at trade pricing${hit.region === "south_africa" ? " from a South African supplier" : " from an international wholesaler"}.`,
-      ),
-      summary: humanize(
-        cleanListingField(hit.listingSummary, 140) ||
-          listingDescription.slice(0, 140) ||
-          `${title} at competitive trade pricing.`,
-      ),
+      name: productName,
+      slug: slugify(productName),
+      description,
+      summary: humanize(summary),
       category,
-      basePrice: hit.estimatedPriceZar,
-      supplierName: hit.domain.replace(/^www\./, ""),
+      basePrice: priceZar,
+      supplierName: supplierLabel,
       supplierUrl: hit.url,
-      deliveryDaysMin: hit.region === "south_africa" ? 3 : 7,
-      deliveryDaysMax: hit.region === "south_africa" ? 7 : 21,
+      deliveryDaysMin: deliveryDaysForSupplierRegion(hit.region).min,
+      deliveryDaysMax: deliveryDaysForSupplierRegion(hit.region).max,
       rating: 4.5,
       reviewCount: 12,
       highlights: listingHighlights,
@@ -149,11 +207,17 @@ export function mapLlmProduct(
   query: string,
   hits: WholesaleSearchHit[],
 ): DiscoveredProductDraft | null {
-  const name = typeof raw.name === "string" ? humanize(raw.name) : null;
-  if (!name) return null;
-
   const hitIndex = Number(raw.supplier_hit_index);
   const matchedHit = Number.isFinite(hitIndex) && hits[hitIndex] ? hits[hitIndex] : null;
+
+  const supplierName =
+    typeof raw.supplier_name === "string"
+      ? raw.supplier_name
+      : matchedHit?.domain.replace(/^www\./, "") ?? hits[0]?.domain.replace(/^www\./, "") ?? "Trade supplier";
+
+  const rawName = typeof raw.name === "string" ? raw.name : null;
+  const name = rawName ? normalizeCustomerProductTitle(query, rawName) : null;
+  if (!name) return null;
 
   const optionsRaw = Array.isArray(raw.options) ? raw.options : [];
   const options: ProductVariantsConfig["options"] = optionsRaw
@@ -189,7 +253,7 @@ export function mapLlmProduct(
     Array.isArray(raw.highlights)
       ? raw.highlights.filter((h): h is string => typeof h === "string").map(humanize)
       : [],
-  );
+  ).filter((h) => !containsSearchSnippetJunk(h) && !isPollutedListingCopy(h));
 
   const specifications: Record<string, string> = {};
   if (raw.specifications && typeof raw.specifications === "object") {
@@ -201,44 +265,73 @@ export function mapLlmProduct(
   const supplierUrl =
     typeof raw.supplier_url === "string" && raw.supplier_url.startsWith("http")
       ? raw.supplier_url
-      : matchedHit?.url ?? hits.find((h) => h.region === "south_africa")?.url ?? hits[0]?.url ?? "";
+      : matchedHit?.url ?? hits.find((h) => isSaSupplierHit(h))?.url ?? hits[0]?.url ?? "";
 
   if (!supplierUrl) return null;
 
-  const supplierName =
-    typeof raw.supplier_name === "string"
-      ? raw.supplier_name
-      : matchedHit?.domain.replace(/^www\./, "") ?? hits[0]?.domain.replace(/^www\./, "") ?? "Trade supplier";
+  const saHits = hits.filter(isSaSupplierHit);
+  if (isSaCommonlyStockedProduct(query) && saHits.length >= 2 && !isSaSupplierUrl(supplierUrl)) {
+    return null;
+  }
+  if (isSaCommonlyStockedProduct(query) && saHits.length >= 1 && !matchedHit && !isSaSupplierUrl(supplierUrl)) {
+    return null;
+  }
 
   if (!isValidProductName(name)) return null;
+  if (isJunkProductTitle(name) || isCatalogPageTitle(name)) return null;
+  if (!productNameMatchesQuery(query, name)) return null;
+  if (!matchedHit) return null;
 
-  const hitIdx = matchedHit ? hits.indexOf(matchedHit) : 0;
+  const hitIdx = hits.indexOf(matchedHit);
   const intel = buildSupplierIntel(query, hits, hitIdx >= 0 ? hitIdx : 0);
 
-  const rawDescription =
-    typeof raw.description === "string" ? cleanListingField(raw.description, 420) : "";
+  if (isAccessoryListing(query, matchedHit.title, matchedHit.snippet)) return null;
+  if (isNonProductListing(matchedHit.title, matchedHit.url, matchedHit.snippet)) {
+    return null;
+  }
+
+  const description = customerFacingListingCopy(
+    [
+      typeof raw.description === "string" ? raw.description : undefined,
+      typeof raw.summary === "string" ? raw.summary : undefined,
+      matchedHit.listingDescription,
+      matchedHit.listingSummary,
+      matchedHit.snippet,
+    ],
+    name,
+  );
+
+  const basePrice =
+    matchedHit.estimatedPriceZar && matchedHit.estimatedPriceZar > 0
+      ? matchedHit.estimatedPriceZar
+      : matchedHit.estimatedPriceUsd && matchedHit.estimatedPriceUsd > 0
+        ? zarFromUsd(matchedHit.estimatedPriceUsd)
+        : 0;
+  if (!isPlausibleWholesalePrice(query, basePrice)) return null;
 
   return applyAttributeValidation(
     {
       name,
       slug: typeof raw.slug === "string" ? raw.slug : slugify(name),
-      description: humanize(rawDescription || `Trade-priced ${name} with fast fulfilment.`),
+      description: humanize(description),
       summary: humanize(
-        typeof raw.summary === "string" ? cleanListingField(raw.summary, 140) : `Shop ${name} at fair prices.`,
+        cleanListingField(typeof raw.summary === "string" ? raw.summary : undefined, 140) ||
+          (description.length > 140 ? `${name} — ready to order.` : description),
       ),
       category: resolveProductCategory(
         query,
         name,
         typeof raw.category === "string" ? raw.category : undefined,
       ),
-      basePrice:
-        Number(raw.base_price) ||
-        wholesaleUsdFromHit(matchedHit ?? hits[0] ?? ({} as WholesaleSearchHit)) ||
-        0,
+      basePrice,
       supplierName,
       supplierUrl,
-      deliveryDaysMin: Number(raw.delivery_days_min) || (matchedHit?.region === "south_africa" ? 3 : 7),
-      deliveryDaysMax: Number(raw.delivery_days_max) || (matchedHit?.region === "south_africa" ? 10 : 21),
+      deliveryDaysMin:
+        Number(raw.delivery_days_min) ||
+        deliveryDaysForSupplierRegion(matchedHit?.region).min,
+      deliveryDaysMax:
+        Number(raw.delivery_days_max) ||
+        deliveryDaysForSupplierRegion(matchedHit?.region).max,
       rating: Number(raw.rating) || 4.5,
       reviewCount: Number(raw.review_count) || 12,
       highlights,
@@ -283,4 +376,16 @@ export function draftsFromHits(
     .slice(0, maxProducts + 2)
     .map((hit, i) => mapHitToDraft(hit, query, i, allHits))
     .filter((p): p is DiscoveredProductDraft => p !== null);
+}
+
+export function filterPublishableDrafts(
+  drafts: DiscoveredProductDraft[],
+  query: string,
+): DiscoveredProductDraft[] {
+  return drafts.filter(
+    (d) =>
+      isPlausibleWholesalePrice(query, d.basePrice) &&
+      productNameMatchesQuery(query, d.name) &&
+      !isJunkProductTitle(d.name),
+  );
 }

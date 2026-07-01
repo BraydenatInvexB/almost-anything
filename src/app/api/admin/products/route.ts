@@ -4,6 +4,7 @@ import { getCurrentStaff } from "@/services/admin-service";
 import { can, staffCan } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createCustomProduct, updateCustomProduct } from "@/lib/admin/operations-persistence";
+import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
 import type { Database } from "@/types/database";
 
 type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
@@ -48,8 +49,8 @@ const createSchema = z.object({
   image_url: z.string().optional().nullable(),
   source_name: z.string().optional().nullable(),
   source_url: z.string().optional().nullable(),
-  delivery_days_min: z.number().default(3),
-  delivery_days_max: z.number().default(7),
+  delivery_days_min: z.number().default(SA_WAREHOUSE_DELIVERY_DAYS.min),
+  delivery_days_max: z.number().default(SA_WAREHOUSE_DELIVERY_DAYS.max),
   is_featured: z.boolean().default(false),
   is_deal: z.boolean().default(false),
   show_in_hot: z.boolean().default(false),

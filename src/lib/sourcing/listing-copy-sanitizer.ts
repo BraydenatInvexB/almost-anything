@@ -14,7 +14,39 @@ const POLLUTION_MARKERS = [
   /write a review/i,
   /b corp certified/i,
   /paia manual/i,
+  /https?:\/\//i,
+  /www\.\w+\.\w+/i,
+  /duckduckgo\.com/i,
+  /uddg=/i,
+  /product-category\//i,
+  /\d+\.\[[^\]]+\]\(/i,
+  /product\s+na\b/i,
 ];
+
+/** Raw search-snippet noise — URLs, markdown links, category paths. */
+export function containsSearchSnippetJunk(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  return (
+    /https?:\/\/|www\.\w+\.|duckduckgo\.com|uddg=/i.test(t) ||
+    /product-category\/|\/pages\/.*bulk/i.test(t) ||
+    /\d+\.\[[^\]]+\]\(/i.test(t) ||
+    /\bproduct\s+na\b/i.test(t)
+  );
+}
+
+/** Strip DDG markdown, URLs, and numbered search-result prefixes from listing copy. */
+export function stripSearchSnippetNoise(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/www\.\S+/gi, "")
+    .replace(/\buddg=[^)\s]+/gi, "")
+    .replace(/\d+\.\s*(?=\[|[A-Z])/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 const PRODUCT_ZONE_STOPS = [
   /\n\[Do you have a question\]/i,
@@ -30,6 +62,7 @@ export function isPollutedListingCopy(text: string): boolean {
   const t = text.trim();
   if (!t) return false;
   if (t.length > 2800) return true;
+  if (containsSearchSnippetJunk(t)) return true;
 
   let hits = 0;
   for (const re of POLLUTION_MARKERS) {
@@ -48,8 +81,8 @@ export function clipProductPageMarkdown(markdown: string): string {
 }
 
 export function sanitizeListingCopy(text: string, maxLength = 600): string {
-  const trimmed = text.trim();
-  if (!trimmed || isPollutedListingCopy(trimmed)) {
+  const trimmed = stripSearchSnippetNoise(text.trim());
+  if (!trimmed || containsSearchSnippetJunk(trimmed) || isPollutedListingCopy(trimmed)) {
     const clipped = clipProductPageMarkdown(trimmed);
     if (clipped.length < trimmed.length && clipped.length > 20) {
       return clipped.slice(0, maxLength).trim();

@@ -4,6 +4,7 @@ import {
   calculateDiscoveryPrice,
   type DiscoveryPriceResult,
 } from "@/lib/pricing/discovery-pricing";
+import { hasPublishablePrice } from "@/lib/sourcing/wholesale-listing-quality";
 import type { DiscoveredProductDraft } from "@/lib/sourcing/product-intelligence";
 import { buildProductMetadata } from "@/types/product-enrichment";
 import { ensureVariantStock } from "@/lib/catalog/product-stock-label";
@@ -31,11 +32,15 @@ export function attachImages(
   const category = resolveProductCategory(query, draft.name, draft.category);
   const pricing = calculateDiscoveryPrice(draft.basePrice, category, { inputIsZar: true });
 
+  const imageUrl = image.imageUrl ?? draft.candidateImageUrl ?? null;
+  const enhancedImageUrl =
+    image.enhancedImageUrl ?? image.imageUrl ?? draft.candidateImageUrl ?? null;
+
   return {
     ...draft,
     category,
-    imageUrl: image.imageUrl,
-    enhancedImageUrl: image.enhancedImageUrl,
+    imageUrl,
+    enhancedImageUrl,
     listingUrl: image.listingUrl,
     supplierUrl: image.listingUrl ?? draft.supplierUrl,
     retailPrice: pricing.retailPrice,
@@ -53,6 +58,8 @@ export async function persistDiscoveredProducts(
   const slugs: string[] = [];
 
   for (const p of products) {
+    if (!hasPublishablePrice(query, p.basePrice, p.retailPrice)) continue;
+
     const supplierUrl =
       p.supplierUrl.includes("almostanything.store/sourced") && p.supplierIntel?.primary.supplierUrl
         ? p.supplierIntel.primary.supplierUrl
@@ -121,4 +128,11 @@ export async function persistDiscoveredProducts(
   }
 
   return slugs;
+}
+
+export async function deleteDiscoveredProductsBySlugs(slugs: string[]): Promise<void> {
+  if (!isSupabaseConfigured() || !slugs.length) return;
+
+  const supabase = createServiceClient();
+  await supabase.from("products").delete().in("slug", slugs);
 }

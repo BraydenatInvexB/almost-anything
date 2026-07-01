@@ -3,17 +3,30 @@ import { materialMatchBoost } from "@/lib/sourcing/product-attribute-validator";
 import { queryRelevanceScore } from "@/lib/sourcing/query-relevance";
 import {
   type SearchTier,
+  SA_B2B_DISTRIBUTOR_DOMAINS,
   WHOLESALE_DOMAINS,
 } from "@/lib/sourcing/wholesale-supplier-constants";
 import type { WholesaleSearchHit } from "@/types/supplier-sourcing";
 
 export function extractPrices(text: string): { usd?: number; zar?: number } {
-  const usdMatch = text.match(/\$\s*([\d,]+(?:\.\d{1,2})?)|USD\s*([\d,]+(?:\.\d{1,2})?)/i);
-  const zarMatch = text.match(/R\s*([\d,]+(?:\.\d{1,2})?)|ZAR\s*([\d,]+(?:\.\d{1,2})?)/i);
+  const withoutDims = text
+    .replace(/\d+(?:\.\d+)?\s*(?:inch|inches|"|mm|cm|gb|tb)\b/gi, " ")
+    .replace(/\bM[1-9]\b/gi, " ");
+
+  const rangeMatch = withoutDims.match(
+    /(?:US\$|\$\s*)([\d,]+(?:\.\d{1,2})?)\s*[-–]\s*(?:US\$|\$)?([\d,]+(?:\.\d{1,2})?)/i,
+  );
+  const usdMatch =
+    rangeMatch ??
+    withoutDims.match(
+      /(?:US\$|\$\s*|USD\s*)([\d,]+(?:\.\d{1,2})?)(?:\s*[-–]\s*(?:US\$|\$)?([\d,]+(?:\.\d{1,2})?))?/i,
+    );
+  const zarMatch = withoutDims.match(/R\s*([\d,]+(?:\.\d{1,2})?)|ZAR\s*([\d,]+(?:\.\d{1,2})?)/i);
   const parse = (m: RegExpMatchArray | null) => {
     if (!m) return undefined;
-    const raw = (m[1] ?? m[2] ?? "").replace(/,/g, "");
-    const n = Number(raw);
+    const low = Number((m[1] ?? "").replace(/,/g, ""));
+    const high = m[2] ? Number(m[2].replace(/,/g, "")) : undefined;
+    const n = Number.isFinite(high) ? Math.min(low, high!) : low;
     return Number.isFinite(n) && n > 0 ? n : undefined;
   };
   const usd = parse(usdMatch);
@@ -31,6 +44,7 @@ export function scoreHit(
 ): number {
   let score = hit.estimatedPriceZar ? 1000 / hit.estimatedPriceZar : 50;
   if (tier.region === "south_africa") score += 120;
+  if (SA_B2B_DISTRIBUTOR_DOMAINS.some((d) => hit.domain.includes(d))) score += 80;
   if (tier.tier === "manufacturer") score += 40;
   if (tier.tier === "wholesale") score += 30;
   if (hit.tier === "retail") score -= 500;

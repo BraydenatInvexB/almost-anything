@@ -16,14 +16,20 @@ const CATEGORY_RULES: CategoryRule[] = [
     ],
   },
   {
-    slug: "garden",
+    slug: "phones",
     patterns: [
-      /\bscrew|\bbolt|\bnut\b|\bfastener|\bdrill|\bsocket|\bwrench|\btool\b|\bhardware|\bplier|\bm2\b|\bm3\b|\bm4\b|\bspanner|\bhammer|\bsaw\b/i,
+      /\biphone\b|\bipad\b|\bapple\s*watch\b|\bsamsung\b|\bpixel\b|\bphone\b|\bsmartphone\b|\btablet\b|\bgalaxy\s*tab\b/i,
     ],
   },
   {
-    slug: "phones",
-    patterns: [/\biphone\b|\bsamsung\b|\bpixel\b|\bphone\b|\bsmartphone\b|\btablet\b|\bipad\b/i],
+    slug: "garden",
+    patterns: [
+      /\bscrew|\bbolt|\bnut\b|\bfastener|\bdrill|\bsocket|\bwrench|\btool\b|\bhardware|\bplier|\bspanner|\bhammer|\bsaw\b/i,
+    ],
+  },
+  {
+    slug: "garden",
+    patterns: [/\bm2\b|\bm3\b(?!\s*max|\s*pro)\b|\bm5\b|\bm6\b/i],
   },
   {
     slug: "computers",
@@ -76,6 +82,36 @@ const CATEGORY_RULES: CategoryRule[] = [
   {
     slug: "books",
     patterns: [/\bbook|\bnotebook|\bstationery|\bpen\b|\bjournal/i],
+  },
+  {
+    slug: "travel",
+    patterns: [
+      /\btravel|\bluggage|\bsuitcase|\bbackpack|\bduffel|\bcabin bag|\btrolley bag|\bpassport|\bcarry.?on|\bweekender/i,
+    ],
+  },
+  {
+    slug: "automotive",
+    patterns: [
+      /\bautomotive|\bcar\b|\bvehicle|\btyre|\btire\b|\bmotor(?:cycle|bike)|\bdash\s*cam|\bbrake pad|\boil filter|\bnumber plate/i,
+    ],
+  },
+  {
+    slug: "health",
+    patterns: [
+      /\bvitamin|\bsupplement|\bmedical|\bfirst aid|\bthermometer|\bwheelchair|\bmobility|\bhealth\b|\bwellness\b|\bglucose|\bblood pressure/i,
+    ],
+  },
+  {
+    slug: "baby",
+    patterns: [
+      /\bbaby|\binfant|\bstroller|\bpram|\bdiaper|\bnappy|\bnursery|\btoddler|\bhigh chair|\bbottle warmer/i,
+    ],
+  },
+  {
+    slug: "office",
+    patterns: [
+      /\boffice|\bprinter|\btoner|\bstapler|\bfiling cabinet|\bpencil case|\bdesk chair|\bwhiteboard|\blaminator/i,
+    ],
   },
 ];
 

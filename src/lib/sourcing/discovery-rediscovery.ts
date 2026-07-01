@@ -1,10 +1,18 @@
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
-import { isValidProductName } from "@/lib/sourcing/wholesale-supplier-search";
+import { isValidProductName, isJunkProductTitle } from "@/lib/sourcing/wholesale-supplier-search";
+import {
+  isBadStoredDiscoveryProduct,
+  isCatalogPageTitle,
+  isPlausibleWholesalePrice,
+  isSupplierBrandedCatalogTitle,
+  productNameIncludesSupplier,
+  productNameMatchesQuery,
+} from "@/lib/sourcing/wholesale-listing-quality";
+import { isSaCommonlyStockedProduct, isSaSupplierUrl } from "@/lib/sourcing/wholesale-sa-priority";
 import { isRelevantProductHit } from "@/lib/sourcing/query-relevance";
-import { isBoilerplateDescription, parseProductEnrichment } from "@/types/product-enrichment";
-import { isPollutedListingCopy } from "@/lib/sourcing/listing-copy-sanitizer";
-import { isInvalidProductImageUrl } from "@/lib/sourcing/product-image-url";
+import { containsSearchSnippetJunk, isPollutedListingCopy } from "@/lib/sourcing/listing-copy-sanitizer";
 
+/** Only purge listings that are genuinely unusable — cosmetic issues are repaired in place. */
 export async function productsNeedRediscovery(slugs: string[], query: string): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
 
@@ -12,44 +20,42 @@ export async function productsNeedRediscovery(slugs: string[], query: string): P
   for (const slug of slugs) {
     const { data } = await supabase
       .from("products")
-      .select("source_url, name, description, retail_price, image_url, enhanced_image_url, metadata")
+      .select("source_url, name, description, retail_price")
       .eq("slug", slug)
       .maybeSingle();
 
     if (!data) continue;
 
-    const sourceUrl = (data.source_url as string | null) ?? "";
-    if (!sourceUrl || sourceUrl.includes("almostanything.store/sourced")) return true;
-
     const name = (data.name as string | null) ?? "";
-    if (!isValidProductName(name) || /\.(co\.za|com)\//i.test(name)) return true;
-
-    if (!isRelevantProductHit(query, name, String(data.description ?? ""), slug)) return true;
-
+    const description = String(data.description ?? "");
+    const sourceUrl = (data.source_url as string | null) ?? "";
     const retail = Number(data.retail_price) || 0;
-    if (retail > 0 && retail < 25) return true;
 
-    const image = (data.enhanced_image_url ?? data.image_url) as string | null;
-    if (isInvalidProductImageUrl(image)) return true;
+    if (retail <= 0) return true;
+    if (!isPlausibleWholesalePrice(query, retail * 0.9)) return true;
+    if (isJunkProductTitle(name)) return true;
+    if (isCatalogPageTitle(name)) return true;
+    if (isSupplierBrandedCatalogTitle(name, sourceUrl)) return true;
+    if (!productNameMatchesQuery(query, name)) return true;
 
-    const enrichment = parseProductEnrichment(data.metadata);
-    const highlights = enrichment.highlights.filter((h) => h.trim().length > 0);
-    const hasRealHighlights = highlights.some(
-      (h) => !/trade supplier|wholesale source|tier pricing|cost base/i.test(h.trim()),
-    );
-    if (!hasRealHighlights && (!data.description || isBoilerplateDescription(String(data.description)))) {
-      return true;
-    }
     if (
-      typeof data.description === "string" &&
-      (data.description.includes("sourced at trade pricing from a South African supplier") ||
-        data.description.includes("sourced from a South African supplier listing") ||
-        isPollutedListingCopy(data.description))
+      isBadStoredDiscoveryProduct({
+        name,
+        description,
+        sourceUrl,
+        retailPrice: retail,
+        query,
+      })
     ) {
       return true;
     }
-    if (highlights.some((h) => isPollutedListingCopy(h))) return true;
-    if (!enrichment.supplierIntel?.primary?.supplierUrl) return true;
+
+    if (isSaCommonlyStockedProduct(query) && !isSaSupplierUrl(sourceUrl)) return true;
+    if (productNameIncludesSupplier(name)) return true;
+    if (!sourceUrl || sourceUrl.includes("almostanything.store/sourced")) return true;
+    if (!isValidProductName(name) || /\.(co\.za|com)\//i.test(name)) return true;
+    if (!isRelevantProductHit(query, name, description, slug)) return true;
+    if (isPollutedListingCopy(description) || containsSearchSnippetJunk(description)) return true;
   }
 
   return false;

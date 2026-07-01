@@ -22,6 +22,11 @@ export type ProductCategory =
   | "garden"
   | "pets"
   | "books"
+  | "travel"
+  | "automotive"
+  | "health"
+  | "baby"
+  | "office"
   | "general";
 
 export type QuoteTier = "cheapest" | "fastest" | "best_quality";

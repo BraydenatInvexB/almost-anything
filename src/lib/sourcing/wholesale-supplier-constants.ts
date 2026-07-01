@@ -13,7 +13,23 @@ export const RETAIL_DOMAINS = [
   "incredible.co.za",
 ];
 
+export const SA_B2B_DISTRIBUTOR_DOMAINS = [
+  "core.co.za",
+  "mustek.co.za",
+  "rectron.co.za",
+  "syntech.co.za",
+  "axiz.co.za",
+  "comstor.co.za",
+  "westconcomstor.com",
+  "tarsus.co.za",
+  "pinnacle.co.za",
+  "datacentrix.co.za",
+  "esquire.co.za",
+  "homemation.co.za",
+];
+
 export const SA_TRADE_DOMAINS = [
+  ...SA_B2B_DISTRIBUTOR_DOMAINS,
   "dischem.co.za",
   "clicks.co.za",
   "faithful-to-nature.co.za",
@@ -22,7 +38,8 @@ export const SA_TRADE_DOMAINS = [
   "beautysouthafrica.co.za",
 ];
 
-export const SA_RETAILER_SITES = [
+/** Consumer marketplaces — never use for wholesale cost / discovery pricing. Images only via SA_IMAGE_ONLY_DOMAINS. */
+export const RETAIL_MARKETPLACE_DOMAINS = [
   "takealot.com",
   "loot.co.za",
   "exclusivebooks.co.za",
@@ -33,12 +50,19 @@ export const SA_RETAILER_SITES = [
   "wantitall.co.za",
   "readerswarehouse.co.za",
   "onedayonly.co.za",
-  "faithful-to-nature.co.za",
-  "dischem.co.za",
-  "clicks.co.za",
+  "checkers.co.za",
+  "woolworths.co.za",
+  "superbalist.com",
   "capeunionmart.co.za",
   "hificorp.co.za",
+  "digicape.co.za",
+  "istore.co.za",
+  "apple.com",
+  "bestbuy.com",
 ];
+
+/** @deprecated Use RETAIL_MARKETPLACE_DOMAINS — kept for image-only lookups. */
+export const SA_RETAILER_SITES = RETAIL_MARKETPLACE_DOMAINS;
 
 export const SA_IMAGE_ONLY_DOMAINS = ["takealot.com", ...SA_TRADE_DOMAINS];
 
@@ -70,7 +94,11 @@ export type SearchTier = {
 };
 
 export const SEARCH_TIERS: SearchTier[] = [
-  { region: "south_africa", tier: "trade", query: (q) => `site:.co.za ${q} buy shop price` },
+  {
+    region: "south_africa",
+    tier: "wholesale",
+    query: (q) => `site:.co.za ${q} wholesale trade supplier distributor MOQ`,
+  },
   {
     region: "south_africa",
     tier: "wholesale",
@@ -79,7 +107,7 @@ export const SEARCH_TIERS: SearchTier[] = [
   {
     region: "south_africa",
     tier: "trade",
-    query: (q) => `${q} Dischem OR Clicks OR faithful to nature South Africa`,
+    query: (q) => `${q} importer distributor Johannesburg Cape Town trade cost`,
   },
   {
     region: "south_africa",
@@ -87,14 +115,24 @@ export const SEARCH_TIERS: SearchTier[] = [
     query: (q) => `${q} trade supplier Johannesburg Cape Town distributor cost`,
   },
   {
-    region: "international",
-    tier: "manufacturer",
-    query: (q) => `site:alibaba.com ${q} factory wholesale MOQ price`,
+    region: "south_africa",
+    tier: "trade",
+    query: (q) => `site:.co.za ${q} distributor importer bulk trade`,
+  },
+  {
+    region: "south_africa",
+    tier: "wholesale",
+    query: (q) => `${q} wholesaler Johannesburg Cape Town Durban .co.za trade`,
   },
   {
     region: "international",
     tier: "manufacturer",
-    query: (q) => `site:made-in-china.com ${q} manufacturer wholesale`,
+    query: (q) => `site:alibaba.com/product-detail ${q} wholesale factory price MOQ`,
+  },
+  {
+    region: "international",
+    tier: "manufacturer",
+    query: (q) => `site:made-in-china.com/product ${q} manufacturer wholesale`,
   },
   {
     region: "international",
@@ -106,6 +144,90 @@ export const SEARCH_TIERS: SearchTier[] = [
     tier: "wholesale",
     query: (q) => `${q} wholesale bulk supplier FOB price trade`,
   },
+  {
+    region: "international",
+    tier: "wholesale",
+    query: (q) => `site:alibaba.com ${q} wholesale used tablet "\\$" MOQ price`,
+  },
+];
+
+/** SA wholesale web-search tiers (no retail marketplaces). */
+export const SA_WHOLESALE_TIERS = SEARCH_TIERS.slice(0, 6);
+
+/** International B2B — only used when SA trade search is thin. */
+export const INTL_WHOLESALE_TIERS = SEARCH_TIERS.slice(6);
+
+/** Price-focused SA queries — surfaces ZAR trade figures in snippets. */
+export const SA_PRICE_TIERS: SearchTier[] = [
+  {
+    region: "south_africa",
+    tier: "trade",
+    query: (q) => `site:.co.za ${q} price ZAR trade distributor ex VAT`,
+  },
+  {
+    region: "south_africa",
+    tier: "trade",
+    query: (q) => `${q} trade price South Africa "R" wholesale distributor`,
+  },
+  {
+    region: "south_africa",
+    tier: "wholesale",
+    query: (q) =>
+      `site:core.co.za OR site:mustek.co.za OR site:rectron.co.za OR site:syntech.co.za ${q} price`,
+  },
+  {
+    region: "south_africa",
+    tier: "trade",
+    query: (q) => `${q} importer Johannesburg Cape Town "incl VAT" OR "ex VAT" .co.za`,
+  },
+  {
+    region: "south_africa",
+    tier: "trade",
+    query: (q) => `site:.co.za ${q} product "R" buy shop`,
+  },
+  {
+    region: "south_africa",
+    tier: "trade",
+    query: (q) => `${q} stationery school supplies South Africa .co.za price`,
+  },
+];
+
+/** International B2B product-detail passes for low-cost consumables (stationery, fasteners, etc.). */
+export const CONSUMABLE_INTL_TIERS: SearchTier[] = [
+  {
+    region: "international",
+    tier: "manufacturer",
+    query: (q) => `site:made-in-china.com/product ${q} US$ FOB MOQ`,
+  },
+  {
+    region: "international",
+    tier: "manufacturer",
+    query: (q) => `site:en.made-in-china.com/product ${q} pencil case US$`,
+  },
+  {
+    region: "international",
+    tier: "manufacturer",
+    query: (q) => `site:alibaba.com/product-detail ${q} US$ MOQ`,
+  },
+];
+
+/** Price-focused international B2B queries. */
+export const INTL_PRICE_TIERS: SearchTier[] = [
+  {
+    region: "international",
+    tier: "manufacturer",
+    query: (q) => `site:alibaba.com/product-detail ${q} "\\$" MOQ unit price`,
+  },
+  {
+    region: "international",
+    tier: "manufacturer",
+    query: (q) => `site:made-in-china.com/product ${q} FOB price USD`,
+  },
+  {
+    region: "international",
+    tier: "wholesale",
+    query: (q) => `${q} wholesale factory price "\\$" MOQ bulk supplier`,
+  },
 ];
 
 export type DirectSiteSearch = {
@@ -116,28 +238,5 @@ export type DirectSiteSearch = {
   extractUrls: (markdown: string) => string[];
 };
 
-export const DIRECT_SA_SITE_SEARCHES: DirectSiteSearch[] = [
-  {
-    domain: "makro.co.za",
-    buildUrl: (q) => `https://www.makro.co.za/search?q=${encodeURIComponent(q)}`,
-    region: "south_africa",
-    tier: "trade",
-    extractUrls: (md) => {
-      const matches = md.match(/https:\/\/www\.makro\.co\.za\/[^)\s"]+\/p\/itm[a-f0-9]+/gi) ?? [];
-      return matches.map((u) => u.split("?")[0]);
-    },
-  },
-  {
-    domain: "faithful-to-nature.co.za",
-    buildUrl: (q) =>
-      `https://www.faithful-to-nature.co.za/catalogsearch/result/?q=${encodeURIComponent(q)}`,
-    region: "south_africa",
-    tier: "trade",
-    extractUrls: (md) => {
-      const skip = /catalogsearch|account|checkout|cart|blog|static|media|favicon/i;
-      const matches =
-        md.match(/https:\/\/www\.faithful-to-nature\.co\.za\/[a-z0-9-]+/gi) ?? [];
-      return matches.filter((u) => !skip.test(u));
-    },
-  },
-];
+/** Direct site searches disabled for pricing — retail catalogues are not wholesale sources. */
+export const DIRECT_SA_SITE_SEARCHES: DirectSiteSearch[] = [];

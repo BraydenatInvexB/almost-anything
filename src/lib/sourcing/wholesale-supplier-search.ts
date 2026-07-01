@@ -1,29 +1,17 @@
 import "server-only";
 
 import type { SupplierListing, WholesaleSearchHit } from "@/types/supplier-sourcing";
-import {
-  SA_IMAGE_ONLY_DOMAINS,
-  SA_RETAILER_SITES,
-  SEARCH_TIERS,
-} from "@/lib/sourcing/wholesale-supplier-constants";
-import {
-  dedupeHits,
-  enrichProductHits,
-  filterRelevantHits,
-} from "@/lib/sourcing/wholesale-supplier-enrich";
-import { fetchDuckDuckGoMarkdown } from "@/lib/sourcing/wholesale-supplier-fetch";
-import { parseSearchResults } from "@/lib/sourcing/wholesale-supplier-parse";
-import {
-  searchBroadSouthAfrica,
-  searchDirectSaSites,
-  searchSaRetailerListings,
-} from "@/lib/sourcing/wholesale-supplier-sa-search";
+import { SA_IMAGE_ONLY_DOMAINS } from "@/lib/sourcing/wholesale-supplier-constants";
+import { runDiscoverySearchPipeline } from "@/lib/sourcing/discovery-search-engine";
+import { sortBySaWholesaleFirst } from "@/lib/sourcing/wholesale-sa-priority";
 import { classifyDomain } from "@/lib/sourcing/wholesale-supplier-url";
 
 export { SA_IMAGE_ONLY_DOMAINS };
 export {
   isJunkListing,
+  isJunkProductTitle,
   isProductPageUrl,
+  isRetailPriceSource,
   isValidProductName,
 } from "@/lib/sourcing/wholesale-supplier-url";
 
@@ -31,34 +19,7 @@ export async function searchWholesaleSuppliers(
   query: string,
   options?: { maxResults?: number },
 ): Promise<WholesaleSearchHit[]> {
-  const maxResults = options?.maxResults ?? 12;
-
-  const [retailerHits, directHits, broadSaHits] = await Promise.all([
-    searchSaRetailerListings(query),
-    searchDirectSaSites(query),
-    searchBroadSouthAfrica(query),
-  ]);
-
-  const allHits: WholesaleSearchHit[] = [...retailerHits, ...directHits, ...broadSaHits];
-  let ranked = filterRelevantHits(await enrichProductHits(dedupeHits(allHits), query), query);
-  if (ranked.length >= 1) return ranked.slice(0, maxResults);
-
-  const intlTiers = SEARCH_TIERS.slice(4);
-  const ddgPages = await Promise.all(
-    intlTiers.map(async (tier) => ({
-      tier,
-      markdown: await fetchDuckDuckGoMarkdown(tier.query(query)),
-    })),
-  );
-
-  for (const { tier, markdown } of ddgPages) {
-    if (markdown) {
-      allHits.push(...parseSearchResults(markdown, tier, query));
-    }
-  }
-
-  ranked = filterRelevantHits(await enrichProductHits(dedupeHits(allHits), query), query);
-  return ranked.slice(0, maxResults);
+  return runDiscoverySearchPipeline(query, options);
 }
 
 export function hitToSupplierListing(hit: WholesaleSearchHit, index: number): SupplierListing {
@@ -87,37 +48,36 @@ export function buildSupplierIntel(
 ): import("@/types/supplier-sourcing").ProductSupplierIntel | null {
   if (!hits.length) return null;
 
-  const listings = hits.map((h, i) => hitToSupplierListing(h, i));
+  const sorted = sortBySaWholesaleFirst(hits);
+  const listings = sorted.map((h, i) => hitToSupplierListing(h, i));
   const saListings = listings.filter((l) => l.region === "south_africa");
   const intlListings = listings.filter((l) => l.region !== "south_africa");
 
-  const cheapestSa = [...saListings]
-    .filter((l) => l.wholesalePriceZar && l.wholesalePriceZar > 0)
-    .sort((a, b) => (a.wholesalePriceZar ?? Infinity) - (b.wholesalePriceZar ?? Infinity))[0];
-
-  const fallbackPrimary = listings[primaryIndex] ?? listings[0];
-  const primary = cheapestSa ?? saListings[0] ?? fallbackPrimary;
+  const cheapestSa = saListings.find(
+    (l) => (l.wholesalePriceZar && l.wholesalePriceZar > 0) || l.wholesalePriceUsd,
+  );
+  const cheapestAny = listings.find(
+    (l) => (l.wholesalePriceZar && l.wholesalePriceZar > 0) || l.wholesalePriceUsd,
+  );
+  const primary = listings[primaryIndex] ?? cheapestSa ?? cheapestAny ?? listings[0];
   primary.isPrimary = true;
 
   const alternates = [
-    ...saListings.filter((l) => l.id !== primary.id),
-    ...intlListings,
+    ...listings.filter((l) => l.id !== primary.id && l.region === "south_africa"),
+    ...intlListings.filter((l) => l.id !== primary.id),
   ].slice(0, 4);
-
-  const priced = listings.filter((l) => l.wholesalePriceZar && l.wholesalePriceZar > 0);
-  const cheapest = priced.sort(
-    (a, b) => (a.wholesalePriceZar ?? Infinity) - (b.wholesalePriceZar ?? Infinity),
-  )[0];
 
   return {
     primary,
     alternates,
     searchQuery: query,
     searchedAt: new Date().toISOString(),
-    cheapestWholesaleZar: cheapest?.wholesalePriceZar,
+    cheapestWholesaleZar: cheapestSa?.wholesalePriceZar ?? cheapestAny?.wholesalePriceZar,
     researchNotes:
-      saListings.length > 0
-        ? `Searched ${SA_RETAILER_SITES.length} major SA stores plus open-web .co.za suppliers — found ${saListings.length} local listing(s) and ${intlListings.length} international option(s).`
-        : `No SA listing found yet — showing international wholesale options. Try a more specific product name.`,
+      listings.length > 0
+        ? saListings.length > 0
+          ? `Found ${saListings.length} South African trade source(s)${intlListings.length ? ` and ${intlListings.length} international fallback(s)` : ""}, sorted SA-first then lowest cost.`
+          : `Found ${listings.length} wholesale source(s) — no SA trade listing yet; showing best available trade pricing.`
+        : `No wholesale listing found yet. Try a more specific product name or model number.`,
   };
 }

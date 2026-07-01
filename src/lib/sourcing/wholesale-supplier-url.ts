@@ -1,5 +1,7 @@
 import {
   RETAIL_DOMAINS,
+  RETAIL_MARKETPLACE_DOMAINS,
+  SA_B2B_DISTRIBUTOR_DOMAINS,
   SA_SIGNALS,
   SA_TRADE_DOMAINS,
   WHOLESALE_DOMAINS,
@@ -39,17 +41,28 @@ export function titleFromProductPath(url: string): string {
   }
 }
 
+export function isRetailPriceSource(domain: string): boolean {
+  const lower = domain.toLowerCase();
+  return (
+    RETAIL_DOMAINS.some((d) => lower.includes(d)) ||
+    RETAIL_MARKETPLACE_DOMAINS.some((d) => lower.includes(d))
+  );
+}
+
 export function classifyDomain(domain: string): {
   region: SupplierRegion;
   tier: SupplierTier;
   retail: boolean;
 } {
   const lower = domain.toLowerCase();
+  if (isRetailPriceSource(lower)) {
+    return { region: "unknown", tier: "retail", retail: true };
+  }
+  if (SA_B2B_DISTRIBUTOR_DOMAINS.some((d) => lower.includes(d))) {
+    return { region: "south_africa", tier: "wholesale", retail: false };
+  }
   if (SA_TRADE_DOMAINS.some((d) => lower.includes(d))) {
     return { region: "south_africa", tier: "trade", retail: false };
-  }
-  if (RETAIL_DOMAINS.some((d) => lower.includes(d))) {
-    return { region: "unknown", tier: "retail", retail: true };
   }
   if (lower.endsWith(".co.za")) {
     return { region: "south_africa", tier: "trade", retail: false };
@@ -88,10 +101,20 @@ function isLikelySaShopProductPath(path: string, search: string): boolean {
 }
 
 export function isJunkListing(title: string, url: string): boolean {
+  try {
+    const host = new URL(resolveRedirectUrl(url)).hostname.toLowerCase();
+    if (/gumtree|olx\.|cashconverters|vinted|junkmail|facebook\.com\/marketplace/i.test(host)) {
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
   const t = title.toLowerCase();
   if (/\.(co\.za|com)\//.test(t) || /^www\./.test(t)) return true;
   if (/^[\w.-]+\.(co\.za|com)(\s|$)/.test(t)) return true;
   if (/\.\.\./.test(title)) return true;
+  if (/\b(trade[\s-]?in|shop\s+all|prices?\s+in\s+china)\b/i.test(title)) return true;
+  if (isJunkProductTitle(title)) return true;
 
   try {
     const { pathname, search, hostname } = new URL(resolveRedirectUrl(url));
@@ -101,19 +124,41 @@ export function isJunkListing(title: string, url: string): boolean {
       return true;
     }
     if (/my-catalogue|athome\.co\.za\/products/i.test(`${hostname}${pathname}`)) return true;
+    if (/\/(showroom|countrysearch|trade-in|tradein)\b/i.test(pathname)) return true;
   } catch {
     return true;
   }
   return false;
 }
 
+const JUNK_PAGE_TITLE =
+  /\b(store\s+unavailable|page\s+not\s+found|404\s+not\s+found|access\s+denied|coming\s+soon|under\s+construction|site\s+maintenance|temporarily\s+unavailable|error\s+404|not\s+available|product\s+unavailable|shop\s+closed|domain\s+for\s+sale|password\s+protected|enable\s+javascript)\b/i;
+
+/** Dead-shop / error-page titles that are not product names. */
+export function isJunkProductTitle(name: string): boolean {
+  const t = name.trim();
+  if (!t || t.length < 4) return true;
+  if (JUNK_PAGE_TITLE.test(t)) return true;
+  if (/^(home|shop|products?|catalogue|catalog|store|index|welcome)$/i.test(t)) return true;
+  if (/\b(not available right now|just a moment|enable javascript|access denied)\b/i.test(t)) return true;
+  if (/\b(bulk\s+pricing|wholesale\s+pricing|trade\s+pricing|price\s+list)\b/i.test(t)) return true;
+  if (/\b(products?\s+tagged\s+with|find\s+details\s+and\s+price)\b/i.test(t)) return true;
+  if (/\b(suppliers?|distributors?|wholesalers?)\s*$/i.test(t) && t.length < 48) return true;
+  if (/https?:\/\/|www\.\w+\./i.test(t)) return true;
+  return false;
+}
+
 export function isValidProductName(name: string): boolean {
-  const trimmed = name.trim();
-  if (trimmed.length < 4 || trimmed.length > 120) return false;
-  if (isJunkListing(trimmed, "https://example.com/p/product")) return false;
-  if (/\.(co\.za|com)\//i.test(trimmed)) return false;
-  if (/^www\./i.test(trimmed)) return false;
+  const trimmed = name.trim().slice(0, 120);
+  if (trimmed.length < 4) return false;
+
+  const t = trimmed.toLowerCase();
+  if (/\.(co\.za|com)\//.test(t) || /^www\./.test(t)) return false;
+  if (/^[\w.-]+\.(co\.za|com)(\s|$)/.test(t)) return false;
+  if (/\.\.\./.test(trimmed)) return false;
   if (/^airfryers(\s+air fryer)?$/i.test(trimmed)) return false;
+  if (isJunkProductTitle(trimmed)) return false;
+
   return true;
 }
 
@@ -136,7 +181,12 @@ export function isProductPageUrl(url: string): boolean {
     if (host.includes("builders.co.za") && /\/p\d+/i.test(path)) return true;
     if (host.includes("game.co.za") && /\/product\//i.test(path)) return true;
     if (host.includes("incredible.co.za") && /\/(product|p)\//i.test(path)) return true;
-    if (WHOLESALE_DOMAINS.some((d) => host.includes(d))) return true;
+    if (host.includes("alibaba.com")) return /\/product-detail\//i.test(path);
+    if (host.includes("1688.com")) return /\/offer\//i.test(path);
+    if (host.includes("made-in-china.com")) return /\/product\/[^/]+\//i.test(path);
+    if (WHOLESALE_DOMAINS.some((d) => host.includes(d))) {
+      return !/\/(showroom|countrysearch|trade|catalog|category)\b/i.test(path);
+    }
 
     if (host.endsWith(".co.za") || host.endsWith(".africa")) {
       return isLikelySaShopProductPath(path, u.search);

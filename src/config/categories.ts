@@ -154,11 +154,112 @@ export const STORE_CATEGORIES: StoreCategory[] = [
     image:
       "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&h=400&fit=crop",
   },
+  {
+    slug: "travel",
+    label: "Travel",
+    blurb: "Luggage, bags, and travel essentials.",
+    color: "#0284c7",
+    icon: "Plane",
+    image:
+      "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=400&fit=crop",
+  },
+  {
+    slug: "automotive",
+    label: "Automotive",
+    blurb: "Car accessories, parts, and care.",
+    color: "#475569",
+    icon: "Car",
+    image:
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=600&h=400&fit=crop",
+  },
+  {
+    slug: "health",
+    label: "Health & Wellness",
+    blurb: "Vitamins, medical supplies, and fitness aids.",
+    color: "#10b981",
+    icon: "HeartPulse",
+    image:
+      "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=400&fit=crop",
+  },
+  {
+    slug: "baby",
+    label: "Baby & Kids",
+    blurb: "Nursery, feeding, and child essentials.",
+    color: "#f472b6",
+    icon: "Baby",
+    image:
+      "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=400&fit=crop",
+  },
+  {
+    slug: "office",
+    label: "Office & School",
+    blurb: "Desks, supplies, and workplace gear.",
+    color: "#78716c",
+    icon: "Briefcase",
+    image:
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop",
+  },
+  {
+    slug: "general",
+    label: "Other",
+    blurb: "Everything else in the catalog.",
+    color: "#94a3b8",
+    icon: "LayoutGrid",
+    image:
+      "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=600&h=400&fit=crop",
+  },
+];
+
+/** Logical groupings for navigation (sidebar, categories page). */
+export interface CategoryGroup {
+  id: string;
+  label: string;
+  slugs: ProductCategory[];
+}
+
+export const CATEGORY_GROUPS: CategoryGroup[] = [
+  {
+    id: "tech",
+    label: "Tech & Electronics",
+    slugs: ["electronics", "computers", "phones", "audio", "gaming"],
+  },
+  {
+    id: "home",
+    label: "Home & Living",
+    slugs: ["home", "kitchen", "furniture", "garden"],
+  },
+  {
+    id: "style",
+    label: "Fashion & Wellness",
+    slugs: ["fashion", "beauty", "health", "sports"],
+  },
+  {
+    id: "family",
+    label: "Kids & Family",
+    slugs: ["baby", "toys", "pets", "books"],
+  },
+  {
+    id: "more",
+    label: "Travel, Auto & More",
+    slugs: ["travel", "automotive", "office", "general"],
+  },
 ];
 
 export const CATEGORY_BY_SLUG: Record<string, StoreCategory> = Object.fromEntries(
   STORE_CATEGORIES.map((c) => [c.slug, c]),
 );
+
+export function getGroupedCategories(): {
+  group: CategoryGroup;
+  categories: StoreCategory[];
+}[] {
+  return CATEGORY_GROUPS.map((group) => ({
+    group,
+    categories: group.slugs
+      .map((slug) => CATEGORY_BY_SLUG[slug])
+      .filter((c): c is StoreCategory => Boolean(c)),
+  }));
+}
 
 export function getCategory(slug?: string): StoreCategory | undefined {
   if (!slug) return undefined;

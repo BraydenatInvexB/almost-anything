@@ -7,11 +7,14 @@ import "server-only";
 import { extractProductIntelligence } from "@/lib/sourcing/product-intelligence";
 import {
   attachImages,
+  deleteDiscoveredProductsBySlugs,
   persistDiscoveredProducts,
 } from "@/lib/sourcing/discovery-persist";
 import { productsNeedRediscovery } from "@/lib/sourcing/discovery-rediscovery";
-import { repairProductImagesIfNeeded } from "@/lib/sourcing/discovery-repair";
+import { repairProductListingIfNeeded, repairMissingProductImages } from "@/lib/sourcing/discovery-repair";
+import { isInvalidProductImageUrl } from "@/lib/sourcing/product-image-url";
 import { resolveProductImagesBatch } from "@/lib/sourcing/image-pipeline";
+import type { ImageResolveInput, ResolvedImage } from "@/lib/sourcing/image-pipeline.types";
 import { logSearchEvent } from "@/services/search-analytics-service";
 import { invalidateCatalogCache } from "@/lib/catalog/catalog-source";
 import { searchCatalogProductSlugs } from "@/services/product-service";
@@ -43,6 +46,46 @@ export async function discoverAndIngestProducts(query: string): Promise<Discover
   return job;
 }
 
+const EMPTY_IMAGE: ResolvedImage = { imageUrl: null, enhancedImageUrl: null };
+
+async function slugsMissingImages(slugs: string[]): Promise<string[]> {
+  if (!slugs.length) return [];
+
+  const { createServiceClient, isSupabaseConfigured } = await import("@/lib/supabase/admin");
+  if (!isSupabaseConfigured()) return slugs;
+
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from("products")
+    .select("slug, image_url, enhanced_image_url")
+    .in("slug", slugs);
+
+  return (data ?? [])
+    .filter((row) => isInvalidProductImageUrl((row.enhanced_image_url ?? row.image_url) as string | null))
+    .map((row) => row.slug as string);
+}
+
+async function resolveProductImagesWithBudget(
+  items: ImageResolveInput[],
+  budgetMs: number,
+): Promise<ResolvedImage[]> {
+  if (!items.length) return [];
+
+  let settled = false;
+  const batch = resolveProductImagesBatch(items).then((images) => {
+    settled = true;
+    return images;
+  });
+
+  const timeout = new Promise<ResolvedImage[]>((resolve) => {
+    setTimeout(() => {
+      if (!settled) resolve(items.map(() => EMPTY_IMAGE));
+    }, budgetMs);
+  });
+
+  return Promise.race([batch, timeout]);
+}
+
 async function runDiscovery(query: string): Promise<DiscoveryResult> {
   const started = Date.now();
   const trimmed = query.trim();
@@ -51,22 +94,34 @@ async function runDiscovery(query: string): Promise<DiscoveryResult> {
   }
 
   const existingSlugs = await searchCatalogProductSlugs(trimmed);
-  if (existingSlugs.length > 0 && !(await productsNeedRediscovery(existingSlugs, trimmed))) {
-    await repairProductImagesIfNeeded(existingSlugs);
+  if (existingSlugs.length > 0) {
+    await repairProductListingIfNeeded(existingSlugs);
+    const stale = await productsNeedRediscovery(existingSlugs, trimmed);
+    if (!stale) {
+      const needsImages = await slugsMissingImages(existingSlugs);
+      if (needsImages.length) {
+        await repairMissingProductImages(needsImages, 20_000);
+      }
+      invalidateCatalogCache();
+      return {
+        query: trimmed,
+        discovered: existingSlugs.length,
+        slugs: existingSlugs,
+        products: [],
+        durationMs: Date.now() - started,
+        cached: true,
+      };
+    }
+    await deleteDiscoveredProductsBySlugs(existingSlugs);
     invalidateCatalogCache();
-    return {
-      query: trimmed,
-      discovered: existingSlugs.length,
-      slugs: existingSlugs,
-      products: [],
-      durationMs: Date.now() - started,
-      cached: true,
-    };
   }
 
   const drafts = await extractProductIntelligence(trimmed);
+  if (process.env.DISCOVERY_DEBUG === "1") {
+    console.error("[discovery]", trimmed, "drafts:", drafts.length, drafts.map((d) => d.name));
+  }
 
-  const images = await resolveProductImagesBatch(
+  const images = await resolveProductImagesWithBudget(
     drafts.map((d) => ({
       name: d.name,
       slug: d.slug,
@@ -76,12 +131,17 @@ async function runDiscovery(query: string): Promise<DiscoveryResult> {
       candidateUrl: d.candidateImageUrl,
       searchQuery: trimmed,
     })),
+    45_000,
   );
 
   const enriched = drafts.map((draft, i) => attachImages(draft, images[i], trimmed));
   const slugs = await persistDiscoveredProducts(trimmed, enriched);
 
-  if (slugs.length) invalidateCatalogCache();
+  if (slugs.length) {
+    invalidateCatalogCache();
+    await repairMissingProductImages(slugs, 45_000);
+    invalidateCatalogCache();
+  }
 
   void logSearchEvent({
     query: trimmed,

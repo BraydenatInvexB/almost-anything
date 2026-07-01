@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
   ChevronRight,
@@ -22,6 +21,7 @@ import { getStockAvailabilityMessage, getWarehouseBadgeLabel } from "@/config/pr
 import { parseVariantsConfig } from "@/types/product-variants";
 import { parseProductEnrichment, customerFacingEnrichment } from "@/types/product-enrichment";
 import { ProductDetailDescription } from "@/components/products/ProductDetailDescription";
+import { ProductCardImage } from "@/components/products/ProductCardImage";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -149,12 +149,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
           <Card padding="none" className="relative aspect-square overflow-hidden bg-neutral-100">
             {imageUrl ? (
-              <Image
+              <ProductCardImage
                 src={imageUrl}
                 alt={product.name}
-                fill
-                className="object-contain p-3"
+                category={product.category}
+                name={product.name}
                 sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-contain p-3"
                 priority
               />
             ) : (
