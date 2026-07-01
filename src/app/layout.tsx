@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   description: SITE_CONFIG.description,
   keywords: ["online store", "e-commerce", "shopping", "product finder", "best price", "almost anything"],
   icons: {
-    icon: SITE_CONFIG.logo,
-    apple: SITE_CONFIG.logo,
+    icon: SITE_CONFIG.favicon,
+    apple: SITE_CONFIG.favicon,
   },
 };
 

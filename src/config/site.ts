@@ -7,6 +7,7 @@ export const SITE_CONFIG = {
   tagline: "The store that has almost everything.",
   logo: "/assets/red transparent no slogan.png",
   logoFull: "/assets/red transparent.png",
+  favicon: "/assets/icon-transparent-aa.png?v=2",
   description:
     "Almost Anything is an online store with almost everything: furniture, tech, home, and more, at great prices, delivered fast. Browse thousands of quality products at fair prices.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
