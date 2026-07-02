@@ -179,7 +179,7 @@ export function StaffManager({
                         Customise modules
                       </button>
                     )}
-                    {canManage && m.status === "invited" && !m.user_id && (
+                    {canManage && m.status === "invited" && (
                       <button
                         type="button"
                         onClick={() => resendInvite(m)}

@@ -100,7 +100,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A staff member with this email already exists" }, { status: 409 });
     }
 
-    const auth = await provisionStaffAuthUser(supabase, email, parsed.data.full_name);
+    const auth = await provisionStaffAuthUser(supabase, email, parsed.data.full_name, {
+      resend: Boolean(existing),
+    });
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: 500 });
     }

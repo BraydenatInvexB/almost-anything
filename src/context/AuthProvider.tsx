@@ -30,6 +30,7 @@ interface AuthContextValue {
   signUp: (data: SignUpData) => Promise<{ error?: string }>;
   signInWithProvider: (provider: OAuthProvider) => Promise<{ error?: string }>;
   updateProfile: (data: Record<string, unknown>) => Promise<{ error?: string }>;
+  updatePassword: (password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   isConfigured: boolean;
 }
@@ -135,6 +136,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [isConfigured],
   );
 
+  const updatePassword = useCallback(
+    async (password: string) => {
+      if (!isConfigured) {
+        return { error: "Auth requires Supabase configuration. See .env.local" };
+      }
+      const supabase = createClient();
+      const { data: updated, error } = await supabase.auth.updateUser({ password });
+      if (updated.user) setUser(updated.user);
+      return { error: formatAuthError(error) };
+    },
+    [isConfigured],
+  );
+
   const signOut = useCallback(async () => {
     if (!isConfigured) return;
     const supabase = createClient();
@@ -150,10 +164,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signInWithProvider,
       updateProfile,
+      updatePassword,
       signOut,
       isConfigured,
     }),
-    [user, loading, signIn, signUp, signInWithProvider, updateProfile, signOut, isConfigured],
+    [user, loading, signIn, signUp, signInWithProvider, updateProfile, updatePassword, signOut, isConfigured],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

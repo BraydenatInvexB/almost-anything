@@ -21,6 +21,22 @@ function AdminLoginForm() {
   const [checkingStaff, setCheckingStaff] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const isInvite =
+      params.get("type") === "invite" ||
+      hashParams.get("type") === "invite" ||
+      params.has("token_hash") ||
+      params.has("code");
+    if (isInvite) {
+      router.replace(
+        `/admin/accept-invite${window.location.search}${window.location.hash}`,
+      );
+    }
+  }, [router]);
+
+  useEffect(() => {
     if (authLoading || !user) return;
     setCheckingStaff(true);
     fetch("/api/admin/session")
