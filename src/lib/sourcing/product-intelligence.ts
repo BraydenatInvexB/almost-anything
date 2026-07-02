@@ -21,7 +21,7 @@ import {
   pickRelevantHits,
   sortByWholesalePrice,
 } from "@/lib/sourcing/product-intelligence-mappers";
-import { enrichListingFromUrl } from "@/lib/sourcing/listing-page-enricher";
+import { enrichListingFromUrl, mergeEnrichedListingIntoHit } from "@/lib/sourcing/listing-page-enricher";
 import {
   finalizeSaFirstDrafts,
   saResearchHits,
@@ -81,7 +81,7 @@ export async function consumableIntlFallback(query: string): Promise<DiscoveredP
     if (!data?.priceZar || !isPlausibleWholesalePrice(query, data.priceZar)) continue;
     if (!data.title || isJunkProductTitle(data.title)) continue;
     hit.title = data.title;
-    hit.estimatedPriceZar = data.priceZar;
+    mergeEnrichedListingIntoHit(hit, data);
     hit.listingImageUrl = data.imageUrl ?? hit.listingImageUrl;
     hit.listingDescription = data.description ?? hit.listingDescription;
     hit.listingSummary = data.summary ?? hit.listingSummary;
@@ -114,7 +114,7 @@ async function draftsFromDeepEnrichment(
     const data = await enrichListingFromUrl(hit.url);
     if (!data?.priceZar) continue;
     hit.title = data.title || hit.title;
-    hit.estimatedPriceZar = data.priceZar;
+    mergeEnrichedListingIntoHit(hit, data);
     hit.listingImageUrl = data.imageUrl ?? hit.listingImageUrl;
     hit.listingDescription = data.description ?? hit.listingDescription;
     hit.listingSummary = data.summary ?? hit.listingSummary;

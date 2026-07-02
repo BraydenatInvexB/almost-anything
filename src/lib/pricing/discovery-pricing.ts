@@ -9,6 +9,9 @@ export const DISCOVERY_MIN_MARKUP_PERCENT = 8;
 /** Wholesale unit price below this (ZAR) uses micro-pricing rules. */
 export const MICRO_ITEM_THRESHOLD_ZAR = 5;
 
+/** South African VAT — storefront prices are stored ex VAT; checkout adds tax. */
+export const SA_VAT_RATE = 0.15;
+
 export type DiscoveryPriceResult = {
   basePriceZar: number;
   retailPrice: number;
@@ -17,6 +20,7 @@ export type DiscoveryPriceResult = {
   unitLabel: string;
   pricingNote?: string;
   isMicroItem: boolean;
+  vatStatus?: "ex" | "incl" | "unknown";
 };
 
 function roundZar(value: number): number {
@@ -53,18 +57,30 @@ function microOrderQuantity(wholesaleZar: number): number {
 export function calculateDiscoveryPrice(
   wholesaleInput: number,
   category: string,
-  options?: { inputIsZar?: boolean },
+  options?: {
+    inputIsZar?: boolean;
+    vatStatus?: "ex" | "incl" | "unknown";
+    minimumOrderQuantity?: number;
+  },
 ): DiscoveryPriceResult {
-  const baseZar = options?.inputIsZar
+  let baseZar = options?.inputIsZar
     ? roundZar(wholesaleInput)
     : normalizeWholesaleToZar(wholesaleInput);
+
+  const vatStatus = options?.vatStatus ?? "unknown";
+  // Supplier quotes marked incl VAT → convert to ex-VAT cost (checkout adds VAT again).
+  if (vatStatus === "incl") {
+    baseZar = roundZar(baseZar / (1 + SA_VAT_RATE));
+  }
+
+  const supplierMoq = options?.minimumOrderQuantity ?? 1;
 
   if (baseZar < MICRO_ITEM_THRESHOLD_ZAR) {
     const markupZar = Math.min(baseZar * 0.45, 1.25);
     let retail = roundZar(baseZar + markupZar);
     retail = Math.max(retail, 0.35);
 
-    const moq = microOrderQuantity(baseZar);
+    const moq = Math.max(supplierMoq, microOrderQuantity(baseZar));
     const markupPercent =
       baseZar > 0 ? roundZar((markupZar / baseZar) * 100) : 0;
 
@@ -74,20 +90,27 @@ export function calculateDiscoveryPrice(
       markupPercent,
       minimumOrderQuantity: moq,
       unitLabel: "each",
-      pricingNote: `Minimum order ${moq} units at ${formatUnitPrice(retail)} each`,
+      pricingNote: `Minimum order ${moq} units at ${formatUnitPrice(retail)} each (excl. VAT)`,
       isMicroItem: true,
+      vatStatus,
     };
   }
 
   const markup = calculateCompetitiveMarkup(baseZar, category);
+  const moq = supplierMoq > 1 ? supplierMoq : 1;
 
   return {
     basePriceZar: baseZar,
     retailPrice: markup.retailPrice,
     markupPercent: markup.markupPercent,
-    minimumOrderQuantity: 1,
+    minimumOrderQuantity: moq,
     unitLabel: "each",
+    pricingNote:
+      moq > 1
+        ? `Minimum order ${moq} units at ${formatUnitPrice(markup.retailPrice)} each (excl. VAT)`
+        : undefined,
     isMicroItem: false,
+    vatStatus,
   };
 }
 

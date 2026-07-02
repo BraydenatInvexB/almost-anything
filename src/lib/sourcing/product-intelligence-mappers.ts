@@ -57,6 +57,8 @@ export type DiscoveredProductDraft = {
   variants: ProductVariantsConfig;
   candidateImageUrl?: string;
   supplierIntel?: ProductSupplierIntel;
+  supplierMoq?: number;
+  priceVatStatus?: "ex" | "incl" | "unknown";
 };
 
 export function slugify(text: string): string {
@@ -183,6 +185,8 @@ export function mapHitToDraft(
       summary: humanize(summary),
       category,
       basePrice: priceZar,
+      supplierMoq: hit.supplierMoq,
+      priceVatStatus: hit.priceVatStatus,
       supplierName: supplierLabel,
       supplierUrl: hit.url,
       deliveryDaysMin: deliveryDaysForSupplierRegion(hit.region).min,
@@ -324,6 +328,8 @@ export function mapLlmProduct(
         typeof raw.category === "string" ? raw.category : undefined,
       ),
       basePrice,
+      supplierMoq: matchedHit.supplierMoq,
+      priceVatStatus: matchedHit.priceVatStatus,
       supplierName,
       supplierUrl,
       deliveryDaysMin:

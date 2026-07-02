@@ -24,8 +24,10 @@ import {
 const JINA_READER = "https://r.jina.ai/";
 const USER_AGENT = "Mozilla/5.0 (compatible; AlmostAnythingBot/1.0)";
 
+import { parseWholesalePriceQuote } from "@/lib/pricing/wholesale-price-quote";
 import { ZAR_PER_USD } from "@/lib/pricing/discovery-pricing";
 
+import type { WholesaleSearchHit } from "@/types/supplier-sourcing";
 import type { EnrichedListing } from "@/lib/sourcing/listing-parsers/types";
 
 export type { EnrichedListing };
@@ -142,7 +144,9 @@ export function parseListingMarkdown(markdown: string, pageUrl: string): Enriche
   }
 
   const title = parseTitleFromMarkdown(markdown);
-  const priceZar = pickListingPrice(parsePricesFromMarkdown(markdown));
+  const priceQuote = parseWholesalePriceQuote(markdown);
+  const priceZar =
+    priceQuote?.unitPriceZarExVat ?? pickListingPrice(parsePricesFromMarkdown(markdown), markdown);
   const imageUrl = parseImageFromMarkdown(markdown, pageUrl, title);
 
   if (!title || title.length < 4 || isJunkProductTitle(title)) return null;
@@ -157,6 +161,8 @@ export function parseListingMarkdown(markdown: string, pageUrl: string): Enriche
     description: copy.description,
     summary: copy.summary,
     highlights: copy.highlights,
+    supplierMoq: priceQuote?.minimumOrderQuantity,
+    priceVatStatus: priceQuote?.vatStatus,
   };
 }
 
@@ -208,6 +214,16 @@ async function enrichFromStructuredHtml(html: string): Promise<EnrichedListing |
     summary: description.slice(0, 140),
     highlights: [],
   };
+}
+
+export function mergeEnrichedListingIntoHit(hit: WholesaleSearchHit, data: EnrichedListing): void {
+  hit.estimatedPriceZar = data.priceZar;
+  if (data.supplierMoq && data.supplierMoq > 1) {
+    hit.supplierMoq = data.supplierMoq;
+  }
+  if (data.priceVatStatus) {
+    hit.priceVatStatus = data.priceVatStatus;
+  }
 }
 
 export async function enrichListingFromUrl(url: string): Promise<EnrichedListing | null> {

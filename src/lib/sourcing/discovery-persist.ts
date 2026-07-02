@@ -30,7 +30,11 @@ export function attachImages(
   query: string,
 ): EnrichedDraft {
   const category = resolveProductCategory(query, draft.name, draft.category);
-  const pricing = calculateDiscoveryPrice(draft.basePrice, category, { inputIsZar: true });
+  const pricing = calculateDiscoveryPrice(draft.basePrice, category, {
+    inputIsZar: true,
+    vatStatus: draft.priceVatStatus,
+    minimumOrderQuantity: draft.supplierMoq,
+  });
 
   const imageUrl = image.imageUrl ?? draft.candidateImageUrl ?? null;
   const enhancedImageUrl =

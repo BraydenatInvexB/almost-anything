@@ -6,4 +6,6 @@ export type EnrichedListing = {
   summary?: string;
   highlights?: string[];
   specifications?: Record<string, string>;
+  supplierMoq?: number;
+  priceVatStatus?: "ex" | "incl" | "unknown";
 };

@@ -44,6 +44,10 @@ export type WholesaleSearchHit = {
   tier: SupplierTier;
   estimatedPriceUsd?: number;
   estimatedPriceZar?: number;
+  /** Supplier minimum order quantity when listed (e.g. MOQ 100). */
+  supplierMoq?: number;
+  /** Whether the scraped price was quoted ex VAT or incl VAT. */
+  priceVatStatus?: "ex" | "incl" | "unknown";
   listingImageUrl?: string;
   listingDescription?: string;
   listingSummary?: string;

@@ -68,7 +68,7 @@ function parseDdgUddgResults(
       .replace(/\s+/g, " ")
       .trim();
     if (isNonProductListing(title, url, snippet)) continue;
-    const prices = extractPrices(`${title} ${snippet}`);
+    const prices = extractPrices(`${title} ${snippet}`, query);
 
     const base: Omit<WholesaleSearchHit, "score"> = {
       title,
@@ -79,6 +79,8 @@ function parseDdgUddgResults(
       tier: tier.tier !== "retail" ? tier.tier : classification.tier,
       estimatedPriceUsd: prices.usd,
       estimatedPriceZar: prices.zar,
+      supplierMoq: prices.moq,
+      priceVatStatus: prices.vatStatus,
     };
 
     hits.push({ ...base, score: scoreHit(base, tier, query) });
@@ -130,7 +132,7 @@ export function parseSearchResults(
       }
     }
 
-    const prices = extractPrices(`${title} ${snippet}`);
+    const prices = extractPrices(`${title} ${snippet}`, query);
 
     const base: Omit<WholesaleSearchHit, "score"> = {
       title: title || url,
@@ -141,6 +143,8 @@ export function parseSearchResults(
       tier: tier.tier !== "retail" ? tier.tier : classification.tier,
       estimatedPriceUsd: prices.usd,
       estimatedPriceZar: prices.zar,
+      supplierMoq: prices.moq,
+      priceVatStatus: prices.vatStatus,
     };
 
     hits.push({ ...base, score: scoreHit(base, tier, query) });

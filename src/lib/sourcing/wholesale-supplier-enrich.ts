@@ -1,5 +1,5 @@
 import { ZAR_PER_USD } from "@/lib/pricing/discovery-pricing";
-import { enrichListingsBatch, enrichListingFromUrl } from "@/lib/sourcing/listing-page-enricher";
+import { enrichListingsBatch, enrichListingFromUrl, mergeEnrichedListingIntoHit } from "@/lib/sourcing/listing-page-enricher";
 import { isRelevantProductHit, rankHitsByRelevance } from "@/lib/sourcing/query-relevance";
 import { isExcludedSecondhandDomain } from "@/lib/sourcing/advanced/domain-classifier";
 import {
@@ -143,7 +143,7 @@ export async function enrichProductHits(
       const data = await enrichListingFromUrl(hit.url);
       if (!data?.priceZar) continue;
       hit.title = data.title || hit.title;
-      hit.estimatedPriceZar = data.priceZar;
+      mergeEnrichedListingIntoHit(hit, data);
       hit.listingImageUrl = data.imageUrl;
       hit.listingDescription = data.description;
       hit.listingSummary = data.summary;
@@ -176,7 +176,7 @@ export async function enrichProductHits(
     const data = await enrichListingFromUrl(hit.url);
     if (!data?.priceZar) continue;
     hit.title = data.title || hit.title;
-    hit.estimatedPriceZar = data.priceZar;
+    mergeEnrichedListingIntoHit(hit, data);
     hit.listingImageUrl = data.imageUrl ?? hit.listingImageUrl;
     hit.listingDescription = data.description ?? hit.listingDescription;
     hit.listingSummary = data.summary ?? hit.listingSummary;

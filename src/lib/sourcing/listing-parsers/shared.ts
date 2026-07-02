@@ -1,4 +1,5 @@
 import { ZAR_PER_USD } from "@/lib/pricing/discovery-pricing";
+import { parseWholesalePriceQuote } from "@/lib/pricing/wholesale-price-quote";
 
 export function cleanListingText(text: string): string {
   return text
@@ -43,7 +44,10 @@ function extractPriceRichMarkdown(markdown: string): string {
   return markdown.slice(0, 25_000);
 }
 
-export function parsePricesFromMarkdown(markdown: string): number[] {
+export function parsePricesFromMarkdown(markdown: string, query?: string): number[] {
+  const quote = parseWholesalePriceQuote(markdown, query);
+  if (quote) return [quote.unitPriceZarExVat];
+
   const header = extractPriceRichMarkdown(markdown);
   const prices: number[] = [];
 
@@ -71,7 +75,11 @@ export function parsePricesFromMarkdown(markdown: string): number[] {
   return prices;
 }
 
-export function pickListingPrice(prices: number[]): number | undefined {
+export function pickListingPrice(prices: number[], context?: string, query?: string): number | undefined {
+  if (context) {
+    const quote = parseWholesalePriceQuote(context, query);
+    if (quote) return quote.unitPriceZarExVat;
+  }
   if (!prices.length) return undefined;
   const sorted = [...new Set(prices)].sort((a, b) => a - b);
   const micro = sorted.filter((p) => p >= 8 && p <= 250);

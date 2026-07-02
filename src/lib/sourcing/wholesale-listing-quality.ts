@@ -104,6 +104,7 @@ export function minWholesaleZarForQuery(query: string): number {
   if (/\b(tablet\s*cover|ipad\s*cover|keyboard\s*cover|stylus)\b/i.test(q)) return 40;
   if (/\b(power\s*bank|portable\s*charger)\b/i.test(q)) return 80;
   if (/\b(case|cover|protector|sleeve|pouch|skin|stand|holder|mount|grip|cable|adapter|dongle)\b/i.test(q)) return 20;
+  if (/\b(cast\s*iron|skillet|frying\s*pan|wok|cookware|saucepan|pot\s*set|baking\s*pan)\b/i.test(q)) return 50;
 
   // Device-level floors — only reached when the query is clearly for a device, not an accessory.
   if (/\bairpods?\s*max\b/i.test(q)) return 4500;
@@ -135,6 +136,7 @@ export function maxWholesaleZarForQuery(query: string): number {
   if (/\b(power\s*bank|portable\s*charger)\b/i.test(q)) return 2500;
   if (/\b(watch\s*strap|watch\s*band|smartwatch\s*strap)\b/i.test(q)) return 600;
   if (/\b(laptop\s*bag|laptop\s*sleeve)\b/i.test(q)) return 1800;
+  if (/\b(cast\s*iron|skillet|frying\s*pan|wok|cookware|saucepan)\b/i.test(q)) return 3500;
   if (/\b(case|cover|protector|sleeve|pouch|skin|stand|holder|mount|grip|adapter|dongle)\b/i.test(q)) return 1500;
   if (/\b(solder(ing)?\s*wire|solder\s*wire|flux|rosin)\b/i.test(q)) return 160;
   if (/\b(solder(ing)?\s*(gun|iron|station|kit)|heat\s*gun)\b/i.test(q)) return 900;

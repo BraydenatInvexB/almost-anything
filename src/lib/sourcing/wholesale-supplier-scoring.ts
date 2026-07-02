@@ -1,4 +1,6 @@
 import { ZAR_PER_USD } from "@/lib/pricing/discovery-pricing";
+import { extractUnitPriceZarFromText } from "@/lib/pricing/wholesale-price-quote";
+import type { VatStatus } from "@/lib/pricing/wholesale-price-quote";
 import { materialMatchBoost } from "@/lib/sourcing/product-attribute-validator";
 import { queryRelevanceScore } from "@/lib/sourcing/query-relevance";
 import {
@@ -8,7 +10,20 @@ import {
 } from "@/lib/sourcing/wholesale-supplier-constants";
 import type { WholesaleSearchHit } from "@/types/supplier-sourcing";
 
-export function extractPrices(text: string): { usd?: number; zar?: number } {
+export function extractPrices(
+  text: string,
+  query?: string,
+): { usd?: number; zar?: number; moq?: number; vatStatus?: VatStatus } {
+  const quote = extractUnitPriceZarFromText(text, query);
+  if (quote.zar) {
+    return {
+      zar: quote.zar,
+      usd: quote.zar / ZAR_PER_USD,
+      moq: quote.moq,
+      vatStatus: quote.vatStatus,
+    };
+  }
+
   const withoutDims = text
     .replace(/\d+(?:\.\d+)?\s*(?:inch|inches|"|mm|cm|gb|tb)\b/gi, " ")
     .replace(/\bM[1-9]\b/gi, " ");
