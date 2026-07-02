@@ -15,7 +15,6 @@ import {
   ScrollText,
   Settings,
   Search,
-  Bell,
   Menu,
   X,
   ExternalLink,
@@ -36,6 +35,8 @@ import { ADMIN_NAV, ROLE_META, staffCan } from "@/config/rbac";
 import { SITE_CONFIG } from "@/config/site";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/context/AuthProvider";
+import type { AdminNotificationSummary } from "@/lib/admin/notifications";
+import { AdminNotifications } from "@/components/admin/AdminNotifications";
 
 const ICONS: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -153,11 +154,11 @@ export function AdminSearch() {
 export function AdminShell({
   staff,
   children,
-  alerts = 0,
+  notifications,
 }: {
   staff: StaffProfile;
   children: React.ReactNode;
-  alerts?: number;
+  notifications: AdminNotificationSummary;
 }) {
   const pathname = usePathname();
   const { signOut } = useAuth();
@@ -175,6 +176,12 @@ export function AdminShell({
       })).filter((g) => g.items.length > 0),
     [visibleNav],
   );
+
+  const showNotifications =
+    staffCan(staff, "orders.view") ||
+    staffCan(staff, "procurement.view") ||
+    staffCan(staff, "support.view") ||
+    staffCan(staff, "products.view");
 
   const pageTitle = useMemo(() => {
     const match = ADMIN_NAV.find((item) =>
@@ -291,20 +298,7 @@ export function AdminShell({
             <AdminSearch />
 
             <div className="ml-auto flex items-center gap-2">
-              {staffCan(staff, "support.view") && (
-                <Link
-                  href="/admin/support"
-                  className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-50"
-                  aria-label="Support queue"
-                >
-                  <Bell className="h-4 w-4" />
-                  {alerts > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[9px] font-bold text-white">
-                      {alerts > 9 ? "9+" : alerts}
-                    </span>
-                  )}
-                </Link>
-              )}
+              {showNotifications && <AdminNotifications initial={notifications} />}
 
               <div className="relative">
                 <button

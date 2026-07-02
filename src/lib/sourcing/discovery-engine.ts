@@ -18,6 +18,7 @@ import type { ImageResolveInput, ResolvedImage } from "@/lib/sourcing/image-pipe
 import { logSearchEvent } from "@/services/search-analytics-service";
 import { invalidateCatalogCache } from "@/lib/catalog/catalog-source";
 import { searchCatalogProductSlugs } from "@/services/product-service";
+import { enrichDraftsBatch } from "@/lib/sourcing/product-enrichment-engine";
 
 const activeDiscoveries = new Map<string, Promise<DiscoveryResult>>();
 
@@ -121,8 +122,16 @@ async function runDiscovery(query: string): Promise<DiscoveryResult> {
     console.error("[discovery]", trimmed, "drafts:", drafts.length, drafts.map((d) => d.name));
   }
 
+  // Enrich each draft by going to the actual supplier page — fixes wrong names,
+  // bad descriptions, missing features and wrong images. The snippet-based copy
+  // from DuckDuckGo is replaced with real page content read by Claude.
+  const enrichedDrafts = await enrichDraftsBatch(drafts, trimmed);
+  if (process.env.DISCOVERY_DEBUG === "1") {
+    console.error("[discovery] enriched", enrichedDrafts.length, "drafts");
+  }
+
   const images = await resolveProductImagesWithBudget(
-    drafts.map((d) => ({
+    enrichedDrafts.map((d) => ({
       name: d.name,
       slug: d.slug,
       category: d.category,
@@ -134,7 +143,7 @@ async function runDiscovery(query: string): Promise<DiscoveryResult> {
     45_000,
   );
 
-  const enriched = drafts.map((draft, i) => attachImages(draft, images[i], trimmed));
+  const enriched = enrichedDrafts.map((draft, i) => attachImages(draft, images[i], trimmed));
   const slugs = await persistDiscoveredProducts(trimmed, enriched);
 
   if (slugs.length) {

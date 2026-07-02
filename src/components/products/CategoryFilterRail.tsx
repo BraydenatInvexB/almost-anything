@@ -5,20 +5,8 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { STORE_CATEGORIES } from "@/config/categories";
+import { productsBrowseHref } from "@/lib/catalog/products-url";
 import { cn } from "@/lib/utils/cn";
-
-function buildHref(
-  base: Record<string, string | undefined>,
-  category?: string,
-) {
-  const params = new URLSearchParams();
-  for (const [k, v] of Object.entries(base)) {
-    if (v) params.set(k, v);
-  }
-  if (category) params.set("category", category);
-  const s = params.toString();
-  return `/products${s ? `?${s}` : ""}`;
-}
 
 interface CategoryFilterRailProps {
   activeCategory?: string;
@@ -31,12 +19,9 @@ export function CategoryFilterRail({ activeCategory, className }: CategoryFilter
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const baseQuery = {
-    q: searchParams.get("q") ?? undefined,
-    sort: searchParams.get("sort") ?? undefined,
-    deals: searchParams.get("deals") ?? undefined,
-    section: searchParams.get("section") ?? undefined,
-  };
+  const sort = searchParams.get("sort") ?? undefined;
+  const isSearchMode = Boolean(searchParams.get("q")?.trim());
+  const allProductsActive = !activeCategory && !isSearchMode;
 
   const updateScrollHints = useCallback(() => {
     const el = scrollRef.current;
@@ -98,10 +83,10 @@ export function CategoryFilterRail({ activeCategory, className }: CategoryFilter
         className="flex gap-2 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <Link
-          href={buildHref(baseQuery)}
+          href={productsBrowseHref({ sort })}
           className={cn(
             "shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-            !activeCategory
+            !allProductsActive
               ? "border-neutral-900 bg-neutral-900 text-white"
               : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:text-neutral-900",
           )}
@@ -111,7 +96,7 @@ export function CategoryFilterRail({ activeCategory, className }: CategoryFilter
         {STORE_CATEGORIES.map((cat) => (
           <Link
             key={cat.slug}
-            href={buildHref(baseQuery, cat.slug)}
+            href={productsBrowseHref({ category: cat.slug, sort })}
             className={cn(
               "inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
               activeCategory === cat.slug

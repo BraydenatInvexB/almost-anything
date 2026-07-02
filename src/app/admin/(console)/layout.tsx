@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentStaff, isAdminLiveMode, listTickets } from "@/services/admin-service";
+import { getAdminNotificationSummary, getCurrentStaff, isAdminLiveMode } from "@/services/admin-service";
 import { AdminShell } from "@/components/admin/AdminShell";
 
 export default async function AdminConsoleLayout({
@@ -16,13 +16,10 @@ export default async function AdminConsoleLayout({
     redirect("/admin/login");
   }
 
-  const tickets = await listTickets();
-  const alerts = tickets.filter(
-    (t) => (t.status === "open" || t.status === "pending") && t.priority === "urgent",
-  ).length;
+  const notifications = await getAdminNotificationSummary(staff);
 
   return (
-    <AdminShell staff={staff} alerts={alerts}>
+    <AdminShell staff={staff} notifications={notifications}>
       {children}
     </AdminShell>
   );

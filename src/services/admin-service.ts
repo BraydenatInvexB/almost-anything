@@ -35,7 +35,11 @@ import { QUEUE_STATUSES } from "@/lib/orders/order-operations";
 import { parseOrderItemMetadata } from "@/lib/orders/line-items";
 import { resolveFulfillment, type FulfillmentSource } from "@/lib/orders/fulfillment";
 import { getAllCouriers } from "@/config/couriers";
+import { staffCan } from "@/config/rbac";
+import type { AdminNotificationItem, AdminNotificationSummary } from "@/lib/admin/notifications";
+import { notificationTotal } from "@/lib/admin/notifications";
 import { toStaffProfile } from "@/lib/staff/profile";
+import { countOpenItemRequests } from "@/services/sourcing-request-service";
 import { mergeExtendedConfig } from "@/lib/admin/extended-config-defaults";
 import type { ExtendedPlatformConfig } from "@/lib/admin/operations-types";
 import { createServiceClient } from "@/lib/supabase/admin";
@@ -830,6 +834,74 @@ export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null
 export async function getFulfillmentQueue(): Promise<AdminOrderSummary[]> {
   const orders = await listAdminOrders();
   return orders.filter((o) => QUEUE_STATUSES.includes(o.status as (typeof QUEUE_STATUSES)[number]));
+}
+
+export async function getAdminNotificationSummary(
+  staff: StaffProfile,
+): Promise<AdminNotificationSummary> {
+  const items: AdminNotificationItem[] = [];
+
+  if (staffCan(staff, "orders.view")) {
+    const fulfillment = await getFulfillmentQueue();
+    if (fulfillment.length > 0) {
+      items.push({
+        id: "fulfillment",
+        title: "Fulfillment",
+        description: `${fulfillment.length} order${fulfillment.length === 1 ? "" : "s"} to process or ship`,
+        href: "/admin/fulfillment",
+        count: fulfillment.length,
+      });
+    }
+  }
+
+  if (staffCan(staff, "procurement.view")) {
+    const requests = await countOpenItemRequests();
+    if (requests > 0) {
+      items.push({
+        id: "requests",
+        title: "Item requests",
+        description: `${requests} custom product lookup${requests === 1 ? "" : "s"}`,
+        href: "/admin/requests",
+        count: requests,
+      });
+    }
+  }
+
+  if (staffCan(staff, "support.view")) {
+    const tickets = await listTickets();
+    const open = tickets.filter((t) => t.status === "open" || t.status === "pending");
+    if (open.length > 0) {
+      items.push({
+        id: "support",
+        title: "Support",
+        description: `${open.length} ticket${open.length === 1 ? "" : "s"} awaiting reply`,
+        href: "/admin/support",
+        count: open.length,
+      });
+    }
+  }
+
+  if (staffCan(staff, "products.view")) {
+    const lowStock = (await listAdminProducts()).filter(
+      (p) => p.stock_status === "low_stock" || p.stock_status === "out_of_stock",
+    ).length;
+    if (lowStock > 0) {
+      items.push({
+        id: "stock",
+        title: "Stock alerts",
+        description: `${lowStock} product${lowStock === 1 ? "" : "s"} low or out of stock`,
+        href: "/admin/products",
+        count: lowStock,
+      });
+    }
+  }
+
+  items.sort((a, b) => b.count - a.count);
+
+  return {
+    total: notificationTotal(items),
+    items,
+  };
 }
 
 export async function getOrderProcurement(orderId: string, orderNumber: string) {

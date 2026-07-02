@@ -4,20 +4,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { LayoutGrid } from "lucide-react";
 import { getGroupedCategories } from "@/config/categories";
+import { productsBrowseHref } from "@/lib/catalog/products-url";
 import { cn } from "@/lib/utils/cn";
-
-function buildHref(
-  base: Record<string, string | undefined>,
-  category?: string,
-) {
-  const params = new URLSearchParams();
-  for (const [k, v] of Object.entries(base)) {
-    if (v) params.set(k, v);
-  }
-  if (category) params.set("category", category);
-  const s = params.toString();
-  return `/products${s ? `?${s}` : ""}`;
-}
 
 interface ProductsCategorySidebarProps {
   activeCategory?: string;
@@ -25,12 +13,9 @@ interface ProductsCategorySidebarProps {
 
 export function ProductsCategorySidebar({ activeCategory }: ProductsCategorySidebarProps) {
   const searchParams = useSearchParams();
-  const baseQuery = {
-    q: searchParams.get("q") ?? undefined,
-    sort: searchParams.get("sort") ?? undefined,
-    deals: searchParams.get("deals") ?? undefined,
-    section: searchParams.get("section") ?? undefined,
-  };
+  const sort = searchParams.get("sort") ?? undefined;
+  const isSearchMode = Boolean(searchParams.get("q")?.trim());
+  const allProductsActive = !activeCategory && !isSearchMode;
 
   const groups = getGroupedCategories();
 
@@ -47,10 +32,10 @@ export function ProductsCategorySidebar({ activeCategory }: ProductsCategorySide
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-2">
         <Link
-          href={buildHref(baseQuery)}
+          href={productsBrowseHref({ sort })}
           className={cn(
             "mb-2 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-            !activeCategory
+            !allProductsActive
               ? "bg-neutral-900 text-white"
               : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900",
           )}
@@ -68,7 +53,7 @@ export function ProductsCategorySidebar({ activeCategory }: ProductsCategorySide
               {categories.map((cat) => (
                 <li key={cat.slug}>
                   <Link
-                    href={buildHref(baseQuery, cat.slug)}
+                    href={productsBrowseHref({ category: cat.slug, sort })}
                     className={cn(
                       "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                       activeCategory === cat.slug
