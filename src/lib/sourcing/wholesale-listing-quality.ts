@@ -17,10 +17,20 @@ const AGGREGATOR_PATH =
   /\/(showroom|countrysearch|trade|catalog|category|categories|search|company_profile|supplier|buyer|help|blog|collections?|tags?|tagged|brands?)\b/i;
 
 const ACCESSORY_LINE =
-  /\b(case|cover|screen\s*replacement|lcd\s*display|touch\s*glass|battery\s*for|tempered\s*glass|charger|strap|band\s*for|housing|digitizer|flex\s*cable|tablet\s*soft\s*tpu|protective\s*case)\b/i;
+  /\b(case|cover|screen\s*replacement|lcd\s*display|touch\s*glass|battery\s*for|tempered\s*glass|screen\s*protector|glass\s*protector|charger|strap|band\s*for|housing|digitizer|flex\s*cable|tablet\s*soft\s*tpu|protective\s*case)\b/i;
 
-/** Parts / accessories when the shopper searched for a device. */
+// Accessory terms — when the customer's OWN query contains these, it's the intended
+// product, not an unwanted accessory. Never reject a listing for being an accessory
+// when the shopper explicitly searched for that accessory type.
+const ACCESSORY_INTENT_TERMS =
+  /\b(case|cover|screen\s*protector|tempered\s*glass|glass\s*protector|charger|cable|strap|band|pouch|sleeve|stand|dock|adapter|skin|film|protector|airpods?\s*case|earbuds?\s*case)\b/i;
+
+/** Parts / accessories when the shopper searched for a DEVICE, not an accessory. */
 export function isAccessoryListing(query: string, title: string, snippet = ""): boolean {
+  // If the query itself is for an accessory, never reject on these grounds —
+  // "iPhone 16 pro max screen protector" IS the product the customer wants.
+  if (ACCESSORY_INTENT_TERMS.test(query)) return false;
+
   if (!/\b(ipad|iphone|apple\s*watch|macbook|galaxy\s*tab|tablet|smartphone|phone)\b/i.test(query)) {
     return false;
   }
@@ -80,6 +90,22 @@ export function isLowCostConsumableQuery(query: string): boolean {
 /** Minimum plausible wholesale unit cost for the shopper's search. */
 export function minWholesaleZarForQuery(query: string): number {
   const q = query.toLowerCase();
+
+  // ACCESSORY INTENT — must be checked BEFORE device keywords.
+  // "iPhone 16 pro max screen protector" is an accessory search, not a phone search.
+  // Applying the R2,500 iPhone floor would kill every valid R50-R300 protector listing.
+  if (/\b(screen\s*protector|tempered\s*glass|glass\s*protector|privacy\s*glass)\b/i.test(q)) return 20;
+  if (/\b(phone\s*case|iphone\s*case|samsung\s*case|tablet\s*case|ipad\s*case)\b/i.test(q)) return 25;
+  if (/\b(charger|charging\s*cable|usb\s*cable|lightning\s*cable|type[\s-]?c\s*cable)\b/i.test(q)) return 30;
+  if (/\b(phone\s*strap|phone\s*stand|phone\s*holder|phone\s*grip|pop\s*socket)\b/i.test(q)) return 20;
+  if (/\b(earphone|earbud|wired\s*headphone|aux\s*cable)\b/i.test(q)) return 50;
+  if (/\b(watch\s*strap|watch\s*band|apple\s*watch\s*band|smartwatch\s*strap)\b/i.test(q)) return 30;
+  if (/\b(laptop\s*bag|laptop\s*sleeve|laptop\s*stand|laptop\s*cooling)\b/i.test(q)) return 80;
+  if (/\b(tablet\s*cover|ipad\s*cover|keyboard\s*cover|stylus)\b/i.test(q)) return 40;
+  if (/\b(power\s*bank|portable\s*charger)\b/i.test(q)) return 80;
+  if (/\b(case|cover|protector|sleeve|pouch|skin|stand|holder|mount|grip|cable|adapter|dongle)\b/i.test(q)) return 20;
+
+  // Device-level floors — only reached when the query is clearly for a device, not an accessory.
   if (/\bairpods?\s*max\b/i.test(q)) return 4500;
   if (/\bairpods?\s*pro\b/i.test(q)) return 2200;
   if (/\bairpods?\b/i.test(q)) return 1200;
@@ -102,6 +128,14 @@ export function minWholesaleZarForQuery(query: string): number {
 /** Reject MOQ/bulk or mis-scraped prices for low-cost consumables. */
 export function maxWholesaleZarForQuery(query: string): number {
   const q = query.toLowerCase();
+  // Accessory caps — must come before device patterns for the same reason as min floor.
+  if (/\b(screen\s*protector|tempered\s*glass|glass\s*protector|privacy\s*glass)\b/i.test(q)) return 800;
+  if (/\b(phone\s*case|iphone\s*case|samsung\s*case|tablet\s*case|ipad\s*case)\b/i.test(q)) return 1200;
+  if (/\b(charger|charging\s*cable|usb\s*cable|lightning\s*cable|type[\s-]?c\s*cable)\b/i.test(q)) return 600;
+  if (/\b(power\s*bank|portable\s*charger)\b/i.test(q)) return 2500;
+  if (/\b(watch\s*strap|watch\s*band|smartwatch\s*strap)\b/i.test(q)) return 600;
+  if (/\b(laptop\s*bag|laptop\s*sleeve)\b/i.test(q)) return 1800;
+  if (/\b(case|cover|protector|sleeve|pouch|skin|stand|holder|mount|grip|adapter|dongle)\b/i.test(q)) return 1500;
   if (/\b(solder(ing)?\s*wire|solder\s*wire|flux|rosin)\b/i.test(q)) return 160;
   if (/\b(solder(ing)?\s*(gun|iron|station|kit)|heat\s*gun)\b/i.test(q)) return 900;
   if (/\b(screw|bolt|nut|washer|rivet|fastener)\b/i.test(q)) return 120;
