@@ -9,9 +9,11 @@ import type { StaffProfile } from "@/types/staff-access";
 export function StaffDirectorySection({
   staff,
   canManage,
+  currentStaffId,
 }: {
   staff: StaffProfile[];
   canManage: boolean;
+  currentStaffId?: string;
 }) {
   const [inviteOpen, setInviteOpen] = useState(false);
 
@@ -34,6 +36,7 @@ export function StaffDirectorySection({
       <StaffManager
         staff={staff}
         canManage={canManage}
+        currentStaffId={currentStaffId}
         inviteOpen={inviteOpen}
         onInviteOpenChange={setInviteOpen}
         suppressInviteButton

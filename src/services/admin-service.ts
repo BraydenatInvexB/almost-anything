@@ -18,6 +18,8 @@ import {
   listOpsTickets,
   updateExtendedConfig,
   updateStaffAccess,
+  removeStaffMemberDemo,
+  isStaffMemberDeleted,
 } from "@/lib/admin/operations-store";
 import {
   ensureProcurementForOrder,
@@ -180,6 +182,7 @@ export async function getCurrentStaff(): Promise<StaffProfile | null> {
 }
 
 export function getStaffProfile(id: string): StaffProfile | null {
+  if (isStaffMemberDeleted(id)) return null;
   const base = DEMO_STAFF.find((s) => s.id === id);
   if (!base) return null;
   const override = getStaffOverrides(id);
@@ -417,7 +420,46 @@ export async function listStaff(): Promise<StaffProfile[]> {
       /* fall through */
     }
   }
-  return DEMO_STAFF.map((s) => getStaffProfile(s.id)!);
+  return DEMO_STAFF.filter((s) => !isStaffMemberDeleted(s.id)).map((s) => getStaffProfile(s.id)!);
+}
+
+export async function deleteStaffMember(
+  id: string,
+  actorId: string,
+): Promise<{ ok: true } | { error: string }> {
+  if (!isSupabaseConfigured()) {
+    if (id === actorId) return { error: "You cannot remove your own account" };
+    if (id === DEMO_SUPER_ADMIN.id) return { error: "Super admins cannot be removed" };
+    if (!DEMO_STAFF.some((s) => s.id === id)) return { error: "Staff member not found" };
+    removeStaffMemberDemo(id);
+    return { ok: true };
+  }
+
+  try {
+    const supabase = createServiceClient();
+    const { data: target, error: fetchError } = await supabase
+      .from("staff_members")
+      .select("id, role, user_id, email, full_name")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError) return { error: fetchError.message };
+    if (!target) return { error: "Staff member not found" };
+    if (target.id === actorId) return { error: "You cannot remove your own account" };
+    if (target.role === "super_admin") return { error: "Super admins cannot be removed" };
+
+    if (target.user_id) {
+      const { error: authError } = await supabase.auth.admin.deleteUser(target.user_id);
+      if (authError) return { error: authError.message };
+    } else {
+      const { error: deleteError } = await supabase.from("staff_members").delete().eq("id", id);
+      if (deleteError) return { error: deleteError.message };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not remove staff member" };
+  }
 }
 
 // ---------------------------------------------------------------------------

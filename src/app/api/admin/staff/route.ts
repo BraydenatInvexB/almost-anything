@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentStaff, saveStaffAccess } from "@/services/admin-service";
+import { getCurrentStaff, saveStaffAccess, deleteStaffMember } from "@/services/admin-service";
 import { staffCan } from "@/config/rbac";
 import type { Permission } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
@@ -208,4 +208,41 @@ export async function PATCH(request: Request) {
   }
 
   return NextResponse.json({ ok: true, staff: updated, demo: !isSupabaseConfigured() });
+}
+
+export async function DELETE(request: Request) {
+  const staff = await getCurrentStaff();
+  if (!staff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!staffCan(staff, "staff.manage")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const id = new URL(request.url).searchParams.get("id")?.trim();
+  if (!id) {
+    return NextResponse.json({ error: "Staff member id is required" }, { status: 400 });
+  }
+
+  const result = await deleteStaffMember(id, staff.id);
+  if ("error" in result) {
+    const status = result.error === "Staff member not found" ? 404 : 400;
+    return NextResponse.json({ error: result.error }, { status });
+  }
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createServiceClient();
+      await supabase.from("staff_activity_log").insert({
+        staff_id: staff.id,
+        staff_name: staff.full_name,
+        action: "Removed staff member",
+        entity_type: "staff",
+        entity_id: id,
+        details: {},
+      });
+    } catch {
+      /* non-fatal */
+    }
+  }
+
+  return NextResponse.json({ ok: true, demo: !isSupabaseConfigured() });
 }

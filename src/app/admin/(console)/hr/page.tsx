@@ -64,6 +64,7 @@ export default async function AdminHRPage() {
       <StaffDirectorySection
         staff={allStaff}
         canManage={staffCan(staff, "hr.manage") || staffCan(staff, "staff.manage")}
+        currentStaffId={staff.id}
       />
     </>
   );

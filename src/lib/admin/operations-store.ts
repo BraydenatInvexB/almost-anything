@@ -56,6 +56,7 @@ interface OperationsState {
   checkoutOrders: CheckoutOrderRecord[];
   payables: import("@/lib/admin/finance-types").SupplierPayable[];
   staffOverrides: Record<string, StaffAccessOverride>;
+  deletedStaffIds: string[];
   tickets: SupportTicket[];
   ticketMessages: Record<string, TicketMessage[]>;
   analytics: SiteAnalytics;
@@ -69,6 +70,7 @@ const initial: OperationsState = {
     "stf-009": { denied_permissions: ["support.view", "support.manage", "hr.view", "hr.manage"] },
     "stf-010": { denied_permissions: ["support.view", "support.manage", "finance.view", "finance.manage"] },
   },
+  deletedStaffIds: [],
   campaigns: [
     {
       id: "cmp-001",
@@ -993,6 +995,16 @@ export function getStaffOverrides(id: string) {
 export function updateStaffAccess(id: string, patch: StaffAccessOverride) {
   state.staffOverrides[id] = { ...state.staffOverrides[id], ...patch };
   return state.staffOverrides[id];
+}
+
+export function removeStaffMemberDemo(id: string) {
+  if (!state.deletedStaffIds.includes(id)) {
+    state.deletedStaffIds.push(id);
+  }
+}
+
+export function isStaffMemberDeleted(id: string) {
+  return state.deletedStaffIds.includes(id);
 }
 
 export function addCourier(input: Omit<ConfigCourier, "id"> & { id?: string }) {

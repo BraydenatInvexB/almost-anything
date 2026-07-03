@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Shield, X } from "lucide-react";
+import { Loader2, Plus, Shield, Trash2, X } from "lucide-react";
 import { ROLE_META } from "@/config/rbac";
 import { StatusBadge, Table, Th, Td, EmptyState } from "@/components/admin/ui";
 import { StaffPermissionsModal } from "@/components/admin/StaffPermissionsModal";
@@ -26,12 +26,14 @@ const ROLES: StaffRole[] = [
 export function StaffManager({
   staff,
   canManage,
+  currentStaffId,
   suppressInviteButton = false,
   inviteOpen: inviteOpenProp,
   onInviteOpenChange,
 }: {
   staff: StaffProfile[];
   canManage: boolean;
+  currentStaffId?: string;
   suppressInviteButton?: boolean;
   inviteOpen?: boolean;
   onInviteOpenChange?: (open: boolean) => void;
@@ -40,6 +42,7 @@ export function StaffManager({
   const [members, setMembers] = useState(staff);
   const [inviteOpenInternal, setInviteOpenInternal] = useState(false);
   const [permissionsFor, setPermissionsFor] = useState<StaffProfile | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const inviteOpen = inviteOpenProp ?? inviteOpenInternal;
   const setInviteOpen = onInviteOpenChange ?? setInviteOpenInternal;
@@ -56,6 +59,39 @@ export function StaffManager({
     } catch {
       /* demo tolerant */
     }
+  }
+
+  async function removeMember(member: StaffProfile) {
+    const label = member.full_name || member.email;
+    const confirmed = window.confirm(
+      `Remove ${label} from staff? They will lose admin access${member.status === "invited" ? " and their pending invitation will be cancelled" : ""}.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingId(member.id);
+    try {
+      const res = await fetch(`/api/admin/staff?id=${encodeURIComponent(member.id)}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json.error ?? "Could not remove staff member");
+        return;
+      }
+      setMembers((prev) => prev.filter((s) => s.id !== member.id));
+      router.refresh();
+    } catch {
+      alert("Network error while removing staff member");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  function canRemoveMember(member: StaffProfile): boolean {
+    if (!canManage) return false;
+    if (member.role === "super_admin") return false;
+    if (currentStaffId && member.id === currentStaffId) return false;
+    return true;
   }
 
   async function resendInvite(member: StaffProfile) {
@@ -119,6 +155,7 @@ export function StaffManager({
               <Th>Department</Th>
               <Th>Status</Th>
               <Th>Last active</Th>
+              {canManage ? <Th className="w-16">Actions</Th> : null}
             </tr>
           </thead>
           <tbody>
@@ -214,6 +251,26 @@ export function StaffManager({
                       })
                     : "N/A"}
                 </Td>
+                {canManage ? (
+                  <Td>
+                    {canRemoveMember(m) ? (
+                      <button
+                        type="button"
+                        onClick={() => removeMember(m)}
+                        disabled={deletingId === m.id}
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:opacity-50"
+                        aria-label={`Remove ${m.full_name}`}
+                        title="Remove staff member"
+                      >
+                        {deletingId === m.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
+                    ) : null}
+                  </Td>
+                ) : null}
               </tr>
             ))}
           </tbody>
