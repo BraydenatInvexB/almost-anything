@@ -64,8 +64,8 @@ async function runGooglePass(
 }
 
 /**
- * Google CSE + structured-data page extraction cascade.
- * Runs when GOOGLE_API_KEY and GOOGLE_CSE_ID are configured.
+ * Google Search grounding (Gemini) + structured-data page extraction cascade.
+ * Runs when GOOGLE_API_KEY (or GEMINI_API_KEY) is configured.
  */
 export async function runAdvancedGoogleSearchPipeline(
   query: string,

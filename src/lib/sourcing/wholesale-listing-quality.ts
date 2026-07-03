@@ -1,5 +1,6 @@
 import { ZAR_PER_USD } from "@/lib/pricing/discovery-pricing";
 import { significantSearchTokens } from "@/lib/sourcing/query-relevance";
+import { productMatchesModelIntent } from "@/lib/catalog/product-model-match";
 import { WHOLESALE_DOMAINS } from "@/lib/sourcing/wholesale-supplier-constants";
 import { domainFromUrl, isJunkProductTitle, resolveRedirectUrl } from "@/lib/sourcing/wholesale-supplier-url";
 import { containsSearchSnippetJunk } from "@/lib/sourcing/listing-copy-sanitizer";
@@ -151,6 +152,8 @@ export function maxWholesaleZarForQuery(query: string): number {
 
 /** Final storefront name must reflect what the shopper searched for. */
 export function productNameMatchesQuery(query: string, name: string): boolean {
+  if (!productMatchesModelIntent(query, name)) return false;
+
   const tokens = significantSearchTokens(query);
   if (!tokens.length) return true;
 

@@ -16,6 +16,8 @@ import {
   shouldQuerySupabase,
 } from "@/lib/catalog/catalog-source";
 import { resolveStoreProduct, resolveStoreProductCard } from "@/lib/pricing/resolve-store-product";
+import { productMatchesModelIntent } from "@/lib/catalog/product-model-match";
+import { significantSearchTokens } from "@/lib/sourcing/query-relevance";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 
@@ -44,13 +46,9 @@ function escapeIlike(term: string): string {
 }
 
 function searchTokens(query: string): string[] {
-  return [...new Set(
-    query
-      .toLowerCase()
-      .split(/\s+/)
-      .map((t) => escapeIlike(t))
-      .filter((t) => t.length >= 2),
-  )];
+  return significantSearchTokens(query)
+    .map((t) => escapeIlike(t))
+    .filter((t) => t.length >= 2);
 }
 
 function buildSingleTermOrClause(term: string): string {
@@ -136,13 +134,26 @@ async function querySupabaseProducts(
     const { data, count, error } = await query;
     if (error) return null;
 
-    const total = count ?? 0;
+    const searchQ = options.query?.trim();
+    const filtered = searchQ
+      ? (data ?? []).filter((row) =>
+          productMatchesModelIntent(
+            searchQ,
+            row.name as string,
+            row.description as string,
+          ),
+        )
+      : (data ?? []);
+
+    const total = searchQ ? filtered.length : (count ?? 0);
     return {
-      data: (data ?? []).map(resolveStoreProductCard),
+      data: filtered.map(resolveStoreProductCard),
       page,
       pageSize,
       total,
-      hasMore: from + (data?.length ?? 0) < total,
+      hasMore: searchQ
+        ? false
+        : (page - 1) * pageSize + filtered.length < total,
     };
   } catch {
     return null;
@@ -157,11 +168,19 @@ export async function searchCatalogProductSlugs(query: string): Promise<string[]
 
   try {
     const supabase = createServiceClient();
-    let dbQuery = supabase.from("products").select("slug");
+    let dbQuery = supabase.from("products").select("slug, name, description");
     dbQuery = applySearchFilter(dbQuery, q);
     const { data } = await dbQuery.limit(8);
 
-    return (data ?? []).map((row) => row.slug as string);
+    return (data ?? [])
+      .filter((row) =>
+        productMatchesModelIntent(
+          q,
+          row.name as string,
+          row.description as string,
+        ),
+      )
+      .map((row) => row.slug as string);
   } catch {
     return [];
   }

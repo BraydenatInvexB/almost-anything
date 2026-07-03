@@ -1,4 +1,8 @@
 /** Stop words stripped when matching specific product searches (e.g. "lightlark book" → "lightlark"). */
+import {
+  extractCompoundSearchPhrases,
+  productMatchesModelIntent,
+} from "@/lib/catalog/product-model-match";
 const SEARCH_STOP_WORDS = new Set([
   "a",
   "an",
@@ -26,15 +30,22 @@ const SEARCH_STOP_WORDS = new Set([
 ]);
 
 export function significantSearchTokens(query: string): string[] {
-  return [
+  const compounds = extractCompoundSearchPhrases(query);
+  let remainder = query.toLowerCase();
+  for (const phrase of compounds) {
+    remainder = remainder.replace(phrase, " ");
+  }
+
+  const rest = [
     ...new Set(
-      query
-        .toLowerCase()
+      remainder
         .split(/[^a-z0-9]+/)
         .map((t) => t.trim())
         .filter((t) => t.length >= 2 && !SEARCH_STOP_WORDS.has(t)),
     ),
   ];
+
+  return [...new Set([...compounds, ...rest])];
 }
 
 function slugFromUrl(url: string): string {
@@ -99,6 +110,8 @@ export function isRelevantProductHit(
   url?: string,
   minScore = 30,
 ): boolean {
+  if (!productMatchesModelIntent(query, title, snippet)) return false;
+
   if (queryRelevanceScore(query, title, snippet, url) >= minScore) return true;
 
   const q = query.toLowerCase();

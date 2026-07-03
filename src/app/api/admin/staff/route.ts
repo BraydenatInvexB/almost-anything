@@ -102,6 +102,7 @@ export async function POST(request: Request) {
 
     const auth = await provisionStaffAuthUser(supabase, email, parsed.data.full_name, {
       resend: Boolean(existing),
+      request,
     });
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: 500 });
@@ -156,6 +157,7 @@ export async function POST(request: Request) {
       ok: true,
       staff: toStaffProfile(data as StaffMember & Record<string, unknown>),
       emailSent: auth.emailSent,
+      redirectTo: auth.redirectTo,
     });
   } catch (err) {
     return NextResponse.json(

@@ -7,48 +7,103 @@ export interface WebSearchResult {
   displayLink: string;
 }
 
-export function isGoogleSearchConfigured(): boolean {
-  return Boolean(process.env.GOOGLE_API_KEY?.trim() && process.env.GOOGLE_CSE_ID?.trim());
+function googleApiKey(): string | undefined {
+  return process.env.GOOGLE_API_KEY?.trim() || process.env.GEMINI_API_KEY?.trim();
 }
 
-async function rawGoogleSearch(
+export function isGoogleSearchConfigured(): boolean {
+  return Boolean(googleApiKey());
+}
+
+function displayLinkFromWeb(title: string, uri: string): string {
+  const trimmedTitle = title.trim();
+  if (trimmedTitle && !trimmedTitle.includes(" ")) return trimmedTitle.replace(/^www\./, "");
+  try {
+    return new URL(uri).hostname.replace(/^www\./, "");
+  } catch {
+    return trimmedTitle || uri;
+  }
+}
+
+type GeminiGroundingChunk = {
+  web?: { uri?: string; title?: string };
+};
+
+type GeminiGenerateResponse = {
+  candidates?: Array<{
+    groundingMetadata?: {
+      groundingChunks?: GeminiGroundingChunk[];
+    };
+  }>;
+};
+
+async function geminiGoogleSearch(
   query: string,
   opts: { num?: number } = {},
 ): Promise<WebSearchResult[]> {
-  const key = process.env.GOOGLE_API_KEY?.trim();
-  const cx = process.env.GOOGLE_CSE_ID?.trim();
-  if (!key || !cx) return [];
+  const key = googleApiKey();
+  if (!key) return [];
 
-  const params = new URLSearchParams({
-    key,
-    cx,
-    q: query,
-    num: String(opts.num ?? 10),
-  });
+  const model = process.env.GOOGLE_GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+  const limit = opts.num ?? 10;
 
-  const res = await fetch(`https://www.googleapis.com/customsearch/v1?${params}`, {
-    signal: AbortSignal.timeout(12000),
-  });
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": key,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `Search the web for up to ${limit} real product listing or wholesale supplier pages relevant to: ${query}. Prefer pages with prices and buy/trade options.`,
+              },
+            ],
+          },
+        ],
+        tools: [{ google_search: {} }],
+      }),
+      signal: AbortSignal.timeout(20_000),
+    },
+  );
+
   if (!res.ok) return [];
 
-  const data = (await res.json()) as {
-    items?: Array<{ title: string; link: string; snippet?: string; displayLink?: string }>;
-  };
+  const data = (await res.json()) as GeminiGenerateResponse;
+  const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
 
-  return (data.items ?? []).map((item) => ({
-    title: item.title,
-    link: item.link,
-    snippet: item.snippet ?? "",
-    displayLink: item.displayLink ?? new URL(item.link).hostname,
-  }));
+  const seen = new Set<string>();
+  const results: WebSearchResult[] = [];
+
+  for (const chunk of chunks) {
+    const uri = chunk.web?.uri?.trim();
+    if (!uri || seen.has(uri)) continue;
+    seen.add(uri);
+
+    const title = chunk.web?.title?.trim() || displayLinkFromWeb("", uri);
+    results.push({
+      title,
+      link: uri,
+      snippet: "",
+      displayLink: displayLinkFromWeb(title, uri),
+    });
+
+    if (results.length >= limit) break;
+  }
+
+  return results;
 }
 
 export async function searchProductZA(query: string): Promise<WebSearchResult[]> {
-  return rawGoogleSearch(`${query} price South Africa buy wholesale`, { num: 10 });
+  return geminiGoogleSearch(`${query} price South Africa buy wholesale`, { num: 10 });
 }
 
 export async function searchProductIntl(query: string): Promise<WebSearchResult[]> {
-  return rawGoogleSearch(`${query} buy price wholesale`, { num: 10 });
+  return geminiGoogleSearch(`${query} buy price wholesale`, { num: 10 });
 }
 
 export async function searchNewOldStock(
@@ -59,5 +114,5 @@ export async function searchNewOldStock(
     region === "ZA"
       ? 'South Africa "new old stock" OR clearance OR liquidation OR "authorized dealer" -used -refurbished -secondhand'
       : '"new old stock" OR clearance OR liquidation OR "authorized dealer" -used -refurbished -secondhand';
-  return rawGoogleSearch(`${query} ${suffix}`, { num: 10 });
+  return geminiGoogleSearch(`${query} ${suffix}`, { num: 10 });
 }

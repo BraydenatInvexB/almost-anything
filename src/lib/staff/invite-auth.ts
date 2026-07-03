@@ -1,16 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { resolveSiteOrigin } from "@/lib/site-url";
 
 type ServiceClient = SupabaseClient<Database>;
 
-function siteBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
-}
-
 /** Invite links must pass through auth callback so the session is established before password setup. */
-export function staffInviteRedirectUrl(): string {
+export function staffInviteRedirectUrl(request?: Request): string {
+  const base = resolveSiteOrigin(request);
   const next = encodeURIComponent("/admin/accept-invite");
-  return `${siteBaseUrl()}/auth/callback?next=${next}`;
+  return `${base}/auth/callback?next=${next}`;
 }
 
 async function findAuthUserByEmail(supabase: ServiceClient, email: string) {
@@ -25,14 +23,14 @@ export async function provisionStaffAuthUser(
   supabase: ServiceClient,
   email: string,
   fullName: string,
-  options?: { resend?: boolean },
-): Promise<{ userId: string; emailSent: boolean } | { error: string }> {
+  options?: { resend?: boolean; request?: Request },
+): Promise<{ userId: string; emailSent: boolean; redirectTo: string } | { error: string }> {
   const normalizedEmail = email.trim().toLowerCase();
   const existing = await findAuthUserByEmail(supabase, normalizedEmail);
-  const redirectTo = staffInviteRedirectUrl();
+  const redirectTo = staffInviteRedirectUrl(options?.request);
 
   if (existing && !options?.resend) {
-    return { userId: existing.id, emailSent: false };
+    return { userId: existing.id, emailSent: false, redirectTo };
   }
 
   const { data, error } = await supabase.auth.admin.inviteUserByEmail(normalizedEmail, {
@@ -45,7 +43,7 @@ export async function provisionStaffAuthUser(
       error.message.toLowerCase().includes("already") ||
       error.message.toLowerCase().includes("registered");
     if (alreadyRegistered && existing) {
-      return { userId: existing.id, emailSent: false };
+      return { userId: existing.id, emailSent: false, redirectTo };
     }
     return { error: error.message };
   }
@@ -55,5 +53,5 @@ export async function provisionStaffAuthUser(
     return { error: "Invitation was not created" };
   }
 
-  return { userId, emailSent: true };
+  return { userId, emailSent: true, redirectTo };
 }

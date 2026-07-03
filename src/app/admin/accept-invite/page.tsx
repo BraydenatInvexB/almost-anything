@@ -30,9 +30,27 @@ function AcceptInviteForm() {
 
     async function establishSession() {
       const supabase = createClient();
+      const callbackError = searchParams.get("error");
+      if (callbackError) {
+        if (!cancelled) {
+          setError(
+            "This invitation link is invalid or has expired. Ask your admin to resend it.",
+          );
+        }
+        return;
+      }
+
       const code = searchParams.get("code");
       const tokenHash = searchParams.get("token_hash");
       const type = searchParams.get("type");
+
+      const hashParams =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.hash.replace(/^#/, ""))
+          : new URLSearchParams();
+      const hashType = hashParams.get("type");
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
 
       try {
         if (code) {
@@ -44,6 +62,13 @@ function AcceptInviteForm() {
             type: "invite",
           });
           if (verifyError) throw verifyError;
+        } else if (accessToken && refreshToken && (hashType === "invite" || !hashType)) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (sessionError) throw sessionError;
+          window.history.replaceState(null, "", window.location.pathname);
         } else {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) {

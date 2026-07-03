@@ -81,25 +81,64 @@ export async function POST(request: NextRequest) {
     log.step5_draft_names = drafts.map(d => d.name);
     log.step5_draft_prices = drafts.map(d => d.basePrice);
 
-    // Step 6: What does DuckDuckGo actually return raw?
+    // Step 6: Google Search grounding (Gemini) status + sample hits
+    const { isGoogleSearchConfigured, searchProductZA } = await import(
+      "@/lib/sourcing/advanced/google-search"
+    );
+    log.step6_google_configured = isGoogleSearchConfigured();
+    log.step6_google_model = process.env.GOOGLE_GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+    if (isGoogleSearchConfigured()) {
+      const googleHits = await searchProductZA(query);
+      log.step6_google_hits = googleHits.length;
+      log.step6_google_titles = googleHits.slice(0, 6).map((h) => ({
+        title: h.title,
+        link: h.link,
+        displayLink: h.displayLink,
+      }));
+      if (googleHits.length === 0) {
+        const key =
+          process.env.GOOGLE_API_KEY?.trim() || process.env.GEMINI_API_KEY?.trim();
+        const model = process.env.GOOGLE_GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+        const probe = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": key ?? "",
+            },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `product listings: ${query}` }] }],
+              tools: [{ google_search: {} }],
+            }),
+          },
+        );
+        const probeBody = (await probe.json()) as { error?: { message?: string; code?: number } };
+        if (!probe.ok) {
+          log.step6_google_error = probeBody.error?.message ?? `HTTP ${probe.status}`;
+        }
+      }
+    }
+
+    // Step 7: What does DuckDuckGo actually return raw?
     const { fetchDuckDuckGoMarkdown } = await import("@/lib/sourcing/wholesale-supplier-fetch");
     const rawDdg = await fetchDuckDuckGoMarkdown(`${query} wholesale South Africa trade supplier`);
-    log.step6_ddg_raw_length = rawDdg.length;
-    log.step6_ddg_has_uddg = rawDdg.includes("uddg=");
-    log.step6_ddg_blocked = /429|CAPTCHA|captcha|Too Many Requests/i.test(rawDdg);
-    log.step6_ddg_snippet = rawDdg.slice(0, 500);
+    log.step7_ddg_raw_length = rawDdg.length;
+    log.step7_ddg_has_uddg = rawDdg.includes("uddg=");
+    log.step7_ddg_blocked = /429|CAPTCHA|captcha|Too Many Requests/i.test(rawDdg);
+    log.step7_ddg_snippet = rawDdg.slice(0, 500);
 
     // Extract all URLs DDG returned so we can see what's being rejected
     const uddgUrls: string[] = [];
     for (const m of rawDdg.matchAll(/uddg=([^&"')]+)/gi)) {
       try { uddgUrls.push(decodeURIComponent(m[1]).split("?")[0]); } catch { /* skip */ }
     }
-    log.step6_all_ddg_urls = uddgUrls;
+    log.step7_all_ddg_urls = uddgUrls;
 
     // Check which ones are being killed by isRetailPriceSource
     const { isRetailPriceSource } = await import("@/lib/sourcing/wholesale-supplier-url");
     const { domainFromUrl } = await import("@/lib/sourcing/wholesale-supplier-url");
-    log.step6_retail_filtered = uddgUrls.map(u => ({
+    log.step7_retail_filtered = uddgUrls.map(u => ({
       url: u,
       domain: domainFromUrl(u),
       isRetail: isRetailPriceSource(domainFromUrl(u) ?? ""),
