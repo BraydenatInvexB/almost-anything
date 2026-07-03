@@ -1,17 +1,22 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Shield } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 import { SiteLogo } from "@/components/layout/SiteLogo";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 
+function readHashParams(): URLSearchParams {
+  if (typeof window === "undefined") return new URLSearchParams();
+  return new URLSearchParams(window.location.hash.replace(/^#/, ""));
+}
+
 function AcceptInviteForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading, updatePassword, isConfigured } = useAuth();
   const [password, setPassword] = useState("");
@@ -19,61 +24,63 @@ function AcceptInviteForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [establishingSession, setEstablishingSession] = useState(true);
+  const [invitedUser, setInvitedUser] = useState<User | null>(null);
+  const sessionChecked = useRef(false);
+
+  const callbackError = searchParams.get("error");
+  const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const inviteType = searchParams.get("type");
 
   useEffect(() => {
     if (!isConfigured) {
       setEstablishingSession(false);
       return;
     }
+    if (sessionChecked.current) return;
+    sessionChecked.current = true;
 
     let cancelled = false;
 
     async function establishSession() {
-      const supabase = createClient();
-      const callbackError = searchParams.get("error");
-      if (callbackError) {
-        if (!cancelled) {
+      try {
+        if (callbackError) {
           setError(
             "This invitation link is invalid or has expired. Ask your admin to resend it.",
           );
+          return;
         }
-        return;
-      }
 
-      const code = searchParams.get("code");
-      const tokenHash = searchParams.get("token_hash");
-      const type = searchParams.get("type");
+        const supabase = createClient();
+        const hashParams = readHashParams();
+        const hashType = hashParams.get("type");
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
 
-      const hashParams =
-        typeof window !== "undefined"
-          ? new URLSearchParams(window.location.hash.replace(/^#/, ""))
-          : new URLSearchParams();
-      const hashType = hashParams.get("type");
-      const accessToken = hashParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token");
-
-      try {
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
-        } else if (tokenHash && type === "invite") {
+          window.history.replaceState(null, "", "/admin/accept-invite");
+        } else if (tokenHash && inviteType === "invite") {
           const { error: verifyError } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: "invite",
           });
           if (verifyError) throw verifyError;
+          window.history.replaceState(null, "", "/admin/accept-invite");
         } else if (accessToken && refreshToken && (hashType === "invite" || !hashType)) {
           const { error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
           if (sessionError) throw sessionError;
-          window.history.replaceState(null, "", window.location.pathname);
-        } else {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            await new Promise((resolve) => setTimeout(resolve, 400));
-          }
+          window.history.replaceState(null, "", "/admin/accept-invite");
+        }
+
+        const { data: { user: resolvedUser }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (resolvedUser && !cancelled) {
+          setInvitedUser(resolvedUser);
         }
       } catch (err) {
         if (!cancelled) {
@@ -92,7 +99,7 @@ function AcceptInviteForm() {
     return () => {
       cancelled = true;
     };
-  }, [isConfigured, searchParams]);
+  }, [isConfigured, callbackError, code, tokenHash, inviteType]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -124,11 +131,13 @@ function AcceptInviteForm() {
       return;
     }
 
-    router.replace("/admin");
-    router.refresh();
+    window.location.href = "/admin";
   }
 
-  if (authLoading || establishingSession) {
+  const activeUser = user ?? invitedUser;
+  const verifying = (authLoading && !activeUser) || establishingSession;
+
+  if (verifying) {
     return (
       <div className="flex min-h-[320px] flex-col items-center justify-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
@@ -145,7 +154,7 @@ function AcceptInviteForm() {
     );
   }
 
-  if (!user && error) {
+  if (!activeUser && error) {
     return (
       <div className="space-y-4 text-center">
         <p className="text-sm text-red-600">{error}</p>
@@ -159,7 +168,7 @@ function AcceptInviteForm() {
     );
   }
 
-  if (!user) {
+  if (!activeUser) {
     return (
       <div className="space-y-4 text-center">
         <p className="text-sm text-neutral-600">
@@ -186,7 +195,7 @@ function AcceptInviteForm() {
             Set your password
           </h1>
           <p className="text-sm text-neutral-500">
-            {user.email ? `Welcome, ${user.email}` : "Create a password for admin access"}
+            {activeUser.email ? `Welcome, ${activeUser.email}` : "Create a password for admin access"}
           </p>
         </div>
       </div>

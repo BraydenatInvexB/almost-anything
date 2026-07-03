@@ -4,11 +4,9 @@ import { resolveSiteOrigin } from "@/lib/site-url";
 
 type ServiceClient = SupabaseClient<Database>;
 
-/** Invite links must pass through auth callback so the session is established before password setup. */
+/** Invite links land on accept-invite so the browser can finish PKCE / hash token exchange. */
 export function staffInviteRedirectUrl(request?: Request): string {
-  const base = resolveSiteOrigin(request);
-  const next = encodeURIComponent("/admin/accept-invite");
-  return `${base}/auth/callback?next=${next}`;
+  return `${resolveSiteOrigin(request)}/admin/accept-invite`;
 }
 
 async function findAuthUserByEmail(supabase: ServiceClient, email: string) {
