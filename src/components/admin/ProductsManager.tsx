@@ -1,18 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ExternalLink, Loader2, Pencil, Search, Star, Trash2 } from "lucide-react";
+import { Search } from "lucide-react";
 import { EmptyState } from "@/components/admin/ui";
-import {
-  StorefrontSectionToggles,
-  flagsFromProduct,
-} from "@/components/admin/StorefrontSectionToggles";
+import { flagsFromProduct } from "@/components/admin/StorefrontSectionToggles";
 import type { StorefrontSectionFlags } from "@/config/storefront-sections";
-import { formatCurrency } from "@/lib/utils/cn";
 import type { Product } from "@/types/database";
-import { parseProductEnrichment } from "@/types/product-enrichment";
+import {
+  ProductsManagerRow,
+} from "@/components/admin/ProductsManagerRow";
+import type { ProductsManagerDeleteState, ProductsManagerSaveState } from "@/components/admin/products-manager-utils";
 
 interface Props {
   products: Product[];
@@ -21,26 +19,6 @@ interface Props {
   minMarkup: number;
   maxMarkup: number;
   initialQuery?: string;
-}
-
-type SaveState = "idle" | "saving" | "saved";
-type DeleteState = "idle" | "deleting";
-
-function compactStockLabel(status: string): string {
-  switch (status) {
-    case "in_stock":
-      return "In stock";
-    case "available_international":
-      return "Intl.";
-    case "low_stock":
-      return "Low";
-    case "out_of_stock":
-      return "Out";
-    case "sourced":
-      return "Sourced";
-    default:
-      return status.replace(/_/g, " ");
-  }
 }
 
 export function ProductsManager({
@@ -61,8 +39,8 @@ export function ProductsManager({
   const [retailPrices, setRetailPrices] = useState<Record<string, number>>(
     Object.fromEntries(products.map((p) => [p.id, Number(p.retail_price)])),
   );
-  const [saveState, setSaveState] = useState<Record<string, SaveState>>({});
-  const [deleteState, setDeleteState] = useState<Record<string, DeleteState>>({});
+  const [saveState, setSaveState] = useState<Record<string, ProductsManagerSaveState>>({});
+  const [deleteState, setDeleteState] = useState<Record<string, ProductsManagerDeleteState>>({});
   const [sections, setSections] = useState<Record<string, StorefrontSectionFlags>>(
     Object.fromEntries(items.map((p) => [p.id, flagsFromProduct(p)])),
   );
@@ -237,154 +215,24 @@ export function ProductsManager({
                 const retail =
                   retailPrices[p.id] ??
                   Number((p.base_price * (1 + markup / 100)).toFixed(2));
-                const state = saveState[p.id] ?? "idle";
-                const removing = deleteState[p.id] === "deleting";
-                const dirty = Math.abs(markup - Number(p.markup_percent)) > 0.001;
-                const enrichment = parseProductEnrichment(p.metadata);
-                const supplierName =
-                  enrichment.supplierIntel?.primary.supplierName ?? p.source_name ?? null;
-                const supplierUrl =
-                  enrichment.supplierIntel?.primary.supplierUrl ?? p.source_url ?? null;
 
                 return (
-                  <tr key={p.id} className="hover:bg-neutral-50/80">
-                    <td className="px-3 py-2.5">
-                      <div className="flex min-w-0 items-center gap-2">
-                        {p.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={p.image_url}
-                            alt=""
-                            width={36}
-                            height={36}
-                            className="h-9 w-9 shrink-0 rounded-md object-cover"
-                          />
-                        ) : (
-                          <div className="h-9 w-9 shrink-0 rounded-md bg-neutral-100" />
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-neutral-900">{p.name}</p>
-                          <p className="flex items-center gap-1 truncate text-[11px] text-neutral-400">
-                            <Star className="h-2.5 w-2.5 shrink-0 fill-amber-400 text-amber-400" />
-                            {p.rating} · <span className="capitalize">{p.category}</span>
-                          </p>
-                          {supplierName && (
-                            <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-neutral-500">
-                              <span className="truncate">{supplierName}</span>
-                              {supplierUrl && (
-                                <a
-                                  href={supplierUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex shrink-0 items-center text-brand hover:underline"
-                                  title="Open supplier listing"
-                                >
-                                  <ExternalLink className="h-2.5 w-2.5" />
-                                </a>
-                              )}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="hidden px-2 py-2.5 text-xs text-neutral-600 sm:table-cell">
-                      {formatCurrency(p.base_price, p.currency)}
-                    </td>
-                    <td className="px-2 py-2.5">
-                      {canEditMarkup ? (
-                        <div className="flex items-center gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => setMarkup(p.id, Math.round((markup - 1) * 10) / 10, p.base_price)}
-                            className="flex h-6 w-6 items-center justify-center rounded border border-neutral-200 text-xs text-neutral-500 hover:bg-neutral-100"
-                          >
-                            −
-                          </button>
-                          <input
-                            type="number"
-                            value={markup}
-                            onChange={(e) => setMarkup(p.id, Number(e.target.value), p.base_price)}
-                            className="h-6 w-12 rounded border border-neutral-200 px-1 text-center text-xs focus:border-neutral-400 focus:outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setMarkup(p.id, Math.round((markup + 1) * 10) / 10, p.base_price)}
-                            className="flex h-6 w-6 items-center justify-center rounded border border-neutral-200 text-xs text-neutral-500 hover:bg-neutral-100"
-                          >
-                            +
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-xs">{markup.toFixed(1)}%</span>
-                      )}
-                    </td>
-                    <td className="hidden px-2 py-2.5 text-xs font-semibold md:table-cell">
-                      {formatCurrency(retail, p.currency)}
-                    </td>
-                    <td className="hidden px-2 py-2.5 lg:table-cell">
-                      <span
-                        className="inline-flex rounded-md bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600"
-                        title={compactStockLabel(p.stock_status)}
-                      >
-                        {compactStockLabel(p.stock_status)}
-                      </span>
-                    </td>
-                    <td className="hidden px-2 py-2.5 xl:table-cell">
-                      <StorefrontSectionToggles
-                        compact
-                        disabled={!canEdit || sectionSaving[p.id]}
-                        value={sections[p.id] ?? flagsFromProduct(p)}
-                        onChange={(next) => updateSections(p, next)}
-                      />
-                    </td>
-                    {(canEditMarkup || canEdit) && (
-                      <td className="px-2 py-2.5">
-                        <div className="flex items-center justify-end gap-1">
-                          {canEdit && (
-                            <>
-                              <Link
-                                href={`/admin/products/${p.id}/edit`}
-                                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-                                title="Edit product"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Link>
-                              <button
-                                type="button"
-                                disabled={removing}
-                                onClick={() => remove(p)}
-                                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                                title={`Remove ${p.name}`}
-                              >
-                                {removing ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                )}
-                              </button>
-                            </>
-                          )}
-                          {canEditMarkup && (
-                            <button
-                              type="button"
-                              disabled={!dirty || state === "saving"}
-                              onClick={() => save(p)}
-                              title={state === "saved" ? "Saved" : "Save markup"}
-                              className="inline-flex h-7 min-w-[2rem] items-center justify-center rounded-full bg-neutral-900 px-2 text-[10px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-30"
-                            >
-                              {state === "saving" ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : state === "saved" ? (
-                                <Check className="h-3.5 w-3.5" />
-                              ) : (
-                                "Save"
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
-                  </tr>
+                  <ProductsManagerRow
+                    key={p.id}
+                    product={p}
+                    markup={markup}
+                    retail={retail}
+                    saveState={saveState[p.id] ?? "idle"}
+                    deleteState={deleteState[p.id] ?? "idle"}
+                    sections={sections[p.id] ?? flagsFromProduct(p)}
+                    sectionSaving={sectionSaving[p.id] ?? false}
+                    canEditMarkup={canEditMarkup}
+                    canEdit={canEdit}
+                    onSetMarkup={setMarkup}
+                    onSave={save}
+                    onRemove={remove}
+                    onUpdateSections={updateSections}
+                  />
                 );
               })}
             </tbody>

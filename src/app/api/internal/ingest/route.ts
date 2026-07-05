@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         source_name: product.source_name,
         delivery_days_min: product.delivery_days_min ?? INTERNATIONAL_WAREHOUSE_DELIVERY_DAYS.min,
         delivery_days_max: product.delivery_days_max ?? INTERNATIONAL_WAREHOUSE_DELIVERY_DAYS.max,
-        rating: product.rating ?? 4.5,
+        rating: product.rating ?? 0,
         review_count: product.review_count ?? 0,
         is_featured: product.is_featured ?? false,
         is_exclusive: product.is_exclusive ?? false,

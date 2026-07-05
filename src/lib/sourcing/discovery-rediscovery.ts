@@ -8,7 +8,7 @@ import {
   productNameIncludesSupplier,
   productNameMatchesQuery,
 } from "@/lib/sourcing/wholesale-listing-quality";
-import { isSaCommonlyStockedProduct, isSaSupplierUrl } from "@/lib/sourcing/wholesale-sa-priority";
+import { isSaCommonlyStockedProduct, isSaSupplierUrl, prefersSaWarehouse } from "@/lib/sourcing/wholesale-sa-priority";
 import { isRelevantProductHit } from "@/lib/sourcing/query-relevance";
 import { containsSearchSnippetJunk, isPollutedListingCopy } from "@/lib/sourcing/listing-copy-sanitizer";
 
@@ -20,7 +20,7 @@ export async function productsNeedRediscovery(slugs: string[], query: string): P
   for (const slug of slugs) {
     const { data } = await supabase
       .from("products")
-      .select("source_url, name, description, retail_price")
+      .select("source_url, name, description, retail_price, review_count, rating, metadata")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -30,6 +30,11 @@ export async function productsNeedRediscovery(slugs: string[], query: string): P
     const description = String(data.description ?? "");
     const sourceUrl = (data.source_url as string | null) ?? "";
     const retail = Number(data.retail_price) || 0;
+    const metadata = data.metadata as { sourcing?: { query?: string } } | null;
+    const isDiscovered = Boolean(metadata?.sourcing?.query);
+
+    if (/shop-online-for|sleep-collective|sleepcollective/i.test(slug)) return true;
+    if (isDiscovered && Number(data.review_count) > 0) return true;
 
     if (retail <= 0) return true;
     if (!isPlausibleWholesalePrice(query, retail * 0.9)) return true;
@@ -50,6 +55,7 @@ export async function productsNeedRediscovery(slugs: string[], query: string): P
       return true;
     }
 
+    if (prefersSaWarehouse(query) && !isSaSupplierUrl(sourceUrl)) return true;
     if (isSaCommonlyStockedProduct(query) && !isSaSupplierUrl(sourceUrl)) return true;
     if (productNameIncludesSupplier(name)) return true;
     if (!sourceUrl || sourceUrl.includes("almostanything.store/sourced")) return true;

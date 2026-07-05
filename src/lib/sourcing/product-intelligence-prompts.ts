@@ -26,7 +26,7 @@ Each product in the "products" array must include:
 - supplier_hit_index (0-based index into the research hits array, or omit if synthesised)
 - image_url (direct product photo from listing if known)
 - delivery_days_min, delivery_days_max (South Africa warehouse: 2-5 days; international warehouse: 5-7 days)
-- rating (4.0-5.0), review_count
+- rating (0 unless real verified reviews exist), review_count (0 unless verified)
 - highlights (3-5 facts), specifications (object)
 - colours, sizes, options (variant matrix)
 

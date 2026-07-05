@@ -1,4 +1,16 @@
-import type { SupplierRegion, SupplierTier } from "@/types/supplier-sourcing";
+export {
+  CONSUMABLE_INTL_TIERS,
+  DIRECT_SA_SITE_SEARCHES,
+  INTL_PRICE_TIERS,
+  INTL_WHOLESALE_TIERS,
+  SA_PRICE_TIERS,
+  SA_WHOLESALE_TIERS,
+  SEARCH_TIERS,
+  SOFT_GOODS_INTL_TIERS,
+  SOFT_GOODS_SA_TIERS,
+  type DirectSiteSearch,
+  type SearchTier,
+} from "@/lib/sourcing/wholesale-search-tiers";
 
 export const JINA_READER = "https://r.jina.ai/";
 export const USER_AGENT = "Mozilla/5.0 (compatible; AlmostAnythingBot/1.0)";
@@ -11,6 +23,14 @@ export const RETAIL_DOMAINS = [
   "woolworths.co.za",
   "superbalist.com",
   "incredible.co.za",
+  "sleepcollective",
+  "thesleepcollective",
+  "truworths.co.za",
+  "bash.com",
+  "ackermans.co.za",
+  "edgars.co.za",
+  "mrpg.com",
+  "cottonon.com",
 ];
 
 export const SA_B2B_DISTRIBUTOR_DOMAINS = [
@@ -38,7 +58,36 @@ export const SA_TRADE_DOMAINS = [
   "beautysouthafrica.co.za",
 ];
 
-/** Consumer marketplaces — never use for wholesale cost / discovery pricing. Images only via SA_IMAGE_ONLY_DOMAINS. */
+export const SA_APPAREL_WHOLESALE_DOMAINS = [
+  "sinopool.co.za",
+  "kws.sinopool.co.za",
+  "nucleus.co.za",
+  "goodada.co.za",
+  "tomotex.co.za",
+  "relaxcollection.co.za",
+  "fashionfusion.co.za",
+  "urban-legend.co.za",
+  "itsmine.co.za",
+];
+
+export function isSaApparelWholesaleDomain(domain: string): boolean {
+  const lower = domain.replace(/^www\./, "").toLowerCase();
+  return SA_APPAREL_WHOLESALE_DOMAINS.some((d) => lower.includes(d));
+}
+
+export const SA_SOFT_GOODS_SEED_URLS: Array<{ url: string; title: string; domain: string }> = [
+  {
+    url: "https://kws.sinopool.co.za/product-category/apparel/underwear-sleepwear/",
+    title: "Katherine Wholesale SA Underwear & Sleepwear",
+    domain: "kws.sinopool.co.za",
+  },
+  {
+    url: "https://www.goodada.co.za/apparel/finished-products/pajamas-sleepwear",
+    title: "Goodada SA Pajamas & Sleepwear Suppliers",
+    domain: "goodada.co.za",
+  },
+];
+
 export const RETAIL_MARKETPLACE_DOMAINS = [
   "takealot.com",
   "loot.co.za",
@@ -61,7 +110,6 @@ export const RETAIL_MARKETPLACE_DOMAINS = [
   "bestbuy.com",
 ];
 
-/** @deprecated Use RETAIL_MARKETPLACE_DOMAINS — kept for image-only lookups. */
 export const SA_RETAILER_SITES = RETAIL_MARKETPLACE_DOMAINS;
 
 export const SA_IMAGE_ONLY_DOMAINS = ["takealot.com", ...SA_TRADE_DOMAINS];
@@ -86,157 +134,3 @@ export const SA_SIGNALS = [
   "durban",
   "pretoria",
 ];
-
-export type SearchTier = {
-  region: SupplierRegion;
-  tier: SupplierTier;
-  query: (productQuery: string) => string;
-};
-
-export const SEARCH_TIERS: SearchTier[] = [
-  {
-    region: "south_africa",
-    tier: "wholesale",
-    query: (q) => `site:.co.za ${q} wholesale trade supplier distributor MOQ`,
-  },
-  {
-    region: "south_africa",
-    tier: "wholesale",
-    query: (q) => `${q} wholesale supplier South Africa trade price MOQ bulk`,
-  },
-  {
-    region: "south_africa",
-    tier: "trade",
-    query: (q) => `${q} importer distributor Johannesburg Cape Town trade cost`,
-  },
-  {
-    region: "south_africa",
-    tier: "trade",
-    query: (q) => `${q} trade supplier Johannesburg Cape Town distributor cost`,
-  },
-  {
-    region: "south_africa",
-    tier: "trade",
-    query: (q) => `site:.co.za ${q} distributor importer bulk trade`,
-  },
-  {
-    region: "south_africa",
-    tier: "wholesale",
-    query: (q) => `${q} wholesaler Johannesburg Cape Town Durban .co.za trade`,
-  },
-  {
-    region: "international",
-    tier: "manufacturer",
-    query: (q) => `site:alibaba.com/product-detail ${q} wholesale factory price MOQ`,
-  },
-  {
-    region: "international",
-    tier: "manufacturer",
-    query: (q) => `site:made-in-china.com/product ${q} manufacturer wholesale`,
-  },
-  {
-    region: "international",
-    tier: "wholesale",
-    query: (q) => `site:globalsources.com ${q} supplier wholesale`,
-  },
-  {
-    region: "international",
-    tier: "wholesale",
-    query: (q) => `${q} wholesale bulk supplier FOB price trade`,
-  },
-  {
-    region: "international",
-    tier: "wholesale",
-    query: (q) => `site:alibaba.com ${q} wholesale used tablet "\\$" MOQ price`,
-  },
-];
-
-/** SA wholesale web-search tiers (no retail marketplaces). */
-export const SA_WHOLESALE_TIERS = SEARCH_TIERS.slice(0, 6);
-
-/** International B2B — only used when SA trade search is thin. */
-export const INTL_WHOLESALE_TIERS = SEARCH_TIERS.slice(6);
-
-/** Price-focused SA queries — surfaces ZAR trade figures in snippets. */
-export const SA_PRICE_TIERS: SearchTier[] = [
-  {
-    region: "south_africa",
-    tier: "trade",
-    query: (q) => `site:.co.za ${q} price ZAR trade distributor ex VAT`,
-  },
-  {
-    region: "south_africa",
-    tier: "trade",
-    query: (q) => `${q} trade price South Africa "R" wholesale distributor`,
-  },
-  {
-    region: "south_africa",
-    tier: "wholesale",
-    query: (q) =>
-      `site:core.co.za OR site:mustek.co.za OR site:rectron.co.za OR site:syntech.co.za ${q} price`,
-  },
-  {
-    region: "south_africa",
-    tier: "trade",
-    query: (q) => `${q} importer Johannesburg Cape Town "incl VAT" OR "ex VAT" .co.za`,
-  },
-  {
-    region: "south_africa",
-    tier: "trade",
-    query: (q) => `site:.co.za ${q} product "R" buy shop`,
-  },
-  {
-    region: "south_africa",
-    tier: "trade",
-    query: (q) => `${q} stationery school supplies South Africa .co.za price`,
-  },
-];
-
-/** International B2B product-detail passes for low-cost consumables (stationery, fasteners, etc.). */
-export const CONSUMABLE_INTL_TIERS: SearchTier[] = [
-  {
-    region: "international",
-    tier: "manufacturer",
-    query: (q) => `site:made-in-china.com/product ${q} US$ FOB MOQ`,
-  },
-  {
-    region: "international",
-    tier: "manufacturer",
-    query: (q) => `site:en.made-in-china.com/product ${q} pencil case US$`,
-  },
-  {
-    region: "international",
-    tier: "manufacturer",
-    query: (q) => `site:alibaba.com/product-detail ${q} US$ MOQ`,
-  },
-];
-
-/** Price-focused international B2B queries. */
-export const INTL_PRICE_TIERS: SearchTier[] = [
-  {
-    region: "international",
-    tier: "manufacturer",
-    query: (q) => `site:alibaba.com/product-detail ${q} "\\$" MOQ unit price`,
-  },
-  {
-    region: "international",
-    tier: "manufacturer",
-    query: (q) => `site:made-in-china.com/product ${q} FOB price USD`,
-  },
-  {
-    region: "international",
-    tier: "wholesale",
-    query: (q) => `${q} wholesale factory price "\\$" MOQ bulk supplier`,
-  },
-];
-
-export type DirectSiteSearch = {
-  domain: string;
-  buildUrl: (query: string) => string;
-  region: SupplierRegion;
-  tier: SupplierTier;
-  extractUrls: (markdown: string) => string[];
-};
-
-/** Direct site searches disabled for pricing — retail catalogues are not wholesale sources. */
-export const DIRECT_SA_SITE_SEARCHES: DirectSiteSearch[] = [];

@@ -6,8 +6,10 @@ import {
   searchNewOldStock,
   searchProductIntl,
   searchProductZA,
+  searchSoftGoodsZA,
   type WebSearchResult,
 } from "@/lib/sourcing/advanced/google-search";
+import { isSoftGoodsQuery } from "@/lib/sourcing/wholesale-listing-quality";
 import {
   extractProductFromPage,
   toWholesaleSearchHit,
@@ -74,13 +76,11 @@ export async function runAdvancedGoogleSearchPipeline(
   if (!isGoogleSearchConfigured()) return [];
 
   const searchQuery = parsedQuery.canonicalProduct || query;
+  const zaSearch = isSoftGoodsQuery(query)
+    ? () => searchSoftGoodsZA(searchQuery)
+    : () => searchProductZA(searchQuery);
 
-  let hits = await runGooglePass(
-    searchQuery,
-    await searchProductZA(searchQuery),
-    "ZA",
-    parsedQuery,
-  );
+  let hits = await runGooglePass(searchQuery, await zaSearch(), "ZA", parsedQuery);
 
   if (!hits.length) {
     hits = await runGooglePass(

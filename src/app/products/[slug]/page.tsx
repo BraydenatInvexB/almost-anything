@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Star,
   Truck,
-  ShieldCheck,
   RotateCcw,
   Lock,
 } from "lucide-react";
@@ -30,7 +29,6 @@ interface ProductPageProps {
 const TRUST = [
   { icon: Truck, label: "Fast delivery" },
   { icon: RotateCcw, label: "30 day returns" },
-  { icon: ShieldCheck, label: "1-year warranty" },
   { icon: Lock, label: "Secure checkout" },
 ];
 
@@ -99,15 +97,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <span className="flex items-center gap-1 text-sm">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              {formatRating(product.rating)}
-              <span className="text-neutral-400"> ({product.review_count} reviews)</span>
-            </span>
-            <span className="text-sm text-neutral-300">·</span>
-            <span className="text-sm text-neutral-500">
-              {warehouseLabel}
-            </span>
+            {product.review_count > 0 && product.rating > 0 ? (
+              <>
+                <span className="flex items-center gap-1 text-sm">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  {formatRating(product.rating)}
+                  <span className="text-neutral-400">
+                    {" "}
+                    ({product.review_count}{" "}
+                    {product.review_count === 1 ? "review" : "reviews"})
+                  </span>
+                </span>
+                <span className="text-sm text-neutral-300">·</span>
+              </>
+            ) : null}
+            <span className="text-sm text-neutral-500">{warehouseLabel}</span>
           </div>
 
           <div className="mt-5 flex flex-wrap items-baseline gap-3">
@@ -190,7 +194,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             />
 
             {/* Trust badges */}
-            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {TRUST.map(({ icon: Icon, label }) => (
                 <div
                   key={label}

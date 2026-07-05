@@ -16,6 +16,7 @@ export interface ProductCardData {
   price: number;
   currency: string;
   rating: number;
+  reviewCount?: number;
   imageUrl: string;
   category: string;
   isDeal?: boolean;

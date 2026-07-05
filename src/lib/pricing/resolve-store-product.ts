@@ -7,6 +7,22 @@ import { stockFromMetadata } from "@/lib/catalog/product-stock-label";
 import { parsePricingFromMetadata } from "@/lib/pricing/discovery-pricing";
 import { customerFacingDescription, parseProductEnrichment } from "@/types/product-enrichment";
 
+function isDiscoveredListing(metadata: Product["metadata"]): boolean {
+  const sourcing = metadata as { sourcing?: { query?: string } } | null;
+  return Boolean(sourcing?.sourcing?.query);
+}
+
+/** Discovered listings have no verified customer reviews yet; hide fabricated defaults. */
+function publicReviewFields(product: Product): { rating: number; review_count: number } {
+  if (isDiscoveredListing(product.metadata)) {
+    return { rating: 0, review_count: 0 };
+  }
+  return {
+    rating: product.review_count > 0 ? product.rating : 0,
+    review_count: product.review_count,
+  };
+}
+
 /**
  * Supabase ingest historically defaulted currency to USD. Prefer seed pricing
  * for known slugs; otherwise force the storefront default (ZAR).
@@ -35,10 +51,14 @@ export function resolveStoreProduct(product: Product): Product {
     metadata: resolved.metadata,
   });
 
+  const reviews = publicReviewFields(resolved);
+
   return {
     ...resolved,
     delivery_days_min: delivery.min,
     delivery_days_max: delivery.max,
+    rating: reviews.rating,
+    review_count: reviews.review_count,
   };
 }
 
@@ -65,6 +85,7 @@ export function resolveStoreProductCard(product: Product): ProductCardData {
     price: resolved.retail_price,
     currency: resolved.currency,
     rating: resolved.rating,
+    reviewCount: resolved.review_count,
     imageUrl: resolved.enhanced_image_url ?? resolved.image_url ?? "",
     category: resolved.category,
     isDeal: resolved.is_deal,

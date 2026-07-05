@@ -56,8 +56,38 @@ const CATEGORY_RULES: CategoryRule[] = [
     patterns: [/\blamp|\blight\b|\bdecor|\bcurtain|\bpillow|\bblanket|\brug\b/i],
   },
   {
+    slug: "sleepwear",
+    patterns: [
+      /\bnight\s?gown|\bnightgown|\bsleepwear|\bpyjama|\bpajama|\bnightie|\bnightdress|\bchemise|\bloungewear|\brobe\b|\bsleep\s?dress/i,
+    ],
+  },
+  {
     slug: "fashion",
     patterns: [/\bshirt|\bshoe|\bsneaker|\bdress|\bjacket|\bpants|\bjeans|\bhoodie/i],
+  },
+  {
+    slug: "womens",
+    patterns: [/\bwomen'?s?\b|\bladies'?\b|\blady'?s?\b|\bfemale\b/i],
+  },
+  {
+    slug: "mens",
+    patterns: [/\bmen'?s?\b|\bgentlemen|\bmenswear|\bmale\b/i],
+  },
+  {
+    slug: "lingerie",
+    patterns: [/\blingerie|\bunderwear|\bbra\b|\bbralette|\bpanties|\bbriefs|\bknickers/i],
+  },
+  {
+    slug: "jewelry",
+    patterns: [
+      /\bjewelry|\bjewellery|\bnecklace|\bbracelet|\bearring|\bpendant|\bengagement ring|\bwedding ring/i,
+    ],
+  },
+  {
+    slug: "appliances",
+    patterns: [
+      /\bappliance|\bvacuum|\bkettle|\bmicrowave|\bair fryer|\bwashing machine|\btumble dryer|\bfridge|\brefrigerator|\bdishwasher/i,
+    ],
   },
   {
     slug: "beauty",

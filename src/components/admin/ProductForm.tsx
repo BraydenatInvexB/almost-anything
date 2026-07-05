@@ -6,21 +6,18 @@ import { BtnPrimary } from "@/components/admin/ui";
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor";
 import { ProductEnrichmentEditor } from "@/components/admin/ProductEnrichmentEditor";
 import { ProductSupplierPanel } from "@/components/admin/ProductSupplierPanel";
-import { ProductImageField } from "@/components/admin/ProductImageField";
-import { STORE_CATEGORIES } from "@/config/categories";
+import { ProductFormDetailsSection } from "@/components/admin/ProductFormDetailsSection";
+import { ProductFormPricingSection } from "@/components/admin/ProductFormPricingSection";
 import {
   StorefrontSectionToggles,
   flagsFromProduct,
 } from "@/components/admin/StorefrontSectionToggles";
-import {
-  STOCK_STATUS_OPTIONS,
-  getStockStatusOrigin,
-} from "@/config/product-stock";
+import { getStockStatusOrigin } from "@/config/product-stock";
 import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
 import type { ProductVariantsConfig } from "@/types/product-variants";
-import { emptyVariantsConfig, parseVariantsConfig } from "@/types/product-variants";
+import { emptyVariantsConfig } from "@/types/product-variants";
 import type { ProductEnrichment } from "@/types/product-enrichment";
-import { emptyEnrichment, parseProductEnrichment, buildProductMetadata } from "@/types/product-enrichment";
+import { emptyEnrichment, buildProductMetadata } from "@/types/product-enrichment";
 
 interface ProductInput {
   id?: string;
@@ -186,49 +183,7 @@ export function ProductForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-neutral-950">Product details</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Product name">
-            <input className="input" value={form.name} onChange={(e) => update("name", e.target.value)} required />
-          </Field>
-          <Field label="URL slug">
-            <input className="input" value={form.slug} onChange={(e) => update("slug", e.target.value)} required />
-          </Field>
-          <Field label="Category" className="sm:col-span-2">
-            <select className="input" value={form.category} onChange={(e) => update("category", e.target.value)}>
-              {STORE_CATEGORIES.map((c) => (
-                <option key={c.slug} value={c.slug}>{c.label}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Description" className="sm:col-span-2">
-            <textarea
-              className="input min-h-[120px] resize-y"
-              value={form.description}
-              onChange={(e) => update("description", e.target.value)}
-              placeholder="Full product description for the storefront…"
-              required
-            />
-          </Field>
-          <ProductImageField
-            value={form.image_url}
-            onChange={(url) => update("image_url", url)}
-          />
-          <Field label="Supplier name">
-            <input className="input" value={form.source_name} onChange={(e) => update("source_name", e.target.value)} />
-          </Field>
-          <Field label="Supplier listing URL">
-            <input
-              className="input"
-              type="url"
-              value={form.source_url}
-              onChange={(e) => update("source_url", e.target.value)}
-              placeholder="https://…"
-            />
-          </Field>
-        </div>
-      </div>
+      <ProductFormDetailsSection form={form} update={update} />
 
       <ProductSupplierPanel
         sourceName={form.source_name}
@@ -237,58 +192,7 @@ export function ProductForm({
         supplierIntel={enrichment.supplierIntel}
       />
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-neutral-950">Pricing & inventory</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <Field label="Cost price (ZAR)">
-            <input type="number" className="input" value={form.base_price} onChange={(e) => update("base_price", e.target.value)} required />
-          </Field>
-          <Field label="Markup %">
-            <input type="number" className="input" value={form.markup_percent} onChange={(e) => update("markup_percent", e.target.value)} />
-          </Field>
-          <Field label="Quantity">
-            <input type="number" className="input" value={form.quantity} onChange={(e) => update("quantity", e.target.value)} />
-          </Field>
-          <Field label="Stock status" hint="Sets availability and whether the item ships from SA or internationally.">
-            <select
-              className="input"
-              value={form.stock_status}
-              onChange={(e) => update("stock_status", e.target.value)}
-            >
-              {STOCK_STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-neutral-400">
-              {STOCK_STATUS_OPTIONS.find((o) => o.value === form.stock_status)?.description}
-            </p>
-          </Field>
-          <Field label="Stock origin" hint="Auto-set from stock status — override if needed.">
-            <select className="input" value={form.stock_origin} onChange={(e) => update("stock_origin", e.target.value)}>
-              <option value="sa_warehouse">South Africa warehouse</option>
-              <option value="overseas">Overseas / international supplier</option>
-            </select>
-          </Field>
-          <Field label="Delivery days">
-            <div className="flex gap-2">
-              <input type="number" className="input" value={form.delivery_days_min} onChange={(e) => update("delivery_days_min", e.target.value)} />
-              <input type="number" className="input" value={form.delivery_days_max} onChange={(e) => update("delivery_days_max", e.target.value)} />
-            </div>
-          </Field>
-        </div>
-        <div className="mt-4 flex gap-4">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.is_featured} onChange={(e) => update("is_featured", e.target.checked)} />
-            Featured badge
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.is_deal} onChange={(e) => update("is_deal", e.target.checked)} />
-            Deal pricing badge
-          </label>
-        </div>
-      </div>
+      <ProductFormPricingSection form={form} update={update} />
 
       <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-neutral-950">Storefront sections</h2>
@@ -313,25 +217,5 @@ export function ProductForm({
         </BtnPrimary>
       </div>
     </form>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-  className = "",
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <label className={`flex flex-col gap-1.5 ${className}`}>
-      <span className="text-xs font-semibold text-neutral-600">{label}</span>
-      {hint ? <span className="text-[11px] text-neutral-400">{hint}</span> : null}
-      {children}
-    </label>
   );
 }

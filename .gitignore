@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+python/.venv/
 
 # debug
 npm-debug.log*

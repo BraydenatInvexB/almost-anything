@@ -5,6 +5,8 @@ import {
   INTL_WHOLESALE_TIERS,
   SA_PRICE_TIERS,
   SA_WHOLESALE_TIERS,
+  SOFT_GOODS_INTL_TIERS,
+  SOFT_GOODS_SA_TIERS,
   type SearchTier,
 } from "@/lib/sourcing/wholesale-supplier-constants";
 import { fetchDuckDuckGoMarkdown } from "@/lib/sourcing/wholesale-supplier-fetch";
@@ -48,6 +50,16 @@ export async function searchSaTradePriceListings(query: string): Promise<Wholesa
 /** Extra international product-detail search for stationery, tools, and other low-cost SKUs. */
 export async function searchConsumableIntlProducts(query: string): Promise<WholesaleSearchHit[]> {
   return searchTiers(query, CONSUMABLE_INTL_TIERS);
+}
+
+/** SA wholesale / trade search for apparel, sleepwear, and soft goods. */
+export async function searchSoftGoodsSaProducts(query: string): Promise<WholesaleSearchHit[]> {
+  return searchTiers(query, SOFT_GOODS_SA_TIERS);
+}
+
+/** International product-detail search for apparel, sleepwear, and soft goods. */
+export async function searchSoftGoodsIntlProducts(query: string): Promise<WholesaleSearchHit[]> {
+  return searchTiers(query, SOFT_GOODS_INTL_TIERS);
 }
 
 /** International B2B listings biased toward unit / FOB prices in snippets. */

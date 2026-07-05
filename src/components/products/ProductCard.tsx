@@ -68,7 +68,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         </Link>
 
         <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
-          {product.rating ? (
+          {product.rating > 0 && (product.reviewCount ?? 0) > 0 ? (
             <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
               {formatRating(product.rating)}

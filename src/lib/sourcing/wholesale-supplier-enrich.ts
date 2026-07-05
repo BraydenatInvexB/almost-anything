@@ -11,9 +11,10 @@ import {
   isLowCostConsumableQuery,
   isNonProductListing,
   isPlausibleWholesalePrice,
+  isSoftGoodsQuery,
   isWholesaleProductDetailUrl,
 } from "@/lib/sourcing/wholesale-listing-quality";
-import { WHOLESALE_DOMAINS } from "@/lib/sourcing/wholesale-supplier-constants";
+import { WHOLESALE_DOMAINS, isSaApparelWholesaleDomain } from "@/lib/sourcing/wholesale-supplier-constants";
 import {
   isJunkListing,
   isProductPageUrl,
@@ -42,8 +43,11 @@ export function sortByCheapestWholesale(hits: WholesaleSearchHit[]): WholesaleSe
 function isWholesalePriceHit(hit: WholesaleSearchHit): boolean {
   if (isRetailPriceSource(hit.domain)) return false;
   if (hit.tier === "retail") return false;
-  if (isNonProductListing(hit.title, hit.url, hit.snippet)) return false;
+  if (isNonProductListing(hit.title, hit.url, hit.snippet) && !isSaApparelWholesaleDomain(hit.domain)) {
+    return false;
+  }
   if (WHOLESALE_DOMAINS.some((d) => hit.domain.includes(d))) return true;
+  if (isSaApparelWholesaleDomain(hit.domain)) return true;
   if (isProductPageUrl(hit.url)) return !isRetailPriceSource(hit.domain);
   return hit.snippet.toLowerCase().includes("wholesale") || hit.snippet.toLowerCase().includes("moq");
 }
@@ -51,7 +55,9 @@ function isWholesalePriceHit(hit: WholesaleSearchHit): boolean {
 function passesListingQuality(hit: WholesaleSearchHit, query: string): boolean {
   if (isExcludedSecondhandDomain(hit.domain)) return false;
   if (isAccessoryListing(query, hit.title, hit.snippet)) return false;
-  if (isNonProductListing(hit.title, hit.url, hit.snippet)) return false;
+  if (isNonProductListing(hit.title, hit.url, hit.snippet) && !isSaApparelWholesaleDomain(hit.domain)) {
+    return false;
+  }
   if (!isValidProductName(hit.title)) return false;
   if (isJunkListing(hit.title, hit.url)) return false;
   const priceZar =
@@ -61,6 +67,12 @@ function passesListingQuality(hit: WholesaleSearchHit, query: string): boolean {
   if (WHOLESALE_DOMAINS.some((d) => hit.domain.includes(d))) {
     return isRelevantProductHit(query, hit.title, hit.snippet, hit.url, 20);
   }
+  if (isSaApparelWholesaleDomain(hit.domain)) {
+    return (
+      isRelevantProductHit(query, hit.title, hit.snippet, hit.url, 12) ||
+      isSoftGoodsQuery(query)
+    );
+  }
   return isRelevantProductHit(query, hit.title, hit.snippet, hit.url);
 }
 
@@ -68,6 +80,7 @@ function isSaTradeProductHit(hit: WholesaleSearchHit): boolean {
   if (isRetailPriceSource(hit.domain) || hit.tier === "retail") return false;
   if (isExcludedSecondhandDomain(hit.domain)) return false;
   if (WHOLESALE_DOMAINS.some((d) => hit.domain.includes(d))) return true;
+  if (isSaApparelWholesaleDomain(hit.domain)) return true;
   if (hit.domain.includes(".co.za") && isProductPageUrl(hit.url)) return true;
   return isProductPageUrl(hit.url);
 }
@@ -123,7 +136,7 @@ export async function enrichProductHits(
         !isNonProductListing(h.title, h.url, h.snippet),
     );
   }
-  const enrichLimit = isLowCostConsumableQuery(query) ? 6 : 4;
+  const enrichLimit = isLowCostConsumableQuery(query) ? 6 : isSoftGoodsQuery(query) ? 8 : 4;
   const sorted = prioritizeProductPages(sortByCheapestWholesale(workingPool));
   const hasSnippetPrices = sorted.some((h) => h.estimatedPriceZar || h.estimatedPriceUsd);
 
@@ -244,7 +257,12 @@ export function filterRelevantHits(
   return ranked.filter((hit) => {
     if (isExcludedSecondhandDomain(hit.domain)) return false;
     if (isRetailPriceSource(hit.domain)) return false;
-    if (!isRelevantProductHit(query, hit.title, hit.snippet, hit.url)) return false;
+    if (
+      !isRelevantProductHit(query, hit.title, hit.snippet, hit.url) &&
+      !(isSoftGoodsQuery(query) && isSaApparelWholesaleDomain(hit.domain))
+    ) {
+      return false;
+    }
     if (parsedQuery) {
       const text = `${hit.title} ${hit.snippet} ${hit.listingDescription ?? ""}`;
       if (!matchesRequiredAttributes(hit.title, text, parsedQuery).matches) return false;

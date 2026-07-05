@@ -22,6 +22,16 @@ export async function POST(request: NextRequest) {
   const log: Record<string, unknown> = { query };
 
   try {
+    // Step 0: Supplier engine (Python) probe
+    const { probeSupplierEngine, isSupplierEngineEnabled } = await import(
+      "@/lib/sourcing/supplier-engine/run-supplier-engine"
+    );
+    log.step0_supplier_engine_enabled = isSupplierEngineEnabled();
+    if (isSupplierEngineEnabled()) {
+      const engineProbe = await probeSupplierEngine(query);
+      log.step0_supplier_engine = engineProbe;
+    }
+
     // Step 1: What does searchWholesaleSuppliers actually return?
     const { searchWholesaleSuppliers } = await import("@/lib/sourcing/wholesale-supplier-search");
     const hits = await searchWholesaleSuppliers(query, { maxResults: 12 });
@@ -143,6 +153,27 @@ export async function POST(request: NextRequest) {
       domain: domainFromUrl(u),
       isRetail: isRetailPriceSource(domainFromUrl(u) ?? ""),
     }));
+
+    const { runSoftGoodsSaSearchPipeline } = await import("@/lib/sourcing/discovery-search-engine");
+    const { mapHitToDraft } = await import("@/lib/sourcing/product-intelligence-mappers");
+    const saSoftHits = await runSoftGoodsSaSearchPipeline(query);
+    log.step8_sa_soft_hits = saSoftHits.length;
+    log.step8_sa_soft_sample = saSoftHits.slice(0, 6).map((h) => ({
+      title: h.title,
+      domain: h.domain,
+      priceZar: h.estimatedPriceZar,
+      url: h.url,
+    }));
+    log.step8_sa_soft_drafts = saSoftHits
+      .slice(0, 4)
+      .map((h, i) => mapHitToDraft(h, query, i, saSoftHits)?.name ?? null);
+
+    const { enrichListingFromUrl } = await import("@/lib/sourcing/listing-page-enricher");
+    const seedUrl = "https://kws.sinopool.co.za/product-category/apparel/underwear-sleepwear/";
+    const seedEnriched = await enrichListingFromUrl(seedUrl);
+    log.step9_sinopool_enrich = seedEnriched
+      ? { title: seedEnriched.title, priceZar: seedEnriched.priceZar }
+      : null;
 
   } catch (err) {
     log.error = String(err);

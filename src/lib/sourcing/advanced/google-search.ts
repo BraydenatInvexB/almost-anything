@@ -98,6 +98,13 @@ async function geminiGoogleSearch(
   return results;
 }
 
+export async function searchSoftGoodsZA(query: string): Promise<WebSearchResult[]> {
+  return geminiGoogleSearch(
+    `${query} sleepwear nightgown wholesale supplier South Africa site:.co.za price ZAR trade`,
+    { num: 10 },
+  );
+}
+
 export async function searchProductZA(query: string): Promise<WebSearchResult[]> {
   return geminiGoogleSearch(`${query} price South Africa buy wholesale`, { num: 10 });
 }

@@ -1,18 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Send, Trash2, Users } from "lucide-react";
 import type { DemoCustomer } from "@/lib/admin/demo-data";
 import type { EmailAudience, EmailBroadcast, EmailSubscriber } from "@/lib/admin/operations-types";
-import { BtnPrimary, StatusBadge, Td, Th } from "@/components/admin/ui";
-
-const AUDIENCE_LABELS: Record<EmailAudience, string> = {
-  all: "Everyone (subscribers + customers)",
-  subscribers: "Newsletter subscribers only",
-  customers: "All customers",
-  vip: "VIP customers",
-  active_customers: "Customers with recent orders",
-};
+import { EmailMarketingListTab } from "@/components/admin/EmailMarketingListTab";
+import { EmailMarketingComposeTab } from "@/components/admin/EmailMarketingComposeTab";
+import { EmailMarketingSentTab } from "@/components/admin/EmailMarketingSentTab";
 
 interface EmailMarketingManagerProps {
   subscribers: EmailSubscriber[];
@@ -167,174 +160,38 @@ export function EmailMarketingManager({
       {message ? <p className="text-sm font-medium text-emerald-700">{message}</p> : null}
 
       {tab === "list" ? (
-        <div className="space-y-4">
-          {canManage ? (
-            <form onSubmit={addSubscriber} className="flex flex-wrap gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-              <input
-                className="input min-w-[200px] flex-1"
-                type="email"
-                placeholder="Email address"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                required
-              />
-              <input
-                className="input min-w-[160px] flex-1"
-                placeholder="Name (optional)"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-              />
-              <BtnPrimary type="submit">
-                <Plus className="h-4 w-4" /> Add to list
-              </BtnPrimary>
-            </form>
-          ) : null}
-
-          <div className="overflow-x-auto rounded-lg border border-neutral-200">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-neutral-100 bg-neutral-50 text-left">
-                  <Th>Email</Th>
-                  <Th>Name</Th>
-                  <Th>Source</Th>
-                  <Th>Status</Th>
-                  {canManage ? <Th /> : null}
-                </tr>
-              </thead>
-              <tbody>
-                {subscribers.map((s) => (
-                  <tr key={s.id} className="border-b border-neutral-50">
-                    <Td className="font-medium">{s.email}</Td>
-                    <Td>{s.name ?? "—"}</Td>
-                    <Td className="capitalize">{s.source}</Td>
-                    <Td>
-                      <StatusBadge status={s.status} />
-                    </Td>
-                    {canManage ? (
-                      <Td>
-                        <button
-                          type="button"
-                          onClick={() => removeSubscriber(s.id)}
-                          className="text-neutral-400 hover:text-red-600"
-                          aria-label="Remove subscriber"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </Td>
-                    ) : null}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <p className="text-xs text-neutral-500">
-            <Users className="mr-1 inline h-3.5 w-3.5" />
-            {subscribers.filter((s) => s.status === "active").length} active subscribers ·{" "}
-            {customers.length} customers in CRM (included when sending to customers or everyone)
-          </p>
-        </div>
+        <EmailMarketingListTab
+          subscribers={subscribers}
+          customers={customers}
+          canManage={canManage}
+          newEmail={newEmail}
+          newName={newName}
+          onNewEmailChange={setNewEmail}
+          onNewNameChange={setNewName}
+          onAddSubscriber={addSubscriber}
+          onRemoveSubscriber={removeSubscriber}
+        />
       ) : null}
 
       {tab === "compose" ? (
-        <form onSubmit={sendBroadcast} className="space-y-4 rounded-lg border border-neutral-200 p-5">
-          <div>
-            <label className="text-xs font-semibold text-neutral-600">Send to</label>
-            <select
-              className="input mt-1"
-              value={audience}
-              onChange={(e) => setAudience(e.target.value as EmailAudience)}
-              disabled={!canManage}
-            >
-              {Object.entries(AUDIENCE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-neutral-500">Estimated recipients: {audienceCount}</p>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-neutral-600">Subject</label>
-            <input
-              className="input mt-1"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Summer deals are live"
-              required
-              disabled={!canManage}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-neutral-600">Preview text</label>
-            <input
-              className="input mt-1"
-              value={previewText}
-              onChange={(e) => setPreviewText(e.target.value)}
-              placeholder="Short line shown in inbox previews"
-              disabled={!canManage}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-neutral-600">Message</label>
-            <textarea
-              className="input mt-1 min-h-[160px] resize-y"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Write what you want customers to receive…"
-              required
-              disabled={!canManage}
-            />
-          </div>
-          {canManage ? (
-            <div className="flex flex-wrap gap-2">
-              <BtnPrimary type="submit" disabled={sending}>
-                <Send className="h-4 w-4" />
-                {sending ? "Sending…" : "Send now"}
-              </BtnPrimary>
-              <button
-                type="button"
-                onClick={saveDraft}
-                className="inline-flex h-9 items-center rounded-lg border border-neutral-200 px-4 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
-              >
-                Save draft
-              </button>
-            </div>
-          ) : null}
-        </form>
+        <EmailMarketingComposeTab
+          canManage={canManage}
+          audience={audience}
+          audienceCount={audienceCount}
+          subject={subject}
+          previewText={previewText}
+          body={body}
+          sending={sending}
+          onAudienceChange={setAudience}
+          onSubjectChange={setSubject}
+          onPreviewTextChange={setPreviewText}
+          onBodyChange={setBody}
+          onSend={sendBroadcast}
+          onSaveDraft={saveDraft}
+        />
       ) : null}
 
-      {tab === "sent" ? (
-        <div className="space-y-3">
-          {broadcasts.length === 0 ? (
-            <p className="text-sm text-neutral-500">No emails sent yet.</p>
-          ) : (
-            broadcasts.map((b) => (
-              <div key={b.id} className="rounded-lg border border-neutral-200 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold text-neutral-900">{b.subject}</p>
-                    <p className="mt-1 text-xs text-neutral-500">
-                      {AUDIENCE_LABELS[b.audience]} · {b.recipientCount} recipients
-                    </p>
-                  </div>
-                  <StatusBadge status={b.status} />
-                </div>
-                {b.previewText ? (
-                  <p className="mt-2 text-sm text-neutral-600">{b.previewText}</p>
-                ) : null}
-                <p className="mt-3 whitespace-pre-wrap text-sm text-neutral-700">{b.body}</p>
-                <p className="mt-3 text-[11px] text-neutral-400">
-                  {b.sentAt
-                    ? `Sent ${new Date(b.sentAt).toLocaleString()}`
-                    : `Created ${new Date(b.createdAt).toLocaleString()}`}
-                  {b.createdBy ? ` · ${b.createdBy}` : ""}
-                </p>
-              </div>
-            ))
-          )}
-        </div>
-      ) : null}
+      {tab === "sent" ? <EmailMarketingSentTab broadcasts={broadcasts} /> : null}
     </div>
   );
 }

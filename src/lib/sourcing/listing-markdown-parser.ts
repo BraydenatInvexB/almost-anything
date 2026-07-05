@@ -1,0 +1,152 @@
+import {
+  isPollutedListingCopy,
+  sanitizeHighlightBullets,
+  sanitizeListingCopy,
+} from "@/lib/sourcing/listing-copy-sanitizer";
+import { isJunkProductTitle } from "@/lib/sourcing/wholesale-supplier-url";
+import { parseFaithfulToNatureMarkdown } from "@/lib/sourcing/listing-parsers/faithful-to-nature";
+import {
+  buildDescriptionFromBullets,
+  cleanListingText,
+  parsePricesFromMarkdown,
+  parseTitleFromMarkdown,
+  pickListingPrice,
+  upgradeProductImageUrl,
+} from "@/lib/sourcing/listing-parsers/shared";
+import { isTakealotUrl, parseTakealotMarkdown } from "@/lib/sourcing/listing-parsers/takealot";
+import { parseWholesalePriceQuote } from "@/lib/pricing/wholesale-price-quote";
+import type { EnrichedListing } from "@/lib/sourcing/listing-parsers/types";
+
+function isFaithfulToNatureUrl(url: string): boolean {
+  return /faithful-to-nature\.co\.za/i.test(url);
+}
+
+function parseProductInformationBullets(markdown: string): string[] {
+  const section = markdown.match(
+    /(?:^|\n)Product Information\s*\n+([\s\S]*?)(?:\n+!\[Image|\n+Sold By|\n+Similar Products|\n+Warranty|$)/i,
+  );
+  if (!section?.[1]) return [];
+
+  const bullets: string[] = [];
+  for (const match of section[1].matchAll(/^\*\s+(.+)$/gm)) {
+    const line = cleanListingText(match[1]);
+    if (line.length > 8) bullets.push(line);
+  }
+  return bullets;
+}
+
+function parseDefaultDescription(
+  markdown: string,
+  title: string,
+): { description: string; summary: string; highlights: string[] } {
+  const section = markdown.match(
+    /(?:^|\n)Description\s*\n+([\s\S]*?)(?:\n+Read More|\n+!\[Image|\n+Sold By|\n+Suggested Products|\n+Reviews|\n+Warranty|$)/i,
+  );
+  const raw = section?.[1] ? cleanListingText(section[1]) : "";
+
+  const bullets = raw
+    .split(
+      /\s*[•\u2022]\s*|\s+-\s+(?=[A-Z])|(?<=[a-z])\s+(?=(?:Dual[- ]|Match[- ]|Easy,|Large \d|One[- ]touch|Non[- ]stick|Perfect for |Experience |Built[- ]in |Includes ))/,
+    )
+    .map((part) => cleanListingText(part))
+    .filter((part) => part.length > 15);
+
+  if (bullets.length) {
+    const fullDescription = sanitizeListingCopy(bullets.join(" "), 500);
+    return {
+      description: fullDescription,
+      summary: bullets[0].slice(0, 140),
+      highlights: sanitizeHighlightBullets(bullets),
+    };
+  }
+
+  if (raw.length > 40 && !isPollutedListingCopy(raw)) {
+    return {
+      description: sanitizeListingCopy(raw, 320),
+      summary: raw.slice(0, 140),
+      highlights: [],
+    };
+  }
+
+  const infoBullets = sanitizeHighlightBullets(parseProductInformationBullets(markdown));
+  if (infoBullets.length) {
+    const description = buildDescriptionFromBullets(title, infoBullets);
+    return {
+      description: sanitizeListingCopy(description, 420),
+      summary: description.slice(0, 140),
+      highlights: infoBullets,
+    };
+  }
+
+  const fallback = `${title}. Available to order with local fulfilment.`;
+  return { description: fallback, summary: fallback.slice(0, 140), highlights: [] };
+}
+
+function parseImageFromMarkdown(
+  markdown: string,
+  pageUrl: string,
+  title?: string,
+): string | undefined {
+  const hero = markdown.split(/\nDescription\n/i)[0] ?? markdown.slice(0, 8000);
+  const candidates: { url: string; score: number }[] = [];
+  const titleToken = title?.split(/\s+/)[0]?.toLowerCase() ?? "";
+
+  for (const match of hero.matchAll(/!\[([^\]]*)\]\((https:\/\/[^)]+)\)/gi)) {
+    const alt = match[1];
+    const url = match[2];
+    if (/logo|favicon|icon|cart|truck|banner|return|seller|\.svg/i.test(url)) continue;
+    if (!/jpe?g|png|webp/i.test(url)) continue;
+    if (/\/(?:128|36|42|100)\/(?:128|36|42|100)\//.test(url)) continue;
+
+    let score = 40;
+    if (/rukmini|cdn\.shopify|woocommerce|wp-content\/uploads|cloudfront|alicdn|media-amazon/i.test(url)) {
+      score += 80;
+    }
+    if (/\/asset\/|faithful-to-nature|product/i.test(url)) score += 40;
+    const dim = url.match(/\/fccp\/(\d+)\/(\d+)\//);
+    if (dim) score += Number(dim[1]) + Number(dim[2]);
+    if (titleToken && alt.toLowerCase().includes(titleToken)) score += 120;
+    if (alt.length > 12 && !/makro|easy 14-day/i.test(alt)) score += 30;
+    candidates.push({ url: upgradeProductImageUrl(url), score });
+  }
+
+  if (candidates.length) {
+    return candidates.sort((a, b) => b.score - a.score)[0]?.url;
+  }
+
+  return undefined;
+}
+
+export function parseListingMarkdown(markdown: string, pageUrl: string): EnrichedListing | null {
+  if (isTakealotUrl(pageUrl)) {
+    const takealot = parseTakealotMarkdown(markdown);
+    if (takealot) return takealot;
+  }
+
+  if (isFaithfulToNatureUrl(pageUrl)) {
+    const ftn = parseFaithfulToNatureMarkdown(markdown);
+    if (ftn) return ftn;
+  }
+
+  const title = parseTitleFromMarkdown(markdown);
+  const priceQuote = parseWholesalePriceQuote(markdown);
+  const priceZar =
+    priceQuote?.unitPriceZarExVat ?? pickListingPrice(parsePricesFromMarkdown(markdown), markdown);
+  const imageUrl = parseImageFromMarkdown(markdown, pageUrl, title);
+
+  if (!title || title.length < 4 || isJunkProductTitle(title)) return null;
+  if (!priceZar) return null;
+
+  const copy = parseDefaultDescription(markdown, title);
+
+  return {
+    title,
+    priceZar,
+    imageUrl,
+    description: copy.description,
+    summary: copy.summary,
+    highlights: copy.highlights,
+    supplierMoq: priceQuote?.minimumOrderQuantity,
+    priceVatStatus: priceQuote?.vatStatus,
+  };
+}

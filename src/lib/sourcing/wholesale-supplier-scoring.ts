@@ -7,6 +7,7 @@ import {
   type SearchTier,
   SA_B2B_DISTRIBUTOR_DOMAINS,
   WHOLESALE_DOMAINS,
+  isSaApparelWholesaleDomain,
 } from "@/lib/sourcing/wholesale-supplier-constants";
 import type { WholesaleSearchHit } from "@/types/supplier-sourcing";
 
@@ -60,6 +61,7 @@ export function scoreHit(
   let score = hit.estimatedPriceZar ? 1000 / hit.estimatedPriceZar : 50;
   if (tier.region === "south_africa") score += 120;
   if (SA_B2B_DISTRIBUTOR_DOMAINS.some((d) => hit.domain.includes(d))) score += 80;
+  if (isSaApparelWholesaleDomain(hit.domain)) score += 70;
   if (tier.tier === "manufacturer") score += 40;
   if (tier.tier === "wholesale") score += 30;
   if (hit.tier === "retail") score -= 500;
