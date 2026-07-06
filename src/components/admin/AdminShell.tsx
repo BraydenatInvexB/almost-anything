@@ -41,7 +41,8 @@ export function AdminShell({
     staffCan(staff, "orders.view") ||
     staffCan(staff, "procurement.view") ||
     staffCan(staff, "support.view") ||
-    staffCan(staff, "products.view");
+    staffCan(staff, "products.view") ||
+    staffCan(staff, "sellers.view");
 
   const pageTitle = useMemo(() => {
     const match = ADMIN_NAV.find((item) =>
@@ -51,6 +52,8 @@ export function AdminShell({
     if (pathname.includes("/customers/")) return "Customer profile";
     if (pathname.includes("/support/")) return "Support ticket";
     if (pathname.includes("/returns/")) return "Return detail";
+    if (pathname.includes("/sellers/")) return "Seller review";
+    if (pathname.startsWith("/admin/sellers")) return "Marketplace sellers";
     if (pathname.includes("/requests")) return "Item requests";
     return match?.label ?? "Admin";
   }, [pathname]);

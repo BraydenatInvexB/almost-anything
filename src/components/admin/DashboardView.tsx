@@ -3,8 +3,10 @@ import {
   Package,
   Truck,
   ClipboardList,
+  Store,
 } from "lucide-react";
 import type { StaffProfile } from "@/types/staff-access";
+import { staffCan } from "@/config/rbac";
 import type { DashboardStats } from "@/services/admin-service";
 import {
   DashboardViewAttention,
@@ -24,6 +26,8 @@ interface DashboardViewProps {
   fulfillmentCount: number;
   openItemRequests: number;
   showItemRequests: boolean;
+  pendingSellerApplications: number;
+  showSellers: boolean;
 }
 
 export function DashboardView({
@@ -32,6 +36,8 @@ export function DashboardView({
   fulfillmentCount,
   openItemRequests,
   showItemRequests,
+  pendingSellerApplications,
+  showSellers,
 }: DashboardViewProps) {
   const today = new Date().toLocaleDateString("en-ZA", {
     weekday: "long",
@@ -58,6 +64,19 @@ export function DashboardView({
             href: "/admin/requests",
             icon: ClipboardList,
             urgent: openItemRequests > 0,
+            color: "bg-violet-600",
+          },
+        ]
+      : []),
+    ...(showSellers
+      ? [
+          {
+            title: "Seller applications",
+            count: pendingSellerApplications,
+            description: "Marketplace sellers awaiting review",
+            href: "/admin/sellers",
+            icon: Store,
+            urgent: pendingSellerApplications > 0,
             color: "bg-violet-600",
           },
         ]
@@ -90,7 +109,7 @@ export function DashboardView({
       <DashboardViewAttention items={attentionItems} />
       <DashboardViewKpis stats={stats} />
       <DashboardViewCharts stats={stats} fulfillmentCount={fulfillmentCount} />
-      <DashboardViewQuickActions />
+      <DashboardViewQuickActions showSellers={showSellers && staffCan(staff, "sellers.view")} />
       <DashboardViewBottomGrid stats={stats} />
     </div>
   );

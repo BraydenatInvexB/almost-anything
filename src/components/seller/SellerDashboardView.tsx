@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Store, Package, ShoppingCart, AlertTriangle, CreditCard } from "lucide-react";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils/cn";
+import { SellerPlatformMessagesPanel } from "@/components/seller/SellerPlatformMessagesPanel";
+import { SellerPanel, SellerPanelBody, SellerPanelHeader, SellerStat, SellerStatGrid } from "@/components/seller/SellerPanel";
 import type { SellerDashboardStats, SellerProfile } from "@/types/seller";
 
 export function SellerDashboardView({
@@ -17,23 +18,25 @@ export function SellerDashboardView({
 
   return (
     <div className="space-y-6">
+      <SellerPlatformMessagesPanel />
+
       {seller.status !== "approved" ? (
-        <Card variant="elevated" className="border-amber-200 bg-amber-50 p-5">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
+        <SellerPanel className="border-amber-200 bg-amber-50/50">
+          <SellerPanelBody className="flex items-start gap-3 py-5">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
             <div>
               <p className="font-semibold text-amber-900">Application under review</p>
               <p className="mt-1 text-sm text-amber-800">
                 Your shop is {seller.status.replace("_", " ")}. You can prepare products while we verify your documents.
               </p>
             </div>
-          </div>
-        </Card>
+          </SellerPanelBody>
+        </SellerPanel>
       ) : null}
 
       {seller.subscriptionStatus === "trial" ? (
-        <Card variant="elevated" className="border-brand/20 bg-brand/5 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <SellerPanel className="border-brand/20 bg-brand/[0.03]">
+          <SellerPanelBody className="flex flex-wrap items-center justify-between gap-4 py-5">
             <div>
               <p className="font-semibold text-neutral-900">Trial period — billing starts on your first sale</p>
               <p className="mt-1 text-sm text-neutral-600">
@@ -46,52 +49,48 @@ export function SellerDashboardView({
                 View plan
               </Button>
             </Link>
-          </div>
-        </Card>
+          </SellerPanelBody>
+        </SellerPanel>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card variant="elevated" className="p-5">
-          <Package className="h-5 w-5 text-brand" />
-          <p className="mt-3 text-2xl font-bold">{stats.productCount}</p>
-          <p className="text-sm text-neutral-500">{limitLabel}</p>
-        </Card>
-        <Card variant="elevated" className="p-5">
-          <ShoppingCart className="h-5 w-5 text-brand" />
-          <p className="mt-3 text-2xl font-bold">{stats.orderCount}</p>
-          <p className="text-sm text-neutral-500">{stats.pendingOrders} awaiting shipment</p>
-        </Card>
-        <Card variant="elevated" className="p-5">
-          <Store className="h-5 w-5 text-brand" />
-          <p className="mt-3 text-2xl font-bold">{formatCurrency(stats.revenueTotal, "ZAR")}</p>
-          <p className="text-sm text-neutral-500">Gross sales</p>
-        </Card>
-        <Card variant="elevated" className="p-5">
-          <AlertTriangle className="h-5 w-5 text-amber-500" />
-          <p className="mt-3 text-2xl font-bold">{stats.lowStockCount}</p>
-          <p className="text-sm text-neutral-500">Low stock SKUs</p>
-        </Card>
-      </div>
+      <SellerStatGrid>
+        <SellerStat label="Listings" value={stats.productCount} hint={limitLabel} />
+        <SellerStat label="Orders" value={stats.orderCount} hint={`${stats.pendingOrders} awaiting shipment`} />
+        <SellerStat label="Gross sales" value={formatCurrency(stats.revenueTotal, "ZAR")} hint="Lifetime revenue" />
+        <SellerStat
+          label="Low stock"
+          value={stats.lowStockCount}
+          hint="SKUs at five units or fewer"
+          tone={stats.lowStockCount ? "warning" : "neutral"}
+        />
+      </SellerStatGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card variant="elevated" className="p-6">
-          <h2 className="text-lg font-semibold">Quick actions</h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/seller/products"><Button size="sm">Add product</Button></Link>
-            <Link href="/seller/inventory"><Button variant="secondary" size="sm">Import stock list</Button></Link>
-            <Link href="/seller/orders"><Button variant="secondary" size="sm">View orders</Button></Link>
-            <Link href="/seller/promos"><Button variant="secondary" size="sm">Create promo</Button></Link>
-          </div>
-        </Card>
-        <Card variant="elevated" className="p-6">
-          <h2 className="text-lg font-semibold">Your storefront</h2>
-          <p className="mt-2 text-sm text-neutral-600">
-            Customers can find your business in our directory once approved.
-          </p>
-          <Link href={`/businesses/${seller.slug}`} className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
-            Preview business profile →
-          </Link>
-        </Card>
+        <SellerPanel>
+          <SellerPanelHeader title="Quick actions" description="Common tasks for managing your shop" />
+          <SellerPanelBody className="flex flex-wrap gap-2 pt-4">
+            <Link href="/seller/products?tab=add"><Button size="sm"><Package className="h-4 w-4" />Add product</Button></Link>
+            <Link href="/seller/products?tab=import"><Button variant="secondary" size="sm">Import stock list</Button></Link>
+            <Link href="/seller/orders"><Button variant="secondary" size="sm"><ShoppingCart className="h-4 w-4" />Orders</Button></Link>
+            <Link href="/seller/promos"><Button variant="secondary" size="sm">Promos</Button></Link>
+          </SellerPanelBody>
+        </SellerPanel>
+        <SellerPanel>
+          <SellerPanelHeader title="Your storefront" description="How customers discover your business" />
+          <SellerPanelBody className="pt-4">
+            <div className="flex items-start gap-3 rounded-lg bg-neutral-50 p-4">
+              <Store className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+              <div>
+                <p className="text-sm text-neutral-600">
+                  Customers can find your business in our directory once approved.
+                </p>
+                <Link href={`/businesses/${seller.slug}`} className="mt-3 inline-block text-sm font-semibold text-brand hover:underline">
+                  Preview business profile →
+                </Link>
+              </div>
+            </div>
+          </SellerPanelBody>
+        </SellerPanel>
       </div>
     </div>
   );

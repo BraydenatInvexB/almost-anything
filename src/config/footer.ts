@@ -63,4 +63,21 @@ export const FOOTER_PAYMENTS = [
   "Google Pay",
 ] as const;
 
-export const FOOTER_SOCIALS: readonly { label: string; href: string; svg?: string }[] = [];
+export const FOOTER_SOCIALS = [
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/almostanythingofficial",
+  },
+  {
+    label: "TikTok",
+    href: "https://www.tiktok.com/@almostanythingofficial",
+  },
+  {
+    label: "Facebook",
+    href: "https://www.facebook.com/almostanythingofficial",
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/company/almostanythingofficial",
+  },
+] as const;

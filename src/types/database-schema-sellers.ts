@@ -169,4 +169,32 @@ export interface DatabaseSellerTables {
     Update: Partial<DatabaseSellerTables["seller_stock_imports"]["Insert"]>;
     Relationships: [];
   };
+  seller_messages: {
+    Row: {
+      id: string;
+      seller_id: string;
+      sender_type: string;
+      sender_name: string;
+      subject: string;
+      body: string;
+      priority: string;
+      read_at: string | null;
+      metadata: Json;
+      created_at: string;
+    };
+    Insert: {
+      id?: string;
+      seller_id: string;
+      sender_type: string;
+      sender_name: string;
+      subject: string;
+      body: string;
+      priority?: string;
+      read_at?: string | null;
+      metadata?: Json;
+      created_at?: string;
+    };
+    Update: Partial<DatabaseSellerTables["seller_messages"]["Insert"]>;
+    Relationships: [];
+  };
 }

@@ -1,4 +1,11 @@
 import { getSellerItemLimit } from "@/config/seller-plans";
+import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
+import {
+  markupFromPrices,
+  retailFromCost,
+  sellerDeliveryMetadata,
+  type SellerDeliverySettings,
+} from "@/lib/seller/product-pricing";
 import { parseStockCsv } from "@/lib/seller/stock-import-parser";
 import { sellerDb } from "@/lib/seller/db";
 import type { SellerProfile } from "@/types/seller";
@@ -10,7 +17,9 @@ function slugify(name: string): string {
 export async function listSellerProducts(sellerId: string) {
   const { data, error } = await sellerDb()
     .from("products")
-    .select("id, name, slug, retail_price, stock_quantity, category, listing_status, image_url, metadata")
+    .select(
+      "id, name, slug, base_price, retail_price, markup_percent, stock_quantity, category, listing_status, image_url, delivery_days_min, delivery_days_max, metadata",
+    )
     .eq("seller_id", sellerId)
     .order("updated_at", { ascending: false });
 
@@ -22,11 +31,16 @@ export async function createSellerProduct(
   seller: SellerProfile,
   input: {
     name: string;
-    retailPrice: number;
+    costPrice: number;
+    markupPercent: number;
+    retailPrice?: number;
     stockQuantity: number;
     category: string;
     imageUrls: string[];
     description?: string;
+    deliveryDaysMin?: number;
+    deliveryDaysMax?: number;
+    delivery?: SellerDeliverySettings;
   },
 ) {
   const limit = getSellerItemLimit(seller.plan);
@@ -37,11 +51,16 @@ export async function createSellerProduct(
     }
   }
 
+  const costPrice = input.costPrice;
+  const markupPercent = input.markupPercent;
+  const retailPrice = input.retailPrice ?? retailFromCost(costPrice, markupPercent);
   const slug = slugify(input.name);
   const imageUrl = input.imageUrls[0] ?? null;
+  const delivery = input.delivery ?? { customerPaysDelivery: true, deliveryFeeZar: null };
   const metadata = {
     gallery: input.imageUrls,
     sellerListing: true,
+    ...sellerDeliveryMetadata(delivery),
   };
 
   const { data, error } = await sellerDb()
@@ -51,17 +70,20 @@ export async function createSellerProduct(
       name: input.name.trim(),
       description: input.description?.trim() ?? null,
       category: (input.category || "general") as never,
-      base_price: input.retailPrice,
-      retail_price: input.retailPrice,
-      markup_percent: 0,
+      base_price: costPrice,
+      retail_price: retailPrice,
+      markup_percent: markupPercent,
       currency: "ZAR",
       image_url: imageUrl,
       seller_id: seller.id,
       stock_quantity: input.stockQuantity,
+      delivery_days_min: input.deliveryDaysMin ?? SA_WAREHOUSE_DELIVERY_DAYS.min,
+      delivery_days_max: input.deliveryDaysMax ?? SA_WAREHOUSE_DELIVERY_DAYS.max,
+      stock_status: input.stockQuantity > 0 ? "in_stock" : "out_of_stock",
       listing_status: seller.status === "approved" ? "published" : "pending_review",
       metadata,
     })
-    .select("id, slug, name")
+    .select("id, slug, name, base_price, retail_price, markup_percent")
     .single();
 
   if (error) throw error;
@@ -72,6 +94,7 @@ export async function importSellerStockCsv(
   seller: SellerProfile,
   csv: string,
   fileName: string,
+  defaultMarkupPercent = 25,
 ): Promise<{ successCount: number; errors: string[] }> {
   const rows = parseStockCsv(csv);
   const errors: string[] = [];
@@ -79,12 +102,17 @@ export async function importSellerStockCsv(
 
   for (const [index, row] of rows.entries()) {
     try {
-      if (!row.name || row.price <= 0) {
+      if (!row.name || row.retailPrice <= 0) {
         throw new Error("Name and price are required");
       }
+      const costPrice = row.costPrice ?? row.retailPrice / (1 + (row.markupPercent ?? defaultMarkupPercent) / 100);
+      const markupPercent = row.markupPercent ?? markupFromPrices(costPrice, row.retailPrice);
+
       await createSellerProduct(seller, {
         name: row.name,
-        retailPrice: row.price,
+        costPrice: Number(costPrice.toFixed(2)),
+        markupPercent,
+        retailPrice: row.retailPrice,
         stockQuantity: row.quantity,
         category: row.category ?? "general",
         imageUrls: row.imageUrl ? [row.imageUrl] : [],
@@ -109,4 +137,24 @@ export async function importSellerStockCsv(
   if (importError) throw importError;
 
   return { successCount, errors };
+}
+
+export async function updateSellerProductStock(
+  sellerId: string,
+  productId: string,
+  stockQuantity: number,
+) {
+  const { data, error } = await sellerDb()
+    .from("products")
+    .update({
+      stock_quantity: stockQuantity,
+      stock_status: stockQuantity > 0 ? "in_stock" : "out_of_stock",
+    })
+    .eq("id", productId)
+    .eq("seller_id", sellerId)
+    .select("id, stock_quantity")
+    .single();
+
+  if (error) throw error;
+  return data;
 }

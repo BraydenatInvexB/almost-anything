@@ -70,6 +70,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
     "analytics.view",
     "activity.view",
     "searches.view",
+    "sellers.view",
   ],
   hr: [
     "dashboard.view",
@@ -91,6 +92,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
     "settings.view",
     "activity.view",
     "searches.view",
+    "sellers.view",
   ],
 };
 

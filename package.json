@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:demo-seller": "npx tsx scripts/seed-demo-seller.ts"
   },
   "engines": {
     "node": "22.20.0"

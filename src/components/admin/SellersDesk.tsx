@@ -15,7 +15,24 @@ const STATUS_COLORS: Record<string, string> = {
   draft: "bg-neutral-100 text-neutral-700",
 };
 
-export function SellersDesk({ sellers }: { sellers: SellerProfile[] }) {
+export function SellersDesk({
+  sellers,
+  productCounts,
+}: {
+  sellers: SellerProfile[];
+  productCounts: Record<string, number>;
+}) {
+  if (!sellers.length) {
+    return (
+      <Card variant="elevated" className="bg-white p-10 text-center">
+        <p className="text-lg font-semibold text-neutral-900">No sellers in this view</p>
+        <p className="mt-2 text-sm text-neutral-600">
+          Try another filter or wait for new seller applications.
+        </p>
+      </Card>
+    );
+  }
+
   return (
     <Card variant="elevated" className="overflow-hidden bg-white">
       <div className="overflow-x-auto">
@@ -25,8 +42,10 @@ export function SellersDesk({ sellers }: { sellers: SellerProfile[] }) {
               <th className="px-4 py-3">Shop</th>
               <th className="px-4 py-3">Company</th>
               <th className="px-4 py-3">Plan</th>
+              <th className="px-4 py-3">Products</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Subscription</th>
+              <th className="px-4 py-3">Applied</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -36,6 +55,7 @@ export function SellersDesk({ sellers }: { sellers: SellerProfile[] }) {
                 <td className="px-4 py-3 font-medium">{seller.shopName}</td>
                 <td className="px-4 py-3 text-neutral-600">{seller.companyName}</td>
                 <td className="px-4 py-3">{formatPlanPrice(seller.plan)}</td>
+                <td className="px-4 py-3">{productCounts[seller.id] ?? 0}</td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_COLORS[seller.status] ?? ""}`}>
                     {seller.status.replace("_", " ")}
@@ -44,9 +64,12 @@ export function SellersDesk({ sellers }: { sellers: SellerProfile[] }) {
                 <td className="px-4 py-3">
                   <Badge>{seller.subscriptionStatus}</Badge>
                 </td>
+                <td className="px-4 py-3 text-neutral-500">
+                  {new Date(seller.createdAt).toLocaleDateString()}
+                </td>
                 <td className="px-4 py-3 text-right">
                   <Link href={`/admin/sellers/${seller.id}`}>
-                    <Button variant="secondary" size="sm">Review</Button>
+                    <Button variant="secondary" size="sm">Manage</Button>
                   </Link>
                 </td>
               </tr>

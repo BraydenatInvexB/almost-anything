@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/Card";
+import { SellerEmptyState, SellerPanel, SellerPanelBody, SellerPanelHeader } from "@/components/seller/SellerPanel";
 import { getCurrentSeller } from "@/services/seller-service";
 
 export default async function SellerOrdersPage() {
@@ -6,14 +6,17 @@ export default async function SellerOrdersPage() {
   if (!seller) return null;
 
   return (
-    <Card variant="elevated" className="p-6">
-      <h2 className="text-lg font-semibold">Orders to fulfill</h2>
-      <p className="mt-2 text-sm text-neutral-600">
-        When customers purchase your products, orders appear here. Mark items as shipped and add courier tracking numbers.
-      </p>
-      <div className="mt-6 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-8 text-center text-sm text-neutral-500">
-        No pending orders yet. Share your business profile to start selling.
-      </div>
-    </Card>
+    <SellerPanel>
+      <SellerPanelHeader
+        title="Orders to fulfill"
+        description="When customers purchase your products, orders appear here. Mark items as shipped and add courier tracking numbers."
+      />
+      <SellerPanelBody>
+        <SellerEmptyState
+          title="No pending orders"
+          description="Share your business profile to start selling. Orders will show up here with fulfillment actions."
+        />
+      </SellerPanelBody>
+    </SellerPanel>
   );
 }

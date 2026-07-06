@@ -23,6 +23,7 @@ export default async function AdminSellerDetailPage({
       seller={detail.seller}
       documents={detail.documents}
       payouts={detail.payouts}
+      canManage={staffCan(staff, "sellers.manage")}
     />
   );
 }

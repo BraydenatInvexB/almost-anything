@@ -2,11 +2,26 @@ import { mapSellerDocument, mapSellerPayout, mapSellerRow } from "@/lib/seller/s
 import { sellerDb } from "@/lib/seller/db";
 import type { SellerDocument, SellerPayout, SellerProfile, SellerStatus } from "@/types/seller";
 
-export async function listAllSellers(): Promise<SellerProfile[]> {
-  const { data, error } = await sellerDb()
+import type { SellerDeskFilter } from "@/types/seller-admin";
+
+export async function countPendingSellerApplications(): Promise<number> {
+  const { count, error } = await sellerDb()
     .from("sellers")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending_review");
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function listAllSellers(filter: SellerDeskFilter = "all"): Promise<SellerProfile[]> {
+  let query = sellerDb().from("sellers").select("*").order("created_at", { ascending: false });
+
+  if (filter !== "all") {
+    query = query.eq("status", filter);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return (data ?? []).map((row) => mapSellerRow(row as Record<string, unknown>));

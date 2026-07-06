@@ -32,7 +32,26 @@ export {
   listAdminCouriers,
 } from "./admin/settings";
 export { getAdminNotificationSummary } from "./admin/notifications";
-export { listAllSellers, getSellerAdminDetail, updateSellerStatus, updatePayoutStatus } from "./admin/sellers";
+export {
+  listAllSellers,
+  getSellerAdminDetail,
+  updateSellerStatus,
+  updatePayoutStatus,
+  countPendingSellerApplications,
+} from "./admin/sellers";
+export {
+  listSellerProductsForAdmin,
+  moderateSellerProduct,
+  countSellerProducts,
+} from "./admin/seller-products";
+export {
+  listSellerMessages,
+  sendAdminMessageToSeller,
+  listUnreadSellerMessages,
+  markSellerMessagesRead,
+  countUnreadAdminMessages,
+} from "./admin/seller-messages";
+export { resetSellerPassword } from "./admin/seller-auth";
 export type {
   AdminOrderSummary,
   AdminOrderLineItem,

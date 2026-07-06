@@ -3,6 +3,7 @@ import type { AdminNotificationItem, AdminNotificationSummary } from "@/lib/admi
 import { notificationTotal } from "@/lib/admin/notifications";
 import type { StaffProfile } from "@/types/staff-access";
 import { countOpenItemRequests } from "@/services/sourcing-request-service";
+import { countPendingSellerApplications } from "@/services/admin/sellers";
 import { getFulfillmentQueue } from "./orders";
 import { listAdminProducts } from "./products";
 import { listTickets } from "./tickets";
@@ -63,6 +64,19 @@ export async function getAdminNotificationSummary(
         description: `${lowStock} product${lowStock === 1 ? "" : "s"} low or out of stock`,
         href: "/admin/products",
         count: lowStock,
+      });
+    }
+  }
+
+  if (staffCan(staff, "sellers.view")) {
+    const pendingSellers = await countPendingSellerApplications();
+    if (pendingSellers > 0) {
+      items.push({
+        id: "sellers",
+        title: "Seller applications",
+        description: `${pendingSellers} seller${pendingSellers === 1 ? "" : "s"} awaiting review`,
+        href: "/admin/sellers",
+        count: pendingSellers,
       });
     }
   }

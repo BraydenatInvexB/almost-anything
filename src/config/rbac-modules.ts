@@ -31,6 +31,8 @@ export const PERMISSION_MODULES: {
       { key: "procurement.manage", label: "Manage procurement", manage: true },
       { key: "returns.view", label: "View returns" },
       { key: "returns.manage", label: "Process returns & refunds", manage: true },
+      { key: "sellers.view", label: "View marketplace sellers" },
+      { key: "sellers.manage", label: "Approve & manage sellers", manage: true },
     ],
   },
   {

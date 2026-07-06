@@ -34,6 +34,7 @@ export type Database = {
       seller_team_members: DatabaseSellerTables["seller_team_members"];
       seller_payouts: DatabaseSellerTables["seller_payouts"];
       seller_stock_imports: DatabaseSellerTables["seller_stock_imports"];
+      seller_messages: DatabaseSellerTables["seller_messages"];
       staff_members: DatabaseAdminTables["staff_members"];
       platform_settings: DatabaseAdminTables["platform_settings"];
       support_tickets: DatabaseAdminTables["support_tickets"];

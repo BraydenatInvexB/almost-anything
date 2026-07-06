@@ -4,6 +4,7 @@ import {
   LifeBuoy,
   PackagePlus,
   ShoppingCart,
+  Store,
   Truck,
   Users,
   Warehouse,
@@ -110,11 +111,14 @@ export function DashboardViewCharts({
   );
 }
 
-export function DashboardViewQuickActions() {
+export function DashboardViewQuickActions({ showSellers = false }: { showSellers?: boolean }) {
   return (
     <div className="flex flex-wrap gap-2">
       <DashboardQuickLink href="/admin/products/new" icon={PackagePlus} label="Add product" />
       <DashboardQuickLink href="/admin/orders" icon={ShoppingCart} label="All orders" />
+      {showSellers ? (
+        <DashboardQuickLink href="/admin/sellers" icon={Store} label="Marketplace sellers" />
+      ) : null}
       <DashboardQuickLink href="/admin/procurement" icon={Warehouse} label="Inbound stock" />
       <DashboardQuickLink href="/admin/customers" icon={Users} label="Customers" />
     </div>

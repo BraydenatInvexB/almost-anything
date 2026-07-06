@@ -1,7 +1,9 @@
 export interface StockImportRow {
   name: string;
   sku?: string;
-  price: number;
+  retailPrice: number;
+  costPrice?: number;
+  markupPercent?: number;
   quantity: number;
   category?: string;
   description?: string;
@@ -18,15 +20,29 @@ export function parseStockCsv(text: string): StockImportRow[] {
 
   const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
   const idx = (key: string) => headers.indexOf(key);
+  const num = (cols: string[], ...keys: string[]) => {
+    for (const key of keys) {
+      const i = idx(key);
+      if (i >= 0) {
+        const value = Number(cols[i]);
+        if (Number.isFinite(value)) return value;
+      }
+    }
+    return 0;
+  };
 
   return lines.slice(1).map((line) => {
     const cols = line.split(",").map((c) => c.trim());
-    const price = Number(cols[idx("price")] ?? cols[idx("retail_price")] ?? 0);
-    const quantity = Number(cols[idx("quantity")] ?? cols[idx("stock")] ?? 0);
+    const retailPrice = num(cols, "retail_price", "price", "selling_price");
+    const costPriceRaw = num(cols, "cost_price", "cost", "base_price");
+    const markupRaw = num(cols, "markup_percent", "markup");
+    const quantity = num(cols, "quantity", "stock");
     return {
       name: cols[idx("name")] ?? cols[idx("product")] ?? "Untitled",
       sku: cols[idx("sku")] || undefined,
-      price: Number.isFinite(price) ? price : 0,
+      retailPrice,
+      costPrice: costPriceRaw > 0 ? costPriceRaw : undefined,
+      markupPercent: markupRaw > 0 ? markupRaw : undefined,
       quantity: Number.isFinite(quantity) ? quantity : 0,
       category: cols[idx("category")] || undefined,
       description: cols[idx("description")] || undefined,
@@ -36,5 +52,5 @@ export function parseStockCsv(text: string): StockImportRow[] {
 }
 
 export function stockImportTemplate(): string {
-  return "name,sku,price,quantity,category,description,image_url\nSample Product,SKU-001,299.99,25,electronics,Short description,https://example.com/image.jpg";
+  return "name,sku,cost_price,markup_percent,price,quantity,category,description,image_url\nSample Product,SKU-001,200,25,250,25,electronics,Short description,https://example.com/image.jpg";
 }

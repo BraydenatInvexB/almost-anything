@@ -19,7 +19,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Procurement", href: "/admin/procurement", icon: "Globe", permission: "procurement.view", group: "Commerce" },
   { label: "Item Requests", href: "/admin/requests", icon: "Search", permission: "procurement.view", group: "Commerce" },
   { label: "Returns", href: "/admin/returns", icon: "RotateCcw", permission: "returns.view", group: "Commerce" },
-  { label: "Sellers", href: "/admin/sellers", icon: "Building2", permission: "sellers.view", group: "Commerce" },
+  { label: "Sellers", href: "/admin/sellers", icon: "Store", permission: "sellers.view", group: "Commerce" },
   { label: "Customers", href: "/admin/customers", icon: "Users", permission: "customers.view", group: "People" },
   { label: "Support", href: "/admin/support", icon: "LifeBuoy", permission: "support.view", group: "People" },
   { label: "HR & Staff", href: "/admin/hr", icon: "Building2", permission: "staff.view", group: "People" },
