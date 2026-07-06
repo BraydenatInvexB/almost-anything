@@ -39,6 +39,7 @@ export const checkoutSchema = z.object({
   courierName: z.string().optional(),
   shippingInternalCost: z.number().min(0).optional(),
   customerShippingCharge: z.number().min(0).optional(),
+  promoCode: z.string().min(2).max(40).optional(),
 });
 
 export const sourcingRequestSchema = z.object({

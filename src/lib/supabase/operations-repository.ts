@@ -56,6 +56,15 @@ export {
 } from "@/lib/supabase/operations-repository-campaigns";
 
 export {
+  listPromoCodes,
+  getPromoByCode,
+  createPromoCode,
+  updatePromoCode,
+  deletePromoCode,
+  incrementPromoUsage,
+} from "@/lib/supabase/operations-repository-promos";
+
+export {
   listEmailSubscribers,
   addEmailSubscriber,
   removeEmailSubscriber,

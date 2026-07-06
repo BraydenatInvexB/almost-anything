@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { Star } from "lucide-react";
-import { formatCurrency, formatRating } from "@/lib/utils/cn";
+import { ProductPriceDisplay } from "@/components/products/ProductPriceDisplay";
 import { FavoriteButton } from "@/components/products/FavoriteButton";
 import { AddToCartButton } from "@/components/products/AddToCartButton";
 import { ProductCardImage } from "@/components/products/ProductCardImage";
 import { getCategory } from "@/config/categories";
 import type { ProductCardData } from "@/types";
-import { cn } from "@/lib/utils/cn";
+import { cn, formatRating } from "@/lib/utils/cn";
 
 interface ProductCardProps {
   product: ProductCardData;
@@ -103,9 +103,12 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-neutral-100 pt-3.5">
           {product.price > 0 ? (
-            <p className="text-base font-bold tabular-nums text-neutral-900 sm:text-lg">
-              {formatCurrency(product.price, product.currency)}
-            </p>
+            <ProductPriceDisplay
+              price={product.price}
+              currency={product.currency}
+              compareAtPrice={product.compareAtPrice}
+              size="card"
+            />
           ) : (
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
               Price on request

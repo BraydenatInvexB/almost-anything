@@ -2,6 +2,7 @@ import type { SupplierPayable } from "@/lib/admin/finance-types";
 import type {
   AdminProductDraft,
   Campaign,
+  PromoCode,
   CheckoutOrderRecord,
   CustomerItemRequest,
   EmailBroadcast,
@@ -23,6 +24,7 @@ import {
   seedPayables,
   type StaffAccessOverride,
 } from "@/lib/admin/operations-store-seed-a";
+import { seedPromoCodes } from "@/lib/admin/operations-store-seed-promos";
 import {
   seedAnalytics,
   seedEmptyCollections,
@@ -48,6 +50,7 @@ export function ticketNum() {
 
 export interface OperationsState {
   campaigns: Campaign[];
+  promoCodes: PromoCode[];
   emailSubscribers: EmailSubscriber[];
   emailBroadcasts: EmailBroadcast[];
   expenses: Expense[];
@@ -69,6 +72,7 @@ export interface OperationsState {
 const initial: OperationsState = {
   ...seedConfigAndStaff(),
   campaigns: seedCampaigns(iso),
+  promoCodes: seedPromoCodes(iso),
   emailSubscribers: seedEmailSubscribers(iso),
   emailBroadcasts: seedEmailBroadcasts(iso),
   expenses: seedExpenses(iso),

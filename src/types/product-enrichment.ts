@@ -1,6 +1,7 @@
 import type { ProductVariantsConfig } from "@/types/product-variants";
 import { parseVariantsConfig } from "@/types/product-variants";
-import type { ProductSupplierIntel } from "@/types/supplier-sourcing";
+import type { ProductSupplierIntel, SupplierListing } from "@/types/supplier-sourcing";
+import { parseManualSuppliers } from "@/lib/product/product-manual-suppliers";
 import {
   isPollutedListingCopy,
   sanitizeHighlightBullets,
@@ -19,6 +20,7 @@ export interface ProductEnrichment {
     supplierName?: string;
   };
   supplierIntel?: ProductSupplierIntel;
+  manualSuppliers?: SupplierListing[];
   minimumOrderQuantity?: number;
   unitLabel?: string;
   pricingNote?: string;
@@ -193,6 +195,7 @@ export function customerFacingEnrichment(enrichment: ProductEnrichment): Product
     specifications: customerFacingSpecifications(enrichment.specifications),
     supplierIntel: undefined,
     sourcing: undefined,
+    manualSuppliers: undefined,
   };
 }
 
@@ -223,6 +226,8 @@ export function parseProductEnrichment(metadata: unknown): ProductEnrichment {
       ? (raw.supplierIntel as ProductSupplierIntel)
       : undefined;
 
+  const manualSuppliers = parseManualSuppliers(metadata);
+
   return {
     highlights,
     specifications,
@@ -230,6 +235,7 @@ export function parseProductEnrichment(metadata: unknown): ProductEnrichment {
     variants,
     sourcing,
     supplierIntel,
+    manualSuppliers: manualSuppliers.length ? manualSuppliers : undefined,
     minimumOrderQuantity:
       typeof raw.minimumOrderQuantity === "number" ? raw.minimumOrderQuantity : undefined,
     unitLabel: typeof raw.unitLabel === "string" ? raw.unitLabel : undefined,
@@ -245,6 +251,7 @@ export function buildProductMetadata(input: {
   summary?: string;
   sourcing?: ProductEnrichment["sourcing"];
   supplierIntel?: ProductSupplierIntel;
+  manualSuppliers?: SupplierListing[];
   minimumOrderQuantity?: number;
   unitLabel?: string;
   pricingNote?: string;
@@ -259,6 +266,7 @@ export function buildProductMetadata(input: {
   if (input.variants?.options.length) metadata.variants = input.variants;
   if (input.sourcing) metadata.sourcing = input.sourcing;
   if (input.supplierIntel) metadata.supplierIntel = input.supplierIntel;
+  if (input.manualSuppliers?.length) metadata.manualSuppliers = input.manualSuppliers;
   if (input.minimumOrderQuantity && input.minimumOrderQuantity > 1) {
     metadata.minimumOrderQuantity = input.minimumOrderQuantity;
   }

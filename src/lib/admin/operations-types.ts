@@ -3,6 +3,13 @@ export type {
   CampaignChannel,
   CampaignStatus,
 } from "@/lib/admin/operations-campaign-types";
+export type {
+  PromoCode,
+  PromoCodeInput,
+  PromoCodeStatus,
+  PromoDiscountType,
+  PromoScope,
+} from "@/lib/admin/operations-promo-types";
 export type { Expense, ExpenseCategory } from "@/lib/admin/operations-finance-types";
 export type {
   ReturnLineItem,

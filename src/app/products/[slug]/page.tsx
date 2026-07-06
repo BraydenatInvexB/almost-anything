@@ -15,12 +15,15 @@ import { ProductActions } from "@/components/products/ProductActions";
 import { ProductGrid } from "@/components/home/ProductGrid";
 import { getProductBySlug, getRelatedProducts } from "@/services/product-service";
 import { getCategory } from "@/config/categories";
-import { formatCurrency, formatRating } from "@/lib/utils/cn";
+import { formatRating } from "@/lib/utils/cn";
 import { getStockAvailabilityMessage, getWarehouseBadgeLabel } from "@/config/product-stock";
 import { parseVariantsConfig } from "@/types/product-variants";
 import { parseProductEnrichment, customerFacingEnrichment } from "@/types/product-enrichment";
 import { ProductDetailDescription } from "@/components/products/ProductDetailDescription";
-import { ProductCardImage } from "@/components/products/ProductCardImage";
+import { parseProductGallery } from "@/lib/product/product-gallery";
+import { ProductImageGallery } from "@/components/products/ProductImageGallery";
+import { ProductPriceDisplay } from "@/components/products/ProductPriceDisplay";
+import { parseSpecialPricing } from "@/lib/product/product-special-pricing";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -38,13 +41,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   if (!product) notFound();
 
-  const imageUrl = product.enhanced_image_url ?? product.image_url;
+  const galleryImages = parseProductGallery(
+    product.metadata,
+    product.enhanced_image_url ?? product.image_url,
+  );
+  const imageUrl = galleryImages[0];
   const category = getCategory(product.category);
   const related = await getRelatedProducts(product.slug, product.category, 4);
-  const originalPrice =
-    product.is_deal && product.deal_discount_percent
-      ? product.retail_price / (1 - product.deal_discount_percent / 100)
-      : null;
+  const special = parseSpecialPricing(
+    product.metadata,
+    product.retail_price,
+    product.is_deal,
+  );
   const variants = parseVariantsConfig(product.metadata);
   const rawEnrichment = parseProductEnrichment(product.metadata);
   const enrichment = customerFacingEnrichment(rawEnrichment);
@@ -114,20 +122,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <span className="text-sm text-neutral-500">{warehouseLabel}</span>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-baseline gap-3">
-            <p className="text-4xl font-bold text-neutral-900">
-              {formatCurrency(product.retail_price, product.currency)}
-            </p>
-            {minimumOrderQuantity > 1 ? (
-              <span className="text-sm font-medium text-neutral-500">
-                per {unitLabel}
-              </span>
-            ) : null}
-            {originalPrice && (
-              <p className="text-lg text-neutral-400 line-through">
-                {formatCurrency(originalPrice, product.currency)}
-              </p>
-            )}
+          <div className="mt-5">
+            <ProductPriceDisplay
+              price={product.retail_price}
+              currency={product.currency}
+              compareAtPrice={special.compareAtPrice}
+              unitLabel={minimumOrderQuantity > 1 ? unitLabel : undefined}
+            />
           </div>
 
           {minimumOrderQuantity > 1 ? (
@@ -151,28 +152,24 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </header>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
-          <Card padding="none" className="relative aspect-square overflow-hidden bg-neutral-100">
-            {imageUrl ? (
-              <ProductCardImage
-                src={imageUrl}
-                alt={product.name}
-                category={product.category}
-                name={product.name}
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-contain p-3"
-                priority
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
-                Photo from supplier listing
-              </div>
-            )}
+          <Card padding="none" className="relative overflow-hidden bg-neutral-100">
+            <ProductImageGallery
+              images={galleryImages}
+              alt={product.name}
+              className="w-full"
+            />
             {product.is_exclusive ? (
               <Badge variant="exclusive" className="absolute left-4 top-4">
                 Exclusive
               </Badge>
             ) : null}
-            {product.is_deal && product.deal_discount_percent ? (
+            {special.enabled ? (
+              <Badge variant="deal" className="absolute right-4 top-4">
+                {special.discountPercent
+                  ? `${special.discountPercent}% off`
+                  : "Special"}
+              </Badge>
+            ) : product.is_deal && product.deal_discount_percent ? (
               <Badge variant="deal" className="absolute right-4 top-4">
                 {product.deal_discount_percent}% off
               </Badge>

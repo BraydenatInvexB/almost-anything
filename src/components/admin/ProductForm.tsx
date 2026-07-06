@@ -5,19 +5,31 @@ import { useRouter } from "next/navigation";
 import { BtnPrimary } from "@/components/admin/ui";
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor";
 import { ProductEnrichmentEditor } from "@/components/admin/ProductEnrichmentEditor";
-import { ProductSupplierPanel } from "@/components/admin/ProductSupplierPanel";
+import { ProductSupplierEditor } from "@/components/admin/ProductSupplierEditor";
+import {
+  bootstrapManualSuppliers,
+  parseManualSuppliers,
+  syncSourceFromSuppliers,
+} from "@/lib/product/product-manual-suppliers";
+import type { SupplierListing } from "@/types/supplier-sourcing";
 import { ProductFormDetailsSection } from "@/components/admin/ProductFormDetailsSection";
 import { ProductFormPricingSection } from "@/components/admin/ProductFormPricingSection";
+import { ProductFormSpecialSection } from "@/components/admin/ProductFormSpecialSection";
 import {
   StorefrontSectionToggles,
   flagsFromProduct,
 } from "@/components/admin/StorefrontSectionToggles";
 import { getStockStatusOrigin } from "@/config/product-stock";
 import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
-import type { ProductVariantsConfig } from "@/types/product-variants";
-import { emptyVariantsConfig } from "@/types/product-variants";
-import type { ProductEnrichment } from "@/types/product-enrichment";
-import { emptyEnrichment, buildProductMetadata } from "@/types/product-enrichment";
+import { emptyVariantsConfig, type ProductVariantsConfig } from "@/types/product-variants";
+import { buildProductMetadata, emptyEnrichment, type ProductEnrichment } from "@/types/product-enrichment";
+import { parseProductGallery, splitProductGallery } from "@/lib/product/product-gallery";
+import {
+  computeDealDiscountPercent,
+  parseCompareAtPrice,
+  resolveRetailWithSpecial,
+  specialPricingMetadata,
+} from "@/lib/product/product-special-pricing";
 
 interface ProductInput {
   id?: string;
@@ -26,11 +38,13 @@ interface ProductInput {
   description: string;
   category: string;
   base_price: number;
+  retail_price?: number;
   markup_percent: number;
   stock_status: string;
   stock_origin: string;
   quantity: number;
-  image_url: string;
+  image_url?: string | null;
+  image_urls?: string[];
   source_name: string;
   source_url: string;
   delivery_days_min: number;
@@ -42,6 +56,17 @@ interface ProductInput {
   show_in_fresh_drops?: boolean;
   variants?: ProductVariantsConfig;
   enrichment?: ProductEnrichment;
+  metadata?: Record<string, unknown>;
+}
+
+function initialSpecial(product?: ProductInput) {
+  const compareAt = parseCompareAtPrice(product?.metadata);
+  const enabled = Boolean(product?.is_deal && compareAt);
+  return {
+    special_enabled: enabled,
+    compare_at_price: compareAt ? String(compareAt) : "",
+    sale_price: enabled && product?.retail_price ? String(product.retail_price) : "",
+  };
 }
 
 export function ProductForm({
@@ -65,14 +90,16 @@ export function ProductForm({
     stock_status: product?.stock_status ?? "in_stock",
     stock_origin: product?.stock_origin ?? "sa_warehouse",
     quantity: product ? String(product.quantity) : "10",
-    image_url: product?.image_url ?? "",
-    source_name: product?.source_name ?? "",
-    source_url: product?.source_url ?? "",
     delivery_days_min: product ? String(product.delivery_days_min) : String(SA_WAREHOUSE_DELIVERY_DAYS.min),
     delivery_days_max: product ? String(product.delivery_days_max) : String(SA_WAREHOUSE_DELIVERY_DAYS.max),
     is_featured: product?.is_featured ?? false,
     is_deal: product?.is_deal ?? false,
   });
+  const [special, setSpecial] = useState(() => initialSpecial(product));
+  const [imageUrls, setImageUrls] = useState<string[]>(
+    product?.image_urls ??
+      parseProductGallery(product?.metadata, product?.image_url),
+  );
   const [sections, setSections] = useState(
     flagsFromProduct({
       show_in_hot: product?.show_in_hot ?? product?.is_featured ?? false,
@@ -82,6 +109,14 @@ export function ProductForm({
   );
   const [variants, setVariants] = useState<ProductVariantsConfig>(
     product?.variants ?? emptyVariantsConfig(),
+  );
+  const [manualSuppliers, setManualSuppliers] = useState<SupplierListing[]>(() =>
+    bootstrapManualSuppliers({
+      sourceName: product?.source_name,
+      sourceUrl: product?.source_url,
+      basePrice: product?.base_price,
+      existing: product?.enrichment?.manualSuppliers ?? parseManualSuppliers(product?.metadata),
+    }),
   );
   const [enrichment, setEnrichment] = useState<ProductEnrichment>(
     product?.enrichment ?? emptyEnrichment(),
@@ -103,21 +138,55 @@ export function ProductForm({
     });
   }
 
+  function updateSpecial(key: keyof typeof special, value: string | boolean) {
+    setSpecial((s) => ({ ...s, [key]: value }));
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError("");
     try {
+      const basePrice = Number(form.base_price);
+      const markupPercent = Number(form.markup_percent);
+      const saleInput = special.special_enabled && special.sale_price
+        ? Number(special.sale_price)
+        : null;
+      const compareAt = special.special_enabled && special.compare_at_price
+        ? Number(special.compare_at_price)
+        : null;
+
+      if (special.special_enabled && compareAt && saleInput && compareAt <= saleInput) {
+        setError("Was price must be higher than the now price.");
+        setSaving(false);
+        return;
+      }
+
+      const retailPrice = resolveRetailWithSpecial({
+        basePrice,
+        markupPercent,
+        specialEnabled: special.special_enabled,
+        salePriceInput: saleInput,
+      });
+      const dealDiscount = special.special_enabled && compareAt && saleInput
+        ? computeDealDiscountPercent(compareAt, saleInput)
+        : null;
+
+      const sourceFields = syncSourceFromSuppliers(manualSuppliers);
+      const { image_url, gallery } = splitProductGallery(imageUrls);
       const payload = {
         ...form,
-        base_price: Number(form.base_price),
-        markup_percent: Number(form.markup_percent),
+        base_price: basePrice,
+        markup_percent: markupPercent,
         quantity: Number(form.quantity),
         delivery_days_min: Number(form.delivery_days_min),
         delivery_days_max: Number(form.delivery_days_max),
-        image_url: form.image_url || null,
-        source_name: form.source_name || null,
-        source_url: form.source_url || null,
+        image_url,
+        is_deal: special.special_enabled,
+        deal_discount_percent: dealDiscount,
+        retail_price: retailPrice,
+        source_name: sourceFields.source_name,
+        source_url: sourceFields.source_url,
         ...sections,
         metadata: {
           ...buildProductMetadata({
@@ -127,9 +196,13 @@ export function ProductForm({
             summary: enrichment.summary,
             sourcing: enrichment.sourcing,
             supplierIntel: enrichment.supplierIntel,
+            manualSuppliers,
           }),
           quantity: Number(form.quantity),
           stock_origin: form.stock_origin,
+          gallery,
+          suppliersUpdatedAt: manualSuppliers.length ? new Date().toISOString() : undefined,
+          ...specialPricingMetadata(special.special_enabled ? compareAt : null),
         },
       };
 
@@ -156,20 +229,19 @@ export function ProductForm({
                 delivery_days_max: payload.delivery_days_max,
                 is_featured: payload.is_featured,
                 is_deal: payload.is_deal,
+                deal_discount_percent: payload.deal_discount_percent,
                 show_in_hot: sections.show_in_hot,
                 show_in_steals: sections.show_in_steals,
                 show_in_fresh_drops: sections.show_in_fresh_drops,
                 metadata: payload.metadata,
-                retail_price: Number(
-                  (payload.base_price * (1 + payload.markup_percent / 100)).toFixed(2),
-                ),
+                retail_price: payload.retail_price,
               }
             : payload,
         ),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Failed to create product");
+        setError(data.error ?? "Failed to save product");
         return;
       }
       router.push("/admin/products");
@@ -183,16 +255,22 @@ export function ProductForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <ProductFormDetailsSection form={form} update={update} />
+      <ProductFormDetailsSection
+        form={{ ...form, image_urls: imageUrls }}
+        update={update}
+        onImagesChange={setImageUrls}
+      />
 
-      <ProductSupplierPanel
-        sourceName={form.source_name}
-        sourceUrl={form.source_url}
+      <ProductSupplierEditor
+        suppliers={manualSuppliers}
+        onChange={setManualSuppliers}
         basePrice={form.base_price ? Number(form.base_price) : undefined}
         supplierIntel={enrichment.supplierIntel}
+        updatedAt={product?.metadata?.suppliersUpdatedAt as string | undefined}
       />
 
       <ProductFormPricingSection form={form} update={update} />
+      <ProductFormSpecialSection form={special} update={updateSpecial} />
 
       <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-neutral-950">Storefront sections</h2>

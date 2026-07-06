@@ -28,6 +28,8 @@ export interface ProductCardData {
   quantity?: number;
   unitPriceLabel?: string;
   minimumOrderQuantity?: number;
+  /** Original price when a special was/now offer is active. */
+  compareAtPrice?: number | null;
 }
 
 export interface SearchResult {

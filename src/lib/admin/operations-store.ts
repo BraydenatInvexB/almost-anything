@@ -9,6 +9,16 @@ export {
 } from "@/lib/admin/operations-store-campaigns";
 
 export {
+  listPromoCodes,
+  getPromoByCode,
+  createPromoCode,
+  updatePromoCode,
+  deletePromoCode,
+  incrementPromoUsage,
+  normalizePromoCodeValue,
+} from "@/lib/admin/operations-store-promos";
+
+export {
   listExpenses,
   createExpense,
   listPayables,

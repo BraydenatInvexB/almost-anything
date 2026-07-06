@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils/cn";
 type Mode = "upload" | "url";
 
 interface ProductImageFieldProps {
-  value: string;
-  onChange: (url: string) => void;
+  value: string[];
+  onChange: (urls: string[]) => void;
 }
 
 export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
@@ -18,6 +18,7 @@ export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [urlDraft, setUrlDraft] = useState("");
 
   async function handleFile(file: File | null) {
     if (!file) return;
@@ -32,7 +33,7 @@ export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
         setUploadError(data.error ?? "Upload failed");
         return;
       }
-      onChange(data.url);
+      onChange([...value, data.url]);
       setMode("upload");
     } catch {
       setUploadError("Network error — try again.");
@@ -42,10 +43,25 @@ export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
     }
   }
 
+  function removeAt(index: number) {
+    onChange(value.filter((_, i) => i !== index));
+  }
+
+  function addUrl() {
+    const trimmed = urlDraft.trim();
+    if (!trimmed) return;
+    if (!value.includes(trimmed)) {
+      onChange([...value, trimmed]);
+    }
+    setUrlDraft("");
+  }
+
   return (
     <div className="sm:col-span-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-neutral-600">Product photo</span>
+        <span className="text-xs font-semibold text-neutral-600">
+          Product photos{value.length ? ` (${value.length})` : ""}
+        </span>
         <div className="flex rounded-lg border border-neutral-200 p-0.5 text-xs font-semibold">
           <button
             type="button"
@@ -72,27 +88,39 @@ export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
       </div>
 
       {mode === "upload" ? (
-        <div className="mt-2 grid gap-3 sm:grid-cols-[140px_1fr]">
-          <div className="relative aspect-square overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
-            {value ? (
-              <>
-                <Image src={value} alt="Product preview" fill className="object-cover" sizes="140px" unoptimized />
-                <button
-                  type="button"
-                  onClick={() => onChange("")}
-                  className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-neutral-700 shadow-sm hover:bg-white"
-                  aria-label="Remove image"
+        <div className="mt-2 space-y-3">
+          {value.length > 0 ? (
+            <div className="flex flex-wrap gap-3">
+              {value.map((url, index) => (
+                <div
+                  key={`${url}-${index}`}
+                  className="relative aspect-square w-[120px] overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50"
                 >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </>
-            ) : (
+                  <Image src={url} alt="" fill className="object-cover" sizes="120px" unoptimized />
+                  {index === 0 ? (
+                    <span className="absolute left-1.5 top-1.5 rounded bg-neutral-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      Primary
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => removeAt(index)}
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-neutral-700 shadow-sm hover:bg-white"
+                    aria-label="Remove image"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="relative mx-auto aspect-square w-[120px] overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
               <div className="flex h-full flex-col items-center justify-center text-neutral-400">
                 <ImagePlus className="h-8 w-8" />
-                <span className="mt-1 text-[10px] font-medium">No image</span>
+                <span className="mt-1 text-[10px] font-medium">No photos yet</span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div
             onDragOver={(e) => {
@@ -103,10 +131,15 @@ export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
             onDrop={(e) => {
               e.preventDefault();
               setDragOver(false);
-              void handleFile(e.dataTransfer.files?.[0] ?? null);
+              const files = Array.from(e.dataTransfer.files ?? []);
+              void (async () => {
+                for (const file of files) {
+                  await handleFile(file);
+                }
+              })();
             }}
             className={cn(
-              "flex min-h-[140px] flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors",
+              "flex min-h-[120px] flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-5 text-center transition-colors",
               dragOver ? "border-brand bg-brand/5" : "border-neutral-200 bg-neutral-50/50 hover:border-neutral-300",
             )}
           >
@@ -114,8 +147,16 @@ export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
               ref={inputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
               className="hidden"
-              onChange={(e) => void handleFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                void (async () => {
+                  for (const file of files) {
+                    await handleFile(file);
+                  }
+                })();
+              }}
             />
             {uploading ? (
               <>
@@ -126,7 +167,7 @@ export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
               <>
                 <Upload className="h-6 w-6 text-neutral-500" />
                 <p className="mt-2 text-sm font-medium text-neutral-800">
-                  Drag a photo here, or{" "}
+                  Drag photos here, or{" "}
                   <button
                     type="button"
                     onClick={() => inputRef.current?.click()}
@@ -135,18 +176,35 @@ export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
                     browse files
                   </button>
                 </p>
-                <p className="mt-1 text-xs text-neutral-400">JPG, PNG, WebP or GIF · max 5 MB</p>
+                <p className="mt-1 text-xs text-neutral-400">
+                  JPG, PNG, WebP or GIF · max 5 MB · add one or more
+                </p>
               </>
             )}
           </div>
         </div>
       ) : (
-        <input
-          className="input mt-2"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="https://…"
-        />
+        <div className="mt-2 flex gap-2">
+          <input
+            className="input flex-1"
+            value={urlDraft}
+            onChange={(e) => setUrlDraft(e.target.value)}
+            placeholder="https://…"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addUrl();
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={addUrl}
+            className="h-10 shrink-0 rounded-lg border border-neutral-200 px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+          >
+            Add
+          </button>
+        </div>
       )}
 
       {uploadError ? <p className="mt-2 text-xs font-medium text-red-600">{uploadError}</p> : null}

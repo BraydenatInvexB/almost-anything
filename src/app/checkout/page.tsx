@@ -10,12 +10,14 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/context/CartProvider";
+import { usePromo } from "@/context/PromoProvider";
 import { useAuth } from "@/context/AuthProvider";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { ShippingAddress } from "@/types/cart";
 import { COURIERS } from "@/config/couriers";
 import { useStorefrontSettings, defaultCouriersFromSettings } from "@/hooks/useStorefrontSettings";
 import { computeStorefrontTotals } from "@/lib/pricing/storefront-totals";
+import { PromoCodeInput } from "@/components/checkout/PromoCodeInput";
 
 const PAYMENT_METHODS = [
   { id: "card", label: "Credit / debit card" },
@@ -28,6 +30,7 @@ const PAYMENT_METHODS = [
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
+  const { applied, discountAmount } = usePromo();
   const { user } = useAuth();
   const { settings } = useStorefrontSettings();
   const [loading, setLoading] = useState(false);
@@ -64,9 +67,16 @@ export default function CheckoutPage() {
   const currency = settings?.currency ?? "ZAR";
 
   const pricing = settings
-    ? computeStorefrontTotals(subtotal, settings, courierId)
-    : { shipping: 0, tax: 0, total: subtotal, shippingCalc: { displayFree: true, customerCharge: 0, internalCost: 0 } };
-  const { shipping, tax, total, shippingCalc } = pricing;
+    ? computeStorefrontTotals(subtotal, settings, courierId, discountAmount)
+    : {
+        shipping: 0,
+        tax: 0,
+        total: subtotal,
+        promoDiscount: discountAmount,
+        discountedSubtotal: Math.max(0, subtotal - discountAmount),
+        shippingCalc: { displayFree: true, customerCharge: 0, internalCost: 0 },
+      };
+  const { shipping, tax, total, shippingCalc, promoDiscount, discountedSubtotal } = pricing;
   const selectedCourier = couriers.find((c) => c.id === courierId);
 
   async function handleCheckout(e: React.FormEvent) {
@@ -88,6 +98,7 @@ export default function CheckoutPage() {
           courierName: selectedCourier?.name,
           shippingInternalCost: shippingCalc.internalCost,
           customerShippingCharge: shipping,
+          promoCode: applied?.code,
         }),
       });
 
@@ -199,6 +210,9 @@ export default function CheckoutPage() {
 
           <Card variant="elevated" className="h-fit bg-white p-6">
             <h2 className="text-lg font-semibold">Order Summary</h2>
+            <div className="mt-4">
+              <PromoCodeInput currency={currency} />
+            </div>
             <ul className="mt-4 space-y-2">
               {items.map((item) => (
                 <li key={item.id} className="flex justify-between text-sm text-neutral-600">
@@ -212,6 +226,18 @@ export default function CheckoutPage() {
                 <dt className="text-neutral-500">Subtotal</dt>
                 <dd>{formatCurrency(subtotal, currency)}</dd>
               </div>
+              {promoDiscount > 0 ? (
+                <div className="flex justify-between text-emerald-600">
+                  <dt>Promo discount</dt>
+                  <dd>-{formatCurrency(promoDiscount, currency)}</dd>
+                </div>
+              ) : null}
+              {promoDiscount > 0 ? (
+                <div className="flex justify-between font-medium">
+                  <dt>After discount</dt>
+                  <dd>{formatCurrency(discountedSubtotal, currency)}</dd>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <dt className="text-neutral-500">Delivery {selectedCourier ? `(${selectedCourier.name})` : ""}</dt>
                 <dd className={shippingCalc.displayFree ? "font-semibold text-emerald-600" : ""}>

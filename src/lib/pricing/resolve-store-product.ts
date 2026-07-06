@@ -3,6 +3,11 @@ import { SITE_CONFIG } from "@/config/site";
 import { getWarehouseBadgeLabel } from "@/config/product-stock";
 import { resolveProductDeliveryDays } from "@/config/delivery";
 import { getProductBySlugSeed } from "@/lib/data/seed-products";
+import { parseProductGallery } from "@/lib/product/product-gallery";
+import {
+  parseCompareAtPrice,
+  parseSpecialPricing,
+} from "@/lib/product/product-special-pricing";
 import { stockFromMetadata } from "@/lib/catalog/product-stock-label";
 import { parsePricingFromMetadata } from "@/lib/pricing/discovery-pricing";
 import { customerFacingDescription, parseProductEnrichment } from "@/types/product-enrichment";
@@ -76,6 +81,15 @@ export function resolveStoreProductCard(product: Product): ProductCardData {
     pricing.minimumOrderQuantity > 1
       ? `per ${pricing.unitLabel} · min ${pricing.minimumOrderQuantity}`
       : undefined;
+  const gallery = parseProductGallery(
+    resolved.metadata,
+    resolved.enhanced_image_url ?? resolved.image_url,
+  );
+  const special = parseSpecialPricing(
+    resolved.metadata,
+    resolved.retail_price,
+    resolved.is_deal,
+  );
 
   return {
     id: resolved.id,
@@ -86,13 +100,19 @@ export function resolveStoreProductCard(product: Product): ProductCardData {
     currency: resolved.currency,
     rating: resolved.rating,
     reviewCount: resolved.review_count,
-    imageUrl: resolved.enhanced_image_url ?? resolved.image_url ?? "",
+    imageUrl: gallery[0] ?? "",
     category: resolved.category,
-    isDeal: resolved.is_deal,
-    dealLabel: resolved.deal_discount_percent
-      ? `${resolved.deal_discount_percent}% off`
-      : undefined,
-    dealDiscountPercent: resolved.deal_discount_percent ?? undefined,
+    isDeal: special.enabled || resolved.is_deal,
+    dealLabel: special.discountPercent
+      ? `${special.discountPercent}% off`
+      : resolved.deal_discount_percent
+        ? `${resolved.deal_discount_percent}% off`
+        : special.enabled
+          ? "Special"
+          : undefined,
+    dealDiscountPercent:
+      special.discountPercent ?? resolved.deal_discount_percent ?? undefined,
+    compareAtPrice: special.compareAtPrice ?? parseCompareAtPrice(resolved.metadata),
     isExclusive: resolved.is_exclusive,
     stockLabel: warehouseLabel,
     warehouseLabel,

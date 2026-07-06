@@ -72,6 +72,8 @@ export interface Order {
   shipping: number;
   tax: number;
   total: number;
+  promoDiscount?: number;
+  promoCode?: string;
   currency: string;
   shippingAddress: ShippingAddress;
   paymentMethod: string;
@@ -96,4 +98,5 @@ export interface CheckoutPayload {
   courierName?: string;
   shippingInternalCost?: number;
   customerShippingCharge?: number;
+  promoCode?: string;
 }

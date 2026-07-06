@@ -1,12 +1,10 @@
 import { NextRequest } from "next/server";
 import {
   secureJsonResponse,
-  secureErrorResponse,
   requireInternalAuth,
   getClientIp,
   logApiRequest,
 } from "@/lib/security/api";
-import { spawnPythonWorker } from "@/lib/sourcing/python-worker";
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -16,12 +14,9 @@ export async function POST(request: NextRequest) {
     return authError;
   }
 
-  const started = spawnPythonWorker(["--process-pending"]);
-  await logApiRequest("/api/internal/sourcing/process", "POST", ip, started ? 202 : 503);
-
-  if (!started) {
-    return secureErrorResponse("Python worker unavailable", "SERVICE_UNAVAILABLE", 503);
-  }
-
-  return secureJsonResponse({ queued: true, mode: "process-pending" }, 202);
+  await logApiRequest("/api/internal/sourcing/process", "POST", ip, 410);
+  return secureJsonResponse(
+    { queued: false, disabled: true, message: "Automated sourcing workers are disabled." },
+    410,
+  );
 }

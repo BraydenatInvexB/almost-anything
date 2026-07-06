@@ -33,6 +33,7 @@ const patchSchema = z.object({
   source_url: z.string().nullable().optional(),
   delivery_days_min: z.number().optional(),
   delivery_days_max: z.number().optional(),
+  deal_discount_percent: z.number().nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -57,6 +58,7 @@ const createSchema = z.object({
   show_in_steals: z.boolean().default(false),
   show_in_fresh_drops: z.boolean().default(false),
   deal_discount_percent: z.number().nullable().optional(),
+  retail_price: z.number().min(0).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -71,7 +73,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid payload", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const retail = parsed.data.base_price * (1 + parsed.data.markup_percent / 100);
+  const retail =
+    parsed.data.retail_price ??
+    parsed.data.base_price * (1 + parsed.data.markup_percent / 100);
 
   if (!isSupabaseConfigured()) {
     const product = createCustomProduct({
@@ -142,9 +146,6 @@ export async function PATCH(request: Request) {
   const { id, quantity, stock_origin, metadata, ...rest } = parsed.data;
 
   const updates = { ...rest } as ProductUpdate;
-  if (metadata !== undefined) {
-    updates.metadata = metadata as ProductUpdate["metadata"];
-  }
 
   // Demo mode: persist to in-memory store so edits survive navigation.
   if (!isSupabaseConfigured()) {
@@ -166,7 +167,7 @@ export async function PATCH(request: Request) {
   try {
     const supabase = createServiceClient();
 
-    if (quantity !== undefined || stock_origin !== undefined) {
+    if (metadata !== undefined || quantity !== undefined || stock_origin !== undefined) {
       const { data: existing } = await supabase
         .from("products")
         .select("metadata, base_price, markup_percent")

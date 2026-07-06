@@ -9,6 +9,7 @@ import type { StorefrontSectionFlags } from "@/config/storefront-sections";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { Product } from "@/types/database";
 import { parseProductEnrichment } from "@/types/product-enrichment";
+import { primaryManualSupplier } from "@/lib/product/product-manual-suppliers";
 import { compactStockLabel, type ProductsManagerDeleteState, type ProductsManagerSaveState } from "@/components/admin/products-manager-utils";
 
 export function ProductsManagerRow({
@@ -43,10 +44,17 @@ export function ProductsManagerRow({
   const dirty = Math.abs(markup - Number(product.markup_percent)) > 0.001;
   const removing = deleteState === "deleting";
   const enrichment = parseProductEnrichment(product.metadata);
+  const manualPrimary = primaryManualSupplier(enrichment.manualSuppliers ?? []);
   const supplierName =
-    enrichment.supplierIntel?.primary.supplierName ?? product.source_name ?? null;
+    manualPrimary?.supplierName ??
+    enrichment.supplierIntel?.primary.supplierName ??
+    product.source_name ??
+    null;
   const supplierUrl =
-    enrichment.supplierIntel?.primary.supplierUrl ?? product.source_url ?? null;
+    manualPrimary?.supplierUrl ??
+    enrichment.supplierIntel?.primary.supplierUrl ??
+    product.source_url ??
+    null;
 
   return (
     <tr className="hover:bg-neutral-50/80">

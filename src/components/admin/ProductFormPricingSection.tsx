@@ -62,14 +62,10 @@ export function ProductFormPricingSection({
           </div>
         </Field>
       </div>
-      <div className="mt-4 flex gap-4">
+      <div className="mt-4">
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={form.is_featured} onChange={(e) => update("is_featured", e.target.checked)} />
           Featured badge
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={form.is_deal} onChange={(e) => update("is_deal", e.target.checked)} />
-          Deal pricing badge
         </label>
       </div>
     </div>

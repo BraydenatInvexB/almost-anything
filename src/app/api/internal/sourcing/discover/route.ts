@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import {
-  rateLimit,
   secureJsonResponse,
   secureErrorResponse,
   requireInternalAuth,
@@ -22,9 +21,6 @@ export async function POST(request: NextRequest) {
     return authError;
   }
 
-  const limited = rateLimit(request, 40);
-  if (limited) return limited;
-
   let body: unknown;
   try {
     body = await request.json();
@@ -34,15 +30,10 @@ export async function POST(request: NextRequest) {
 
   const parsed = discoverSchema.safeParse(body);
   if (!parsed.success) {
-    return secureErrorResponse("Invalid payload", "VALIDATION_ERROR");
+    return secureErrorResponse("Invalid request", "VALIDATION_ERROR");
   }
 
-  try {
-    const result = await discoverAndIngestProducts(parsed.data.query);
-    await logApiRequest("/api/internal/sourcing/discover", "POST", ip, 200);
-    return secureJsonResponse(result);
-  } catch {
-    await logApiRequest("/api/internal/sourcing/discover", "POST", ip, 500);
-    return secureErrorResponse("Discovery failed", "INTERNAL_ERROR", 500);
-  }
+  const result = await discoverAndIngestProducts(parsed.data.query);
+  await logApiRequest("/api/internal/sourcing/discover", "POST", ip, 200);
+  return secureJsonResponse(result);
 }

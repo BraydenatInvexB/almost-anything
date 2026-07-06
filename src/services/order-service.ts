@@ -1,113 +1,34 @@
-import type { CartItem, CheckoutPayload, Order, OrderItem, ShippingAddress } from "@/types/cart";
+import type { CheckoutPayload, Order } from "@/types/cart";
 import type { Json } from "@/types/database";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createCheckoutOrder } from "@/lib/admin/operations-store";
 import { ensureProcurementForSupabaseOrder } from "@/lib/admin/operations-persistence";
-import type { StockOrigin } from "@/lib/admin/operations-types";
 import { cartItemToLineItem } from "@/lib/orders/line-items";
+import {
+  calculateTotals,
+  inferStockOrigin,
+  mapCartToOrderItems,
+  mapDbOrder,
+  paymentLabel,
+  type DbOrderRow,
+} from "@/lib/orders/order-service-helpers";
 import { generateOrderNumber, normalizeOrderNumber } from "@/lib/orders/order-number";
-
-interface DbOrderItem {
-  id: string;
-  name: string;
-  unit_price: number;
-  quantity: number;
-  image_url: string | null;
-  item_type: string;
-  slug: string | null;
-}
-
-interface DbOrderRow {
-  id: string;
-  order_number: string;
-  user_id: string | null;
-  status: string;
-  subtotal: number;
-  shipping: number;
-  tax: number;
-  total: number;
-  currency: string;
-  payment_method: string | null;
-  shipping_address: Json;
-  created_at: string;
-  order_items?: DbOrderItem[];
-}
-
-function mapDbOrder(o: DbOrderRow): Order {
-  return {
-    id: o.id,
-    orderNumber: o.order_number,
-    status: o.status as Order["status"],
-    items: (o.order_items ?? []).map((item) => ({
-      id: item.id,
-      name: item.name,
-      price: Number(item.unit_price),
-      quantity: item.quantity,
-      imageUrl: item.image_url ?? undefined,
-      type: item.item_type as "product" | "quote",
-      slug: item.slug ?? undefined,
-    })),
-    subtotal: Number(o.subtotal),
-    shipping: Number(o.shipping),
-    tax: Number(o.tax),
-    total: Number(o.total),
-    currency: o.currency,
-    shippingAddress: o.shipping_address as unknown as ShippingAddress,
-    paymentMethod: o.payment_method ?? "unknown",
-    createdAt: o.created_at,
-    userId: o.user_id ?? undefined,
-  };
-}
-
-function calculateTotals(items: CartItem[]) {
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const shipping = subtotal > 1000 ? 0 : 99;
-  const tax = Math.round(subtotal * 0.15 * 100) / 100;
-  const total = Math.round((subtotal + shipping + tax) * 100) / 100;
-  return { subtotal, shipping, tax, total };
-}
-
-function mapCartToOrderItems(items: CartItem[]): OrderItem[] {
-  return items.map((item) => ({
-    id: item.id,
-    name: item.name,
-    price: item.price,
-    quantity: item.quantity,
-    imageUrl: item.imageUrl,
-    type: item.type,
-    slug: item.slug,
-  }));
-}
-
-function paymentLabel(method: string): string {
-  switch (method) {
-    case "card":
-      return "Credit / debit card";
-    case "eft":
-      return "Instant EFT";
-    case "demo":
-      return "Demo checkout";
-    default:
-      return method;
-  }
-}
-
-function inferStockOrigin(items: CartItem[]): StockOrigin {
-  const overseas = items.some((i) => i.type === "quote" || i.supplierName);
-  return overseas ? "overseas" : "sa_warehouse";
-}
+import { resolveOrderPromo } from "@/lib/promo/validate-checkout-promo";
 
 export async function createOrder(
   payload: CheckoutPayload,
   userId?: string | null,
 ): Promise<Order> {
   const calculated = calculateTotals(payload.items);
+  const { promoDiscount, promoCode } = await resolveOrderPromo(payload);
+
   const shipping =
     payload.customerShippingCharge ?? calculated.shipping;
   const subtotal = calculated.subtotal;
-  const tax = calculated.tax;
-  const total = Math.round((subtotal + shipping + tax) * 100) / 100;
+  const discountedSubtotal = Math.max(0, subtotal - promoDiscount);
+  const tax = Math.round(discountedSubtotal * 0.15 * 100) / 100;
+  const total = Math.round((discountedSubtotal + shipping + tax) * 100) / 100;
   const orderNumber = generateOrderNumber();
   const orderItems = mapCartToOrderItems(payload.items);
   const stockOrigin = inferStockOrigin(payload.items);
@@ -121,6 +42,8 @@ export async function createOrder(
     shipping,
     tax,
     total,
+    promoDiscount: promoDiscount || undefined,
+    promoCode,
     currency: "ZAR",
     shippingAddress: payload.shippingAddress,
     paymentMethod: payload.paymentMethod,
@@ -151,6 +74,8 @@ export async function createOrder(
             courierName: payload.courierName ?? null,
             shippingInternalCost: payload.shippingInternalCost ?? null,
             stockOrigin,
+            promoCode: promoCode ?? null,
+            promoDiscount: promoDiscount || null,
           },
         })
         .select()

@@ -195,8 +195,8 @@ export function HeroShowcaseEditor({
 
               <div className="mt-4">
                 <ProductImageField
-                  value={item.imageUrl}
-                  onChange={(url) => updateItem(item.id, { imageUrl: url })}
+                  value={item.imageUrl ? [item.imageUrl] : []}
+                  onChange={(urls) => updateItem(item.id, { imageUrl: urls[0] ?? "" })}
                 />
               </div>
             </div>

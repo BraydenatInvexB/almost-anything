@@ -10,17 +10,27 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/context/CartProvider";
+import { usePromo } from "@/context/PromoProvider";
 import { formatCurrency } from "@/lib/utils/cn";
+import { PromoCodeInput } from "@/components/checkout/PromoCodeInput";
 
 export default function CartPage() {
   const { items, itemCount, subtotal, updateQuantity, removeItem, clearCart } =
     useCart();
+  const { discountAmount } = usePromo();
   const { settings } = useStorefrontSettings();
 
   const pricing = settings
-    ? computeStorefrontTotals(subtotal, settings)
-    : { shipping: 0, tax: 0, total: subtotal, shippingCalc: { displayFree: true, customerCharge: 0, internalCost: 0 } };
-  const { shipping, tax, total, shippingCalc } = pricing;
+    ? computeStorefrontTotals(subtotal, settings, undefined, discountAmount)
+    : {
+        shipping: 0,
+        tax: 0,
+        total: subtotal,
+        promoDiscount: discountAmount,
+        discountedSubtotal: Math.max(0, subtotal - discountAmount),
+        shippingCalc: { displayFree: true, customerCharge: 0, internalCost: 0 },
+      };
+  const { shipping, tax, total, shippingCalc, promoDiscount, discountedSubtotal } = pricing;
   const currency = settings?.currency ?? "ZAR";
 
   return (
@@ -156,11 +166,26 @@ export default function CartPage() {
 
             <Card variant="elevated" className="h-fit bg-white p-6">
               <h2 className="text-lg font-semibold">Order Summary</h2>
+              <div className="mt-4">
+                <PromoCodeInput currency={currency} />
+              </div>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-neutral-500">Subtotal</dt>
                   <dd>{formatCurrency(subtotal, currency)}</dd>
                 </div>
+                {promoDiscount > 0 ? (
+                  <div className="flex justify-between text-emerald-600">
+                    <dt>Promo discount</dt>
+                    <dd>-{formatCurrency(promoDiscount, currency)}</dd>
+                  </div>
+                ) : null}
+                {promoDiscount > 0 ? (
+                  <div className="flex justify-between font-medium">
+                    <dt>After discount</dt>
+                    <dd>{formatCurrency(discountedSubtotal, currency)}</dd>
+                  </div>
+                ) : null}
                 <div className="flex justify-between">
                   <dt className="text-neutral-500">Shipping</dt>
                   <dd>

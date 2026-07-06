@@ -5,9 +5,11 @@ import {
   listCampaigns,
   listCustomers,
 } from "@/services/admin-service";
+import { listPromoCodes } from "@/lib/admin/operations-persistence";
 import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { CampaignManager } from "@/components/admin/CampaignManager";
+import { PromoCodeManager } from "@/components/admin/PromoCodeManager";
 import { EmailMarketingManager } from "@/components/admin/EmailMarketingManager";
 import { PageHeader, StatCard, Panel } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
@@ -18,9 +20,10 @@ export default async function AdminMarketingPage() {
   const staff = await getCurrentStaff();
   if (!staff || !staffCan(staff, "marketing.view")) return <AccessDenied feature="marketing" />;
 
-  const [products, campaigns, customers, subscribers, broadcasts] = await Promise.all([
+  const [products, campaigns, promoCodes, customers, subscribers, broadcasts] = await Promise.all([
     listAdminProducts(),
     listCampaigns(),
+    listPromoCodes(),
     listCustomers(),
     listEmailSubscribers(),
     listEmailBroadcasts(),
@@ -28,6 +31,7 @@ export default async function AdminMarketingPage() {
   const featured = products.filter((p) => p.is_featured).slice(0, 6);
   const deals = products.filter((p) => p.is_deal);
   const liveCampaigns = campaigns.filter((c) => c.status === "live").length;
+  const activePromos = promoCodes.filter((p) => p.status === "active").length;
   const activeSubscribers = subscribers.filter((s) => s.status === "active").length;
 
   return (
@@ -37,10 +41,11 @@ export default async function AdminMarketingPage() {
         subtitle="Email list, customer broadcasts, promotions, and featured products."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-6">
         <StatCard label="Email list" value={String(activeSubscribers)} icon={<Users className="h-4 w-4" />} accent="bg-blue-500" />
         <StatCard label="Emails sent" value={String(broadcasts.filter((b) => b.status === "sent").length)} icon={<Mail className="h-4 w-4" />} accent="bg-neutral-950" />
         <StatCard label="Live campaigns" value={String(liveCampaigns)} icon={<Megaphone className="h-4 w-4" />} accent="bg-brand" />
+        <StatCard label="Active promo codes" value={String(activePromos)} icon={<Tag className="h-4 w-4" />} accent="bg-orange-500" />
         <StatCard label="Active deals" value={String(deals.length)} icon={<Tag className="h-4 w-4" />} accent="bg-emerald-500" />
         <StatCard label="Featured products" value={String(featured.length)} icon={<Star className="h-4 w-4" />} accent="bg-violet-500" />
       </div>
@@ -62,6 +67,14 @@ export default async function AdminMarketingPage() {
           <CampaignManager initial={campaigns} canManage={staffCan(staff, "marketing.manage")} />
         </Panel>
       </div>
+
+      <Panel title="Promo codes" className="mt-4">
+        <PromoCodeManager
+          initial={promoCodes}
+          products={products}
+          canManage={staffCan(staff, "marketing.manage")}
+        />
+      </Panel>
 
       <Panel title="Featured products" className="mt-4">
         <div className="flex flex-col gap-3 p-5 sm:grid sm:grid-cols-2 lg:grid-cols-3">

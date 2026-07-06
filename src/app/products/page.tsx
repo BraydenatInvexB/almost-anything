@@ -179,7 +179,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <div className="min-w-0 flex-1">
           {params.q ? (
             <ProductsSearchSection
-              query={params.q}
               initialProducts={products}
               initialTotal={total}
             />
@@ -227,6 +226,26 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               ) : null}
             </nav>
           )}
+
+          {products.length === 0 && params.q ? (
+            <Card variant="elevated" className="mt-4 border border-dashed border-neutral-300 bg-white py-20 text-center shadow-none">
+              <p className="text-lg font-semibold text-neutral-900">
+                No products match &ldquo;{params.q}&rdquo;
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
+                Search only includes products already listed on our site. Try different keywords, browse
+                categories, or tell us what you need.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                <Link href="/products">
+                  <Button>Browse all products</Button>
+                </Link>
+                <Link href="/request">
+                  <Button variant="secondary">Request a product</Button>
+                </Link>
+              </div>
+            </Card>
+          ) : null}
 
           {products.length === 0 && !params.q ? (
             <Card variant="elevated" className="mt-4 border border-dashed border-neutral-300 bg-white py-20 text-center shadow-none">
@@ -278,7 +297,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         </nav>
 
         {params.q ? (
-          <ProductsSearchProvider initialTotal={total} query={params.q}>
+          <ProductsSearchProvider initialTotal={total}>
             {pageBody}
           </ProductsSearchProvider>
         ) : (

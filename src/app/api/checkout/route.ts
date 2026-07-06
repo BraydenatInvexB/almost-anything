@@ -58,23 +58,20 @@ export async function POST(request: NextRequest) {
 
   try {
     if (useStripe && stripe) {
-      const { subtotal, shipping, tax, total } = await import(
-        "@/services/order-service"
-      ).then((m) => m.calculateTotals(parsed.data.items));
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(total * 100),
-        currency: "zar",
-        metadata: {
-          customer_email: parsed.data.shippingAddress.email,
-        },
-        automatic_payment_methods: { enabled: true },
-      });
-
       const order = await createOrder(
         { ...parsed.data, paymentMethod: "card" },
         userId,
       );
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(order.total * 100),
+        currency: "zar",
+        metadata: {
+          customer_email: parsed.data.shippingAddress.email,
+          order_number: order.orderNumber,
+        },
+        automatic_payment_methods: { enabled: true },
+      });
 
       if (isSupabaseConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY) {
         const supabase = createServiceClient();
@@ -91,10 +88,10 @@ export async function POST(request: NextRequest) {
       return secureJsonResponse({
         orderNumber: order.orderNumber,
         clientSecret: paymentIntent.client_secret,
-        total,
-        subtotal,
-        shipping,
-        tax,
+        total: order.total,
+        subtotal: order.subtotal,
+        shipping: order.shipping,
+        tax: order.tax,
         mode: "stripe",
       });
     }

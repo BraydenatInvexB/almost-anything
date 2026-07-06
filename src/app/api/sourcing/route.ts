@@ -9,7 +9,6 @@ import {
 import { sourcingRequestSchema } from "@/lib/validation/checkout";
 import { submitItemRequest } from "@/services/sourcing-request-service";
 import { enqueueSourcingRun, logSearchEvent } from "@/services/search-analytics-service";
-import { triggerInternalSourcingProcess } from "@/lib/sourcing/trigger-workers";
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -55,8 +54,6 @@ export async function POST(request: NextRequest) {
       query: parsed.data.query,
       inputMethod: "request",
     });
-
-    void triggerInternalSourcingProcess();
 
     await logApiRequest("/api/sourcing", "POST", ip, 200);
     return secureJsonResponse({

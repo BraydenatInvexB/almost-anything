@@ -96,6 +96,27 @@ export const deleteCampaign = async (id: string) => {
     store.deleteCampaign(id);
   }
 };
+
+export const listPromoCodes = () => withRepo(repo.listPromoCodes, store.listPromoCodes);
+export const getPromoByCode = (code: string) =>
+  withRepo(() => repo.getPromoByCode(code), () => store.getPromoByCode(code));
+export const createPromoCode = (input: Parameters<typeof store.createPromoCode>[0]) =>
+  withRepo(() => repo.createPromoCode(input), () => store.createPromoCode(input));
+export const updatePromoCode = (id: string, patch: Parameters<typeof store.updatePromoCode>[1]) =>
+  withRepo(() => repo.updatePromoCode(id, patch), () => store.updatePromoCode(id, patch));
+export const deletePromoCode = async (id: string) => {
+  if (!canUseSupabaseOps()) {
+    store.deletePromoCode(id);
+    return;
+  }
+  try {
+    await repo.deletePromoCode(id);
+  } catch {
+    store.deletePromoCode(id);
+  }
+};
+export const incrementPromoUsage = (id: string) =>
+  withRepo(() => repo.incrementPromoUsage(id), () => store.incrementPromoUsage(id));
 export const listEmailSubscribers = () =>
   withRepo(repo.listEmailSubscribers, store.listEmailSubscribers);
 export const addEmailSubscriber = (input: Parameters<typeof store.addEmailSubscriber>[0]) =>

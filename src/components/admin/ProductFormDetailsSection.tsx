@@ -7,17 +7,17 @@ type FormSlice = {
   slug: string;
   category: string;
   description: string;
-  image_url: string;
-  source_name: string;
-  source_url: string;
+  image_urls: string[];
 };
 
 export function ProductFormDetailsSection({
   form,
   update,
+  onImagesChange,
 }: {
   form: FormSlice;
-  update: (key: string, value: string | boolean) => void;
+  update: (key: keyof Omit<FormSlice, "image_urls">, value: string | boolean) => void;
+  onImagesChange: (urls: string[]) => void;
 }) {
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -45,22 +45,7 @@ export function ProductFormDetailsSection({
             required
           />
         </Field>
-        <ProductImageField
-          value={form.image_url}
-          onChange={(url) => update("image_url", url)}
-        />
-        <Field label="Supplier name">
-          <input className="input" value={form.source_name} onChange={(e) => update("source_name", e.target.value)} />
-        </Field>
-        <Field label="Supplier listing URL">
-          <input
-            className="input"
-            type="url"
-            value={form.source_url}
-            onChange={(e) => update("source_url", e.target.value)}
-            placeholder="https://…"
-          />
-        </Field>
+        <ProductImageField value={form.image_urls} onChange={onImagesChange} />
       </div>
     </div>
   );
