@@ -1,10 +1,14 @@
+import Link from "next/link";
 import { getCurrentSeller } from "@/services/seller-service";
 import { SELLER_PLANS, formatPlanPrice } from "@/config/seller-plans";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 export default async function SellerSubscriptionPage() {
   const seller = await getCurrentSeller();
   if (!seller) return null;
+
+  const needsPayment = seller.subscriptionStatus === "past_due";
 
   return (
     <div className="space-y-6">
@@ -16,6 +20,15 @@ export default async function SellerSubscriptionPage() {
             ? ` Subscription started ${new Date(seller.firstSaleAt).toLocaleDateString()}.`
             : " No charges until your first customer order."}
         </p>
+        {needsPayment ? (
+          <Link href="/seller/subscription/payment" className="mt-4 inline-block">
+            <Button size="sm">Pay subscription now</Button>
+          </Link>
+        ) : (
+          <Link href="/seller/subscription/payment" className="mt-4 inline-block">
+            <Button variant="secondary" size="sm">Manage payment method</Button>
+          </Link>
+        )}
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">

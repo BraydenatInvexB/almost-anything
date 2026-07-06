@@ -11,14 +11,9 @@ import { checkoutSchema } from "@/lib/validation/checkout";
 import { createOrder } from "@/services/order-service";
 import { saveCustomerAddressFromCheckout } from "@/services/customer-address-service";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
-import Stripe from "stripe";
-
-function getStripe(): Stripe | null {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key || key.startsWith("sk_test_xxx")) return null;
-  return new Stripe(key);
-}
+import { isSupabaseConfigured } from "@/lib/supabase/admin";
+import { isPaystackConfigured } from "@/config/paystack";
+import { checkoutPaymentPageUrl } from "@/lib/payments/payment-urls";
 
 async function persistSavedAddress(
   userId: string | null,
@@ -65,52 +60,34 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const stripe = getStripe();
-  const useStripe =
-    stripe &&
-    parsed.data.paymentMethod === "card" &&
-    Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+  const usePaystack =
+    isPaystackConfigured() &&
+    (parsed.data.paymentMethod === "card" || parsed.data.paymentMethod === "eft");
 
   try {
-    if (useStripe && stripe) {
-      const order = await createOrder(
-        { ...parsed.data, paymentMethod: "card" },
-        userId,
-      );
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(order.total * 100),
-        currency: "zar",
-        metadata: {
-          customer_email: parsed.data.shippingAddress.email,
-          order_number: order.orderNumber,
-        },
-        automatic_payment_methods: { enabled: true },
-      });
-
-      if (isSupabaseConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-        const supabase = createServiceClient();
-        await supabase
-          .from("orders")
-          .update({
-            payment_intent_id: paymentIntent.id,
-            status: "pending",
-          })
-          .eq("order_number", order.orderNumber);
+    if (parsed.data.paymentMethod === "demo") {
+      if (process.env.NODE_ENV !== "development") {
+        return secureErrorResponse("Demo checkout is disabled.", "DEMO_DISABLED", 400);
       }
 
+      const order = await createOrder(parsed.data, userId);
       await persistSavedAddress(userId, parsed.data.saveAddress, parsed.data.shippingAddress);
 
       await logApiRequest("/api/checkout", "POST", ip, 200);
       return secureJsonResponse({
         orderNumber: order.orderNumber,
-        clientSecret: paymentIntent.client_secret,
-        total: order.total,
-        subtotal: order.subtotal,
-        shipping: order.shipping,
-        tax: order.tax,
-        mode: "stripe",
+        order,
+        mode: "demo",
+        redirectUrl: `/checkout/success?orderNumber=${encodeURIComponent(order.orderNumber)}`,
       });
+    }
+
+    if (!usePaystack) {
+      return secureErrorResponse(
+        "Online payments are temporarily unavailable. Please try again later.",
+        "PAYMENTS_UNAVAILABLE",
+        503,
+      );
     }
 
     const order = await createOrder(parsed.data, userId);
@@ -119,9 +96,13 @@ export async function POST(request: NextRequest) {
     await logApiRequest("/api/checkout", "POST", ip, 200);
     return secureJsonResponse({
       orderNumber: order.orderNumber,
-      order,
-      mode: "demo",
-      message: "Order placed successfully. Our sourcing team will begin fulfillment.",
+      total: order.total,
+      subtotal: order.subtotal,
+      shipping: order.shipping,
+      tax: order.tax,
+      mode: "paystack",
+      redirectUrl: checkoutPaymentPageUrl(order.orderNumber),
+      paymentMethod: parsed.data.paymentMethod,
     });
   } catch (error) {
     await logApiRequest("/api/checkout", "POST", ip, 500);

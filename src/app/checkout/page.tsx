@@ -18,14 +18,7 @@ import { useStorefrontSettings, defaultCouriersFromSettings } from "@/hooks/useS
 import { computeStorefrontTotals } from "@/lib/pricing/storefront-totals";
 import { PromoCodeInput } from "@/components/checkout/PromoCodeInput";
 import { ShippingAddressSection } from "@/components/checkout/ShippingAddressSection";
-
-const PAYMENT_METHODS = [
-  { id: "card", label: "Credit / debit card" },
-  { id: "eft", label: "Instant EFT" },
-  ...(process.env.NODE_ENV === "development"
-    ? [{ id: "demo", label: "Demo checkout" }]
-    : []),
-];
+import { CHECKOUT_PAYMENT_METHODS } from "@/config/paystack";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -112,8 +105,15 @@ export default function CheckoutPage() {
         return;
       }
 
+      if (data.mode === "paystack" && data.redirectUrl) {
+        const url = new URL(data.redirectUrl, window.location.origin);
+        url.searchParams.set("method", paymentMethod);
+        router.push(`${url.pathname}${url.search}`);
+        return;
+      }
+
       clearCart();
-      router.push(`/checkout/success?orderNumber=${encodeURIComponent(data.orderNumber)}`);
+      router.push(data.redirectUrl ?? `/checkout/success?orderNumber=${encodeURIComponent(data.orderNumber)}`);
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -188,7 +188,7 @@ export default function CheckoutPage() {
                 Payment method
               </h2>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {PAYMENT_METHODS.map((m) => (
+                {CHECKOUT_PAYMENT_METHODS.map((m) => (
                   <label key={m.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border-2 p-3 text-sm font-medium ${paymentMethod === m.id ? "border-brand bg-brand/5" : "border-neutral-200"}`}>
                     <input type="radio" name="payment" value={m.id} checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} />
                     {m.label}
@@ -197,7 +197,7 @@ export default function CheckoutPage() {
               </div>
               <div className="mt-4 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
                 <Lock className="mb-2 h-4 w-4" />
-                Secure checkout. Payment method is recorded on your order for support and finance.
+                Secure checkout powered by Paystack. Card and Instant EFT are supported.
               </div>
             </Card>
           </div>
@@ -254,7 +254,7 @@ export default function CheckoutPage() {
             {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}
 
             <Button type="submit" className="mt-6 w-full rounded-full" isLoading={loading}>
-              Place Order · {formatCurrency(total, currency)}
+              Continue to payment · {formatCurrency(total, currency)}
             </Button>
           </Card>
         </form>
