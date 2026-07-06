@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentSeller } from "@/services/seller-service";
+import { requireApprovedSellerApi } from "@/services/seller/access-guard";
 import {
   createSellerProduct,
   listSellerProducts,
@@ -46,8 +46,10 @@ const patchSchema = z
   });
 
 export async function GET() {
-  const seller = await getCurrentSeller();
-  if (!seller || !sellerCan(seller, "products.view")) {
+  const gate = await requireApprovedSellerApi();
+  if (gate.error) return gate.error;
+  const seller = gate.seller;
+  if (!sellerCan(seller, "products.view")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const products = await listSellerProducts(seller.id);
@@ -55,8 +57,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const seller = await getCurrentSeller();
-  if (!seller || !sellerCan(seller, "products.edit")) {
+  const gate = await requireApprovedSellerApi();
+  if (gate.error) return gate.error;
+  const seller = gate.seller;
+  if (!sellerCan(seller, "products.edit")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -83,8 +87,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const seller = await getCurrentSeller();
-  if (!seller) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const gate = await requireApprovedSellerApi();
+  if (gate.error) return gate.error;
+  const seller = gate.seller;
 
   const parsed = patchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

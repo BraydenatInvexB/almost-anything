@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentSeller } from "@/services/seller-service";
+import { requireApprovedSellerApi } from "@/services/seller/access-guard";
 import { mapSellerTeamMember } from "@/lib/seller/seller-mapper";
 import { sellerDb } from "@/lib/seller/db";
 import { sellerCan } from "@/config/seller-rbac";
 
 export async function GET() {
-  const seller = await getCurrentSeller();
-  if (!seller || !sellerCan(seller, "team.view")) {
+  const gate = await requireApprovedSellerApi();
+  if (gate.error) return gate.error;
+  const seller = gate.seller;
+  if (!sellerCan(seller, "team.view")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -31,8 +33,10 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
-  const seller = await getCurrentSeller();
-  if (!seller || !sellerCan(seller, "team.manage")) {
+  const gate = await requireApprovedSellerApi();
+  if (gate.error) return gate.error;
+  const seller = gate.seller;
+  if (!sellerCan(seller, "team.manage")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

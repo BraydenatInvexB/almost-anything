@@ -12,6 +12,7 @@ import {
   Warehouse,
   Tag,
   CreditCard,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { SELLER_NAV, SELLER_NAV_GROUP_ORDER } from "@/config/seller-nav";
@@ -28,6 +29,7 @@ export const SELLER_NAV_ICONS: Record<string, LucideIcon> = {
   Warehouse,
   Tag,
   CreditCard,
+  ShieldCheck,
 };
 
 export type SellerNavGroup = {

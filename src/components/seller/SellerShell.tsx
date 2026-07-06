@@ -7,18 +7,27 @@ import { SELLER_NAV, SELLER_NAV_GROUP_ORDER } from "@/config/seller-nav";
 import { sellerCan } from "@/config/seller-rbac";
 import { SellerShellHeader, SellerShellSidebar } from "@/components/seller/SellerShellParts";
 import type { SellerNavGroup } from "@/components/seller/SellerNavList";
+import type { SellerAccessState } from "@/lib/seller/seller-access";
+
+const LOCKED_NAV_HREFS = new Set(["/seller/settings", "/seller/verification"]);
 
 export function SellerShell({
   seller,
+  access,
   children,
 }: {
   seller: SellerProfile;
+  access: SellerAccessState;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const visibleNav = SELLER_NAV.filter((item) => sellerCan(seller, item.permission));
+  const visibleNav = SELLER_NAV.filter((item) => {
+    if (!sellerCan(seller, item.permission)) return false;
+    if (!access.canUseDashboard) return LOCKED_NAV_HREFS.has(item.href);
+    return true;
+  });
 
   const groups = useMemo(
     () =>
@@ -30,6 +39,7 @@ export function SellerShell({
   );
 
   const pageTitle = useMemo(() => {
+    if (pathname.startsWith("/seller/verification")) return "Verification";
     const match = SELLER_NAV.find((item) =>
       item.href === "/seller" ? pathname === "/seller" : pathname.startsWith(item.href),
     );

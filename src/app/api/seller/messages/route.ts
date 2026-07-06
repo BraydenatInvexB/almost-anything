@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
-import { getCurrentSeller } from "@/services/seller-service";
+import { requireApprovedSellerApi } from "@/services/seller/access-guard";
 import { listUnreadSellerMessages, markSellerMessagesRead } from "@/services/admin/seller-messages";
 
 export async function GET() {
-  const seller = await getCurrentSeller();
-  if (!seller) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await requireApprovedSellerApi();
+  if (gate.error) return gate.error;
+  const seller = gate.seller;
 
   const messages = await listUnreadSellerMessages(seller.id);
   return NextResponse.json({ messages });
 }
 
 export async function PATCH(request: Request) {
-  const seller = await getCurrentSeller();
-  if (!seller) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await requireApprovedSellerApi();
+  if (gate.error) return gate.error;
+  const seller = gate.seller;
 
   const body = await request.json().catch(() => ({}));
   const messageIds = Array.isArray(body.messageIds)

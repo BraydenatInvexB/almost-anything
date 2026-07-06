@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentStaff, listAllSellers, getSellerAdminDetail, updateSellerStatus, updatePayoutStatus } from "@/services/admin-service";
+import { sellerApprovalBlockReason } from "@/lib/seller/seller-access";
 import { staffCan } from "@/config/rbac";
 import { z } from "zod";
 
@@ -34,6 +35,18 @@ export async function PATCH(request: NextRequest) {
     suspend: "suspended",
     reject: "rejected",
   } as const;
+
+  if (parsed.data.action === "approve") {
+    const detail = await getSellerAdminDetail(parsed.data.id);
+    if (!detail) {
+      return NextResponse.json({ error: "Seller not found" }, { status: 404 });
+    }
+
+    const blockReason = sellerApprovalBlockReason(detail.seller, detail.documents);
+    if (blockReason) {
+      return NextResponse.json({ error: blockReason }, { status: 400 });
+    }
+  }
 
   await updateSellerStatus(parsed.data.id, statusMap[parsed.data.action], parsed.data.notes);
   const detail = await getSellerAdminDetail(parsed.data.id);

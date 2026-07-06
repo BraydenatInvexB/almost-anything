@@ -35,6 +35,7 @@ export function SellerDetailShell({
 }) {
   const [tab, setTab] = useState<SellerTab>("overview");
   const [status, setStatus] = useState(seller.status);
+  const [documentRows, setDocumentRows] = useState(documents);
 
   return (
     <div className="space-y-6">
@@ -48,7 +49,11 @@ export function SellerDetailShell({
           <h1 className="text-2xl font-bold">{seller.shopName}</h1>
           <p className="text-neutral-600">{seller.companyName}</p>
         </div>
-        <SellerAdminActionsBar seller={seller} canManage={canManage} onStatusChange={setStatus} />
+        <SellerAdminActionsBar
+          seller={{ ...seller, status }}
+          canManage={canManage}
+          onStatusChange={setStatus}
+        />
       </div>
 
       <div className="flex flex-wrap gap-2 border-b border-neutral-200 pb-1">
@@ -72,7 +77,14 @@ export function SellerDetailShell({
       {tab === "overview" ? <SellerAdminOverviewTab seller={seller} status={status} /> : null}
       {tab === "products" ? <SellerAdminProductsTab sellerId={seller.id} canManage={canManage} /> : null}
       {tab === "messages" ? <SellerAdminMessagesTab sellerId={seller.id} canManage={canManage} /> : null}
-      {tab === "documents" ? <SellerAdminDocumentsPanel seller={seller} documents={documents} /> : null}
+      {tab === "documents" ? (
+        <SellerAdminDocumentsPanel
+          seller={{ ...seller, status }}
+          documents={documentRows}
+          canManage={canManage}
+          onUpdated={setDocumentRows}
+        />
+      ) : null}
       {tab === "payouts" ? <SellerAdminPayoutsTab payouts={payouts} /> : null}
     </div>
   );

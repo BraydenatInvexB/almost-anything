@@ -55,7 +55,8 @@ export function SellerDocumentsPanel({
 
       {onboarding ? (
         <p className="mt-4 rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 text-sm text-neutral-800">
-          Complete all required documents so our team can verify your business before you start selling.
+          Upload all required documents to unlock your seller dashboard. An admin will review and approve your
+          application after submission.
         </p>
       ) : null}
 

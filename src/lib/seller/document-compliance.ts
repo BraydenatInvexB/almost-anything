@@ -68,6 +68,22 @@ export function formatMissingDocuments(missing: SellerDocumentType[]): string {
   return missing.map((type) => getDocumentLabel(type)).join(", ");
 }
 
+export function evaluateRequiredDocumentsApproved(
+  entityType: SellerEntityType,
+  documents: SellerDocument[],
+): { isApproved: boolean; pendingRequired: SellerDocumentType[] } {
+  const grouped = groupDocumentsByType(documents);
+  const required = getRequiredDocuments(entityType);
+  const pendingRequired = required
+    .filter((spec) => !(grouped[spec.id] ?? []).some((doc) => doc.status === "approved"))
+    .map((spec) => spec.id);
+
+  return {
+    isApproved: pendingRequired.length === 0,
+    pendingRequired,
+  };
+}
+
 export function parseDocumentType(value: string): SellerDocumentType {
   const normalized = normalizeDocumentType(value);
   if (!VALID_TYPES.has(normalized)) {

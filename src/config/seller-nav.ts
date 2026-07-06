@@ -17,6 +17,7 @@ export const SELLER_NAV: SellerNavItem[] = [
   { label: "Payouts", href: "/seller/payouts", icon: "Wallet", permission: "payouts.view", group: "Sales" },
   { label: "Team", href: "/seller/team", icon: "Users", permission: "team.view", group: "Team" },
   { label: "Subscription", href: "/seller/subscription", icon: "CreditCard", permission: "settings.view", group: "Account" },
+  { label: "Verification", href: "/seller/verification", icon: "ShieldCheck", permission: "settings.view", group: "Account" },
   { label: "Settings", href: "/seller/settings", icon: "Settings", permission: "settings.view", group: "Account" },
 ];
 

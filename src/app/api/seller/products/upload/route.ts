@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { getCurrentSeller } from "@/services/seller-service";
+import { requireApprovedSellerApi } from "@/services/seller/access-guard";
 import { sellerCan } from "@/config/seller-rbac";
 import { uploadProductImage } from "@/lib/uploads/marketplace-upload";
 
 export async function POST(request: Request) {
-  const seller = await getCurrentSeller();
-  if (!seller || !sellerCan(seller, "products.edit")) {
+  const gate = await requireApprovedSellerApi();
+  if (gate.error) return gate.error;
+  const seller = gate.seller;
+  if (!sellerCan(seller, "products.edit")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

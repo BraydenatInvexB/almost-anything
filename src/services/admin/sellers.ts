@@ -75,6 +75,25 @@ export async function updateSellerStatus(
   if (error) throw error;
 }
 
+export async function updateSellerDocumentStatus(
+  documentId: string,
+  status: SellerDocument["status"],
+  notes?: string,
+): Promise<SellerDocument | null> {
+  const { data, error } = await sellerDb()
+    .from("seller_documents")
+    .update({
+      status,
+      notes: notes ?? null,
+    })
+    .eq("id", documentId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapSellerDocument(data as Record<string, unknown>) : null;
+}
+
 export async function updatePayoutStatus(
   payoutId: string,
   status: SellerPayout["status"],

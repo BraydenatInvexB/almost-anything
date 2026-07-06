@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentSeller } from "@/services/seller-service";
+import { requireApprovedSellerApi } from "@/services/seller/access-guard";
 import { sellerDb } from "@/lib/seller/db";
 import { sellerCan } from "@/config/seller-rbac";
 
 const schema = z.object({ amount: z.number().positive() });
 
 export async function POST(request: Request) {
-  const seller = await getCurrentSeller();
-  if (!seller || !sellerCan(seller, "payouts.request")) {
+  const gate = await requireApprovedSellerApi();
+  if (gate.error) return gate.error;
+  const seller = gate.seller;
+  if (!sellerCan(seller, "payouts.request")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

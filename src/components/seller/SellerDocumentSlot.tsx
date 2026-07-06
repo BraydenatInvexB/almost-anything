@@ -78,7 +78,9 @@ export function SellerDocumentSlot({
             <ul className="mt-2 space-y-1">
               {uploads.map((doc) => (
                 <li key={doc.id} className="flex items-center justify-between gap-2 text-xs text-neutral-600">
-                  <span className="truncate">{doc.fileName}</span>
+                  <span className="truncate">
+                    {doc.fileName} · <span className="capitalize">{doc.status}</span>
+                  </span>
                   <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="shrink-0 text-brand hover:underline">
                     View
                   </a>
