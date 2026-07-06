@@ -24,6 +24,7 @@ export interface DatabaseSellerTables {
       subscription_starts_at: string | null;
       first_sale_at: string | null;
       preferred_couriers: string[];
+      default_stock_origin: string;
       bank_details: Json;
       onboarding: Json;
       metadata: Json;
@@ -52,6 +53,7 @@ export interface DatabaseSellerTables {
       subscription_starts_at?: string | null;
       first_sale_at?: string | null;
       preferred_couriers?: string[];
+      default_stock_origin?: string;
       bank_details?: Json;
       onboarding?: Json;
       metadata?: Json;

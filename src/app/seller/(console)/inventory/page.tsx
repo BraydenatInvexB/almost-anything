@@ -19,6 +19,7 @@ export default async function SellerInventoryPage() {
         products={products}
         shipping={platform.shipping}
         sellerApproved={seller.status === "approved"}
+        defaultStockOrigin={seller.defaultStockOrigin}
         defaultTab="stock"
         canEdit={sellerCan(seller, "products.edit")}
         canManageStock={sellerCan(seller, "inventory.manage")}

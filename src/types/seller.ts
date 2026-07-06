@@ -16,6 +16,7 @@ import type { SellerDocumentType } from "@/config/seller-document-requirements";
 
 export type SellerTeamRole = "owner" | "manager" | "inventory" | "support" | "staff";
 export type SellerPayoutStatus = "pending" | "approved" | "paid" | "rejected";
+import type { StockOrigin } from "@/lib/admin/operations-inventory-types";
 
 export interface SellerBusinessAddress {
   line1: string;
@@ -48,6 +49,7 @@ export interface SellerProfile {
   subscriptionStartsAt?: string;
   firstSaleAt?: string;
   preferredCouriers: string[];
+  defaultStockOrigin: StockOrigin;
   role: SellerTeamRole;
   permissions: string[];
   createdAt: string;

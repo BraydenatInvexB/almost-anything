@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getCurrentStaff, getSellerAdminDetail } from "@/services/admin-service";
 import { staffCan } from "@/config/rbac";
@@ -19,11 +20,13 @@ export default async function AdminSellerDetailPage({
   if (!detail) notFound();
 
   return (
-    <SellerDetailPanel
-      seller={detail.seller}
-      documents={detail.documents}
-      payouts={detail.payouts}
-      canManage={staffCan(staff, "sellers.manage")}
-    />
+    <Suspense fallback={<div className="text-sm text-neutral-500">Loading seller…</div>}>
+      <SellerDetailPanel
+        seller={detail.seller}
+        documents={detail.documents}
+        payouts={detail.payouts}
+        canManage={staffCan(staff, "sellers.manage")}
+      />
+    </Suspense>
   );
 }

@@ -1,33 +1,82 @@
 import { normalizeListingStatus, type SellerListingStatus } from "@/config/seller-listing-status";
+import { mapSellerAdminProduct, mapSellerCatalogProduct } from "@/lib/admin/seller-product-mapper";
+import { storefrontSectionPatch } from "@/lib/product/deal-flags";
+import type { StorefrontSectionFlags } from "@/config/storefront-sections";
 import { sellerDb } from "@/lib/seller/db";
-import type { SellerAdminProduct } from "@/types/seller-admin";
+import type { SellerAdminCatalogProduct, SellerAdminProduct } from "@/types/seller-admin";
 import type { Json } from "@/types/database";
 
-function mapProduct(row: Record<string, unknown>): SellerAdminProduct {
-  const metadata = (row.metadata as Record<string, unknown> | null) ?? {};
-  return {
-    id: String(row.id),
-    name: String(row.name),
-    slug: String(row.slug),
-    retailPrice: Number(row.retail_price ?? 0),
-    stockQuantity: Number(row.stock_quantity ?? 0),
-    category: String(row.category ?? "general"),
-    listingStatus: normalizeListingStatus(row.listing_status as string | null),
-    imageUrl: row.image_url ? String(row.image_url) : undefined,
-    moderationNote: metadata.moderationNote ? String(metadata.moderationNote) : undefined,
-    updatedAt: String(row.updated_at ?? row.created_at),
-  };
+const BASE_SELECT =
+  "id, name, slug, base_price, retail_price, markup_percent, stock_quantity, category, listing_status, image_url, metadata, updated_at, created_at";
+const CATALOG_SELECT = `${BASE_SELECT}, seller_id, show_in_hot, show_in_steals, show_in_fresh_drops, is_deal, deal_discount_percent`;
+
+async function sellerNameMap(sellerIds: string[]) {
+  if (!sellerIds.length) return {};
+  const { data } = await sellerDb()
+    .from("sellers")
+    .select("id, shop_name, company_name")
+    .in("id", sellerIds);
+  return Object.fromEntries((data ?? []).map((row) => [String(row.id), row]));
 }
 
 export async function listSellerProductsForAdmin(sellerId: string): Promise<SellerAdminProduct[]> {
   const { data, error } = await sellerDb()
     .from("products")
-    .select("id, name, slug, retail_price, stock_quantity, category, listing_status, image_url, metadata, updated_at, created_at")
+    .select(BASE_SELECT)
     .eq("seller_id", sellerId)
     .order("updated_at", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []).map((row) => mapProduct(row as Record<string, unknown>));
+  return (data ?? []).map((row) => mapSellerAdminProduct(row as Record<string, unknown>));
+}
+
+export async function listAllSellerProductsForAdmin(): Promise<SellerAdminCatalogProduct[]> {
+  const { data, error } = await sellerDb()
+    .from("products")
+    .select(CATALOG_SELECT)
+    .not("seller_id", "is", null)
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+  const rows = data ?? [];
+  const sellers = await sellerNameMap([...new Set(rows.map((row) => String(row.seller_id)))]);
+
+  return rows.map((row) =>
+    mapSellerCatalogProduct(row as Record<string, unknown>, sellers[String(row.seller_id)] ?? null),
+  );
+}
+
+export async function updateSellerProductStorefront(
+  productId: string,
+  sections: StorefrontSectionFlags,
+): Promise<SellerAdminCatalogProduct> {
+  const { data: existing, error: fetchError } = await sellerDb()
+    .from("products")
+    .select(CATALOG_SELECT)
+    .eq("id", productId)
+    .not("seller_id", "is", null)
+    .maybeSingle();
+
+  if (fetchError) throw fetchError;
+  if (!existing) throw new Error("Seller product not found.");
+
+  const patch = storefrontSectionPatch(existing, sections);
+  const { data, error } = await sellerDb()
+    .from("products")
+    .update({
+      show_in_hot: patch.show_in_hot,
+      show_in_steals: patch.show_in_steals,
+      show_in_fresh_drops: patch.show_in_fresh_drops,
+      is_deal: patch.is_deal ?? existing.is_deal,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", productId)
+    .select(CATALOG_SELECT)
+    .single();
+
+  if (error) throw error;
+  const sellers = await sellerNameMap([String(data.seller_id)]);
+  return mapSellerCatalogProduct(data as Record<string, unknown>, sellers[String(data.seller_id)] ?? null);
 }
 
 export async function moderateSellerProduct(input: {
@@ -63,11 +112,11 @@ export async function moderateSellerProduct(input: {
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.productId)
-    .select("id, name, slug, retail_price, stock_quantity, category, listing_status, image_url, metadata, updated_at, created_at")
+    .select(BASE_SELECT)
     .single();
 
   if (error) throw error;
-  return mapProduct(data as Record<string, unknown>);
+  return mapSellerAdminProduct(data as Record<string, unknown>);
 }
 
 export async function countSellerProducts(sellerId: string): Promise<number> {

@@ -29,14 +29,14 @@ export function ProductImageGallery({ images, alt, className }: ProductImageGall
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
-      <div className="relative aspect-square overflow-hidden bg-neutral-100">
+      <div className="relative aspect-square overflow-hidden bg-white">
         <Image
           key={active}
           src={active}
           alt={alt}
           fill
           sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-contain p-3"
+          className="object-contain bg-white p-4"
           priority={activeIndex === 0}
           unoptimized={active.startsWith("http") && !active.includes("unsplash")}
         />
@@ -52,7 +52,7 @@ export function ProductImageGallery({ images, alt, className }: ProductImageGall
               aria-label={`View photo ${index + 1}`}
               aria-pressed={index === activeIndex}
               className={cn(
-                "relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-neutral-50 transition-colors",
+                "relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-white transition-colors",
                 index === activeIndex
                   ? "border-neutral-900"
                   : "border-neutral-200 hover:border-neutral-400",
@@ -63,7 +63,7 @@ export function ProductImageGallery({ images, alt, className }: ProductImageGall
                 alt=""
                 fill
                 sizes="64px"
-                className="object-cover"
+                className="object-contain bg-white p-1"
                 unoptimized={url.startsWith("http") && !url.includes("unsplash")}
               />
             </button>

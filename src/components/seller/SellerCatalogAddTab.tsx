@@ -14,15 +14,19 @@ import {
 import { normalizeListingStatus } from "@/config/seller-listing-status";
 import { retailFromCost } from "@/lib/seller/product-pricing";
 import { SellerPricingFields } from "@/components/seller/SellerPricingFields";
+import { SellerStockOriginField } from "@/components/seller/SellerStockOriginField";
+import type { StockOrigin } from "@/lib/admin/operations-inventory-types";
 import type { SellerCatalogProduct, SellerCatalogShipping, SellerDeliverySettings } from "@/types/seller-catalog";
 
 export function SellerCatalogAddTab({
   shipping,
   sellerApproved,
+  defaultStockOrigin,
   onAdded,
 }: {
   shipping: SellerCatalogShipping;
   sellerApproved: boolean;
+  defaultStockOrigin: StockOrigin;
   onAdded: (product: SellerCatalogProduct) => void;
 }) {
   const [images, setImages] = useState<string[]>([]);
@@ -35,6 +39,7 @@ export function SellerCatalogAddTab({
   const [deliveryDaysMin, setDeliveryDaysMin] = useState(String(SA_WAREHOUSE_DELIVERY_DAYS.min));
   const [deliveryDaysMax, setDeliveryDaysMax] = useState(String(SA_WAREHOUSE_DELIVERY_DAYS.max));
   const [delivery, setDelivery] = useState<SellerDeliverySettings>({ customerPaysDelivery: true, deliveryFeeZar: null });
+  const [stockOrigin, setStockOrigin] = useState<StockOrigin>(defaultStockOrigin);
   const [loading, setLoading] = useState<SellerSaveIntent | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -64,6 +69,7 @@ export function SellerCatalogAddTab({
           deliveryDaysMax: Number(deliveryDaysMax),
           delivery,
           saveIntent,
+          stockOrigin,
         }),
       });
       const data = await res.json();
@@ -84,7 +90,10 @@ export function SellerCatalogAddTab({
         image_url: images[0] ?? null,
         delivery_days_min: Number(deliveryDaysMin),
         delivery_days_max: Number(deliveryDaysMax),
-        metadata: { seller_delivery: { customer_pays: delivery.customerPaysDelivery, fee_zar: delivery.deliveryFeeZar } },
+        metadata: {
+          seller_delivery: { customer_pays: delivery.customerPaysDelivery, fee_zar: delivery.deliveryFeeZar },
+          stock_origin: stockOrigin,
+        },
       });
       if (saveIntent === "list") resetForm();
     } catch (err) {
@@ -102,6 +111,7 @@ export function SellerCatalogAddTab({
     setDescription("");
     setImages([]);
     setDelivery({ customerPaysDelivery: true, deliveryFeeZar: null });
+    setStockOrigin(defaultStockOrigin);
     setError("");
     setMessage("");
   }
@@ -130,6 +140,7 @@ export function SellerCatalogAddTab({
           <ProductFormField label="Description" className="sm:col-span-2">
             <textarea className="input min-h-[88px] resize-y" placeholder="Short description" value={description} onChange={(e) => setDescription(e.target.value)} />
           </ProductFormField>
+          <SellerStockOriginField value={stockOrigin} onChange={setStockOrigin} />
         </div>
       </section>
 

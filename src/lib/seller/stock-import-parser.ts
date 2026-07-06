@@ -1,3 +1,6 @@
+import { parseImportStockOrigin } from "@/lib/product/stock-origin";
+import type { StockOrigin } from "@/lib/admin/operations-inventory-types";
+
 export interface StockImportRow {
   name: string;
   sku?: string;
@@ -8,6 +11,7 @@ export interface StockImportRow {
   category?: string;
   description?: string;
   imageUrl?: string;
+  stockOrigin?: StockOrigin;
 }
 
 export function parseStockCsv(text: string): StockImportRow[] {
@@ -37,6 +41,7 @@ export function parseStockCsv(text: string): StockImportRow[] {
     const costPriceRaw = num(cols, "cost_price", "cost", "base_price");
     const markupRaw = num(cols, "markup_percent", "markup");
     const quantity = num(cols, "quantity", "stock");
+    const warehouseRaw = cols[idx("warehouse")] ?? cols[idx("stock_origin")] ?? cols[idx("origin")];
     return {
       name: cols[idx("name")] ?? cols[idx("product")] ?? "Untitled",
       sku: cols[idx("sku")] || undefined,
@@ -47,10 +52,11 @@ export function parseStockCsv(text: string): StockImportRow[] {
       category: cols[idx("category")] || undefined,
       description: cols[idx("description")] || undefined,
       imageUrl: cols[idx("image_url")] ?? (cols[idx("image")] || undefined),
+      stockOrigin: parseImportStockOrigin(warehouseRaw) ?? undefined,
     };
   });
 }
 
 export function stockImportTemplate(): string {
-  return "name,sku,cost_price,markup_percent,price,quantity,category,description,image_url\nSample Product,SKU-001,200,25,250,25,electronics,Short description,https://example.com/image.jpg";
+  return "name,sku,cost_price,markup_percent,price,quantity,warehouse,category,description,image_url\nSample Product,SKU-001,200,25,250,25,sa_warehouse,electronics,Short description,https://example.com/image.jpg";
 }

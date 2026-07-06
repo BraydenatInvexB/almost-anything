@@ -13,6 +13,8 @@ import {
   type SellerDeliverySettings,
 } from "@/lib/seller/product-pricing";
 import { parseStockCsv } from "@/lib/seller/stock-import-parser";
+import { parseStockOrigin, stockStatusForOrigin } from "@/lib/product/stock-origin";
+import type { StockOrigin } from "@/lib/admin/operations-inventory-types";
 import { sellerDb } from "@/lib/seller/db";
 import type { SellerProfile } from "@/types/seller";
 
@@ -48,6 +50,7 @@ export async function createSellerProduct(
     deliveryDaysMax?: number;
     delivery?: SellerDeliverySettings;
     saveIntent?: SellerSaveIntent;
+    stockOrigin?: StockOrigin;
   },
 ) {
   const limit = getSellerItemLimit(seller.plan);
@@ -68,9 +71,11 @@ export async function createSellerProduct(
   const slug = slugify(input.name);
   const imageUrl = input.imageUrls[0] ?? null;
   const delivery = input.delivery ?? { customerPaysDelivery: true, deliveryFeeZar: null };
+  const stockOrigin = parseStockOrigin(input.stockOrigin ?? seller.defaultStockOrigin);
   const metadata = {
     gallery: input.imageUrls,
     sellerListing: true,
+    stock_origin: stockOrigin,
     ...sellerDeliveryMetadata(delivery),
   };
 
@@ -90,7 +95,7 @@ export async function createSellerProduct(
       stock_quantity: input.stockQuantity,
       delivery_days_min: input.deliveryDaysMin ?? SA_WAREHOUSE_DELIVERY_DAYS.min,
       delivery_days_max: input.deliveryDaysMax ?? SA_WAREHOUSE_DELIVERY_DAYS.max,
-      stock_status: input.stockQuantity > 0 ? "in_stock" : "out_of_stock",
+      stock_status: stockStatusForOrigin(stockOrigin, input.stockQuantity),
       listing_status: listingStatus,
       metadata,
     })
@@ -128,6 +133,7 @@ export async function importSellerStockCsv(
         category: row.category ?? "general",
         imageUrls: row.imageUrl ? [row.imageUrl] : [],
         description: row.description,
+        stockOrigin: row.stockOrigin ?? seller.defaultStockOrigin,
         saveIntent: "list",
       });
       successCount += 1;

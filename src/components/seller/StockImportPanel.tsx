@@ -7,7 +7,7 @@ import { Panel } from "@/components/admin/ui";
 import { stockImportTemplate } from "@/lib/seller/stock-import-parser";
 import { cn } from "@/lib/utils/cn";
 
-const CSV_COLUMNS = ["name", "sku", "cost_price", "markup_percent", "price", "quantity", "category", "description", "image_url"];
+const CSV_COLUMNS = ["name", "sku", "cost_price", "markup_percent", "price", "quantity", "warehouse", "category", "description", "image_url"];
 
 export function StockImportPanel({
   embedded = false,
@@ -86,7 +86,9 @@ export function StockImportPanel({
         <p className="mt-4 text-sm font-medium text-neutral-900">
           {loading ? "Importing products…" : "Drag and drop your stock list CSV here"}
         </p>
-        <p className="mt-1 text-sm text-neutral-500">Each row becomes a product with price and stock quantity</p>
+        <p className="mt-1 text-sm text-neutral-500">
+          Each row becomes a product with price, stock quantity, and optional warehouse column
+        </p>
         <button
           type="button"
           disabled={loading}

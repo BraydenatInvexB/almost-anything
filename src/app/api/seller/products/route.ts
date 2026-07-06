@@ -28,6 +28,7 @@ const createSchema = z
     deliveryDaysMax: z.number().int().min(1).optional(),
     delivery: deliverySchema.optional(),
     saveIntent: z.enum(["draft", "list"]).default("list"),
+    stockOrigin: z.enum(["sa_warehouse", "overseas"]).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.saveIntent === "list" && data.costPrice <= 0) {

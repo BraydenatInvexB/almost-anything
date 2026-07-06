@@ -30,6 +30,7 @@ import {
   resolveRetailWithSpecial,
   specialPricingMetadata,
 } from "@/lib/product/product-special-pricing";
+import { resolveProductIsDeal } from "@/lib/product/deal-flags";
 
 interface ProductInput {
   id?: string;
@@ -182,7 +183,7 @@ export function ProductForm({
         delivery_days_min: Number(form.delivery_days_min),
         delivery_days_max: Number(form.delivery_days_max),
         image_url,
-        is_deal: special.special_enabled,
+        is_deal: resolveProductIsDeal(special.special_enabled, sections),
         deal_discount_percent: dealDiscount,
         retail_price: retailPrice,
         source_name: sourceFields.source_name,
@@ -273,9 +274,10 @@ export function ProductForm({
       <ProductFormSpecialSection form={special} update={updateSpecial} />
 
       <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-neutral-950">Storefront sections</h2>
+        <h2 className="text-sm font-semibold text-neutral-950">Homepage & Today&apos;s Deals</h2>
         <p className="mt-1 text-xs text-neutral-500">
-          Choose which homepage rows show this product. Categories are separate — this only controls Hot right now, Today&apos;s steals, and Fresh drops.
+          Turn on <span className="font-medium text-neutral-700">Deals</span> to feature this product on the homepage
+          row and the Today&apos;s Deals page. Use Special offer above for was/now discount pricing.
         </p>
         <div className="mt-4">
           <StorefrontSectionToggles value={sections} onChange={setSections} />

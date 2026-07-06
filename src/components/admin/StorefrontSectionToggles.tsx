@@ -71,7 +71,11 @@ export function StorefrontSectionToggles({
               />
               <span className="text-sm font-semibold text-neutral-900">{section.title}</span>
             </span>
-            <span className="text-[11px] leading-relaxed text-neutral-500">{section.kicker}</span>
+            <span className="text-[11px] leading-relaxed text-neutral-500">
+              {section.id === "steals"
+                ? "Homepage row + /products?deals=true"
+                : section.kicker}
+            </span>
           </label>
         );
       })}

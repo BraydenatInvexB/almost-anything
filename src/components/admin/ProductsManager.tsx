@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { EmptyState } from "@/components/admin/ui";
 import { flagsFromProduct } from "@/components/admin/StorefrontSectionToggles";
 import type { StorefrontSectionFlags } from "@/config/storefront-sections";
+import { storefrontSectionPatch } from "@/lib/product/deal-flags";
 import type { Product } from "@/types/database";
 import {
   ProductsManagerRow,
@@ -128,14 +129,22 @@ export function ProductsManager({
 
     setSectionSaving((s) => ({ ...s, [product.id]: true }));
     try {
+      const patch = storefrontSectionPatch(product, next);
       const res = await fetch("/api/admin/products", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: product.id, ...next }),
+        body: JSON.stringify({ id: product.id, ...patch }),
       });
       if (!res.ok) {
         setSections((s) => ({ ...s, [product.id]: flagsFromProduct(product) }));
       } else {
+        setItems((prev) =>
+          prev.map((p) =>
+            p.id === product.id
+              ? { ...p, ...patch, show_in_steals: patch.show_in_steals, is_deal: patch.is_deal ?? p.is_deal }
+              : p,
+          ),
+        );
         router.refresh();
       }
     } catch {
@@ -170,6 +179,12 @@ export function ProductsManager({
         </select>
       </div>
 
+      <p className="border-b border-neutral-100 px-4 pb-3 text-xs text-neutral-500">
+        Toggle <span className="font-semibold text-neutral-700">Deals</span> on a product to show it on the homepage
+        and the <span className="font-semibold text-neutral-700">Today&apos;s Deals</span> page. Edit a product to set
+        was/now pricing for discount badges.
+      </p>
+
       {filtered.length === 0 ? (
         <EmptyState
           title={query || category !== "all" ? "No products match your filters" : "No products yet"}
@@ -199,8 +214,8 @@ export function ProductsManager({
                 <th className="hidden w-[72px] px-2 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500 lg:table-cell">
                   Stock
                 </th>
-                <th className="hidden w-[120px] px-2 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500 xl:table-cell">
-                  Storefront
+                <th className="hidden w-[120px] px-2 py-2.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500 lg:table-cell">
+                  Homepage & deals
                 </th>
                 {(canEditMarkup || canEdit) && (
                   <th className="w-[96px] px-2 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-neutral-500">

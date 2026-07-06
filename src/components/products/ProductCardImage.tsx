@@ -17,7 +17,7 @@ type Props = {
 };
 
 const DEFAULT_IMAGE_CLASS =
-  "absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105";
+  "absolute inset-0 h-full w-full bg-white object-contain p-4 transition-transform duration-500 group-hover:scale-[1.03]";
 
 export function ProductCardImage({
   src,
@@ -38,7 +38,7 @@ export function ProductCardImage({
   if (!src || failed) {
     return (
       <div
-        className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-neutral-100"
+        className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white"
         aria-hidden
       >
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-lg font-bold text-neutral-300 shadow-sm">

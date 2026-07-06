@@ -59,6 +59,8 @@ export function mapSellerRow(
     preferredCouriers: Array.isArray(row.preferred_couriers)
       ? row.preferred_couriers.map(String)
       : [],
+    defaultStockOrigin:
+      row.default_stock_origin === "overseas" ? "overseas" : "sa_warehouse",
     role: role as SellerProfile["role"],
     permissions,
     createdAt: String(row.created_at),

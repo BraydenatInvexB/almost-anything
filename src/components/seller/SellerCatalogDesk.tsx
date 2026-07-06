@@ -13,6 +13,7 @@ import { SellerCatalogProductsTab } from "@/components/seller/SellerCatalogProdu
 import { SellerCatalogStockTab } from "@/components/seller/SellerCatalogStockTab";
 import { StockImportPanel } from "@/components/seller/StockImportPanel";
 import type { SellerCatalogProduct, SellerCatalogShipping, SellerCatalogTab } from "@/types/seller-catalog";
+import type { StockOrigin } from "@/lib/admin/operations-inventory-types";
 
 const TABS: { id: SellerCatalogTab; label: string }[] = [
   { id: "products", label: "Catalog" },
@@ -25,6 +26,7 @@ export function SellerCatalogDesk({
   products: initialProducts,
   shipping,
   sellerApproved,
+  defaultStockOrigin,
   defaultTab = "products",
   canEdit,
   canManageStock,
@@ -32,6 +34,7 @@ export function SellerCatalogDesk({
   products: SellerCatalogProduct[];
   shipping: SellerCatalogShipping;
   sellerApproved: boolean;
+  defaultStockOrigin: StockOrigin;
   defaultTab?: SellerCatalogTab;
   canEdit: boolean;
   canManageStock: boolean;
@@ -121,6 +124,7 @@ export function SellerCatalogDesk({
         <SellerCatalogAddTab
           shipping={shipping}
           sellerApproved={sellerApproved}
+          defaultStockOrigin={defaultStockOrigin}
           onAdded={(product) => {
             setProducts((prev) => [product, ...prev]);
             setTab("products");

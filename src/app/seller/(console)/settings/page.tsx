@@ -2,6 +2,7 @@ import { getCurrentSeller, listSellerDocuments } from "@/services/seller-service
 import { getSellerPlatformContext } from "@/services/seller/platform-context";
 import { SellerDocumentsPanel } from "@/components/seller/SellerDocumentsPanel";
 import { SellerDeliveryPartnersPanel } from "@/components/seller/SellerDeliveryPartnersPanel";
+import { SellerStockDefaultsPanel } from "@/components/seller/SellerStockDefaultsPanel";
 import { PaymentGatewayFeesNotice } from "@/components/seller/PaymentGatewayFeesNotice";
 import { Card } from "@/components/ui/Card";
 import { getSellerEntityLabel } from "@/config/seller-entity-types";
@@ -40,6 +41,8 @@ export default async function SellerSettingsPage({
         documents={documents}
         onboarding={Boolean(params.onboarding)}
       />
+
+      <SellerStockDefaultsPanel defaultStockOrigin={seller.defaultStockOrigin} />
 
       <SellerDeliveryPartnersPanel
         couriers={platform.couriers}

@@ -139,7 +139,7 @@ export function ProductsManagerRow({
           {compactStockLabel(product.stock_status)}
         </span>
       </td>
-      <td className="hidden px-2 py-2.5 xl:table-cell">
+      <td className="hidden px-2 py-2.5 lg:table-cell">
         <StorefrontSectionToggles
           compact
           disabled={!canEdit || sectionSaving}

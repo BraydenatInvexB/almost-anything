@@ -103,7 +103,9 @@ function applyFilters(options: SeedFilterOptions): Product[] {
     results = results.filter((p) => p.category === category);
   }
   if (featuredOnly) results = results.filter((p) => p.is_featured);
-  if (dealsOnly) results = results.filter((p) => p.is_deal);
+  if (dealsOnly) {
+    results = results.filter((p) => p.is_deal || p.show_in_steals);
+  }
   if (section) {
     const col = STOREFRONT_SECTION_BY_ID[section].column;
     results = results.filter((p) => Boolean(p[col]));

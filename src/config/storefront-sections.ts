@@ -24,11 +24,11 @@ export const STOREFRONT_SECTIONS: StorefrontSection[] = [
   {
     id: "steals",
     column: "show_in_steals",
-    title: "Today's steals",
-    kicker: "Limited time",
-    shortLabel: "Steals",
-    shopHref: "/products?section=steals",
-    shopCta: "All steals",
+    title: "Today's Deals",
+    kicker: "Limited-time offers",
+    shortLabel: "Deals",
+    shopHref: "/products?deals=true",
+    shopCta: "All deals",
   },
   {
     id: "fresh",

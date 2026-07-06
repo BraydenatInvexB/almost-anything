@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatPlanPrice } from "@/config/seller-plans";
+import { SellerNeedsAttentionButton } from "@/components/admin/SellerNeedsAttentionButton";
 import type { SellerProfile } from "@/types/seller";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -18,9 +19,11 @@ const STATUS_COLORS: Record<string, string> = {
 export function SellersDesk({
   sellers,
   productCounts,
+  canManage = false,
 }: {
   sellers: SellerProfile[];
   productCounts: Record<string, number>;
+  canManage?: boolean;
 }) {
   if (!sellers.length) {
     return (
@@ -68,9 +71,14 @@ export function SellersDesk({
                   {new Date(seller.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/sellers/${seller.id}`}>
-                    <Button variant="secondary" size="sm">Manage</Button>
-                  </Link>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {canManage ? (
+                      <SellerNeedsAttentionButton sellerId={seller.id} shopName={seller.shopName} />
+                    ) : null}
+                    <Link href={`/admin/sellers/${seller.id}`}>
+                      <Button variant="secondary" size="sm">Manage</Button>
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}

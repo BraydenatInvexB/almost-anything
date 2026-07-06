@@ -118,7 +118,7 @@ async function querySupabaseProducts(
     }
 
     if (options.dealsOnly) {
-      query = query.eq("is_deal", true);
+      query = query.or("is_deal.eq.true,show_in_steals.eq.true");
     }
 
     if (options.section) {

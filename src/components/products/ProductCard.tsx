@@ -7,6 +7,7 @@ import { FavoriteButton } from "@/components/products/FavoriteButton";
 import { AddToCartButton } from "@/components/products/AddToCartButton";
 import { ProductCardImage } from "@/components/products/ProductCardImage";
 import { getCategory } from "@/config/categories";
+import { warehouseBadgeFromLabel } from "@/lib/product/stock-origin";
 import type { ProductCardData } from "@/types";
 import { cn, formatRating } from "@/lib/utils/cn";
 
@@ -17,12 +18,12 @@ interface ProductCardProps {
 
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   const categoryMeta = getCategory(product.category);
-  const isSaWarehouse = product.warehouseLabel?.includes("South Africa");
+  const warehouseBadge = warehouseBadgeFromLabel(product.warehouseLabel);
 
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-all duration-200 hover:border-neutral-900 hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]">
       {/* Fixed-ratio media — must not collapse when image uses position:absolute */}
-      <div className="relative w-full shrink-0 overflow-hidden bg-neutral-100 [aspect-ratio:1/1]">
+      <div className="relative w-full shrink-0 overflow-hidden bg-white [aspect-ratio:1/1]">
         <Link
           href={`/products/${product.slug}`}
           className="absolute inset-0 z-0 block"
@@ -60,31 +61,33 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
       <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
         <Link
           href={`/products/${product.slug}`}
-          className="min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+          className="block min-h-[2.75rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:min-h-[3rem]"
         >
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-neutral-900 transition-colors group-hover:text-brand sm:text-[15px]">
             {product.name}
           </h3>
         </Link>
 
-        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+        <div className="mt-2 flex min-h-[1.375rem] min-w-0 flex-wrap items-center gap-1.5">
           {product.rating > 0 && (product.reviewCount ?? 0) > 0 ? (
             <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
               {formatRating(product.rating)}
             </span>
           ) : null}
+        </div>
 
-          {product.warehouseLabel ? (
+        <div className="mt-1.5 flex min-h-[1.375rem] items-center">
+          {warehouseBadge ? (
             <span
               className={cn(
                 "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                isSaWarehouse
+                warehouseBadge.isSa
                   ? "bg-emerald-50 text-emerald-800"
                   : "bg-sky-50 text-sky-800",
               )}
             >
-              {isSaWarehouse ? "SA warehouse" : "International"}
+              {warehouseBadge.text}
             </span>
           ) : product.stockLabel ? (
             <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">

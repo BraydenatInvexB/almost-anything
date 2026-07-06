@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { SellerAdminActionsBar } from "@/components/admin/SellerAdminActionsBar";
@@ -27,15 +28,26 @@ export function SellerDetailShell({
   documents,
   payouts,
   canManage,
+  initialTab,
 }: {
   seller: SellerProfile;
   documents: SellerDocument[];
   payouts: SellerPayout[];
   canManage: boolean;
+  initialTab?: SellerTab;
 }) {
-  const [tab, setTab] = useState<SellerTab>("overview");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as SellerTab | null;
+  const defaultTab = tabParam && TABS.some((t) => t.id === tabParam) ? tabParam : initialTab ?? "overview";
+  const [tab, setTab] = useState<SellerTab>(defaultTab);
   const [status, setStatus] = useState(seller.status);
   const [documentRows, setDocumentRows] = useState(documents);
+
+  useEffect(() => {
+    if (tabParam && TABS.some((t) => t.id === tabParam)) {
+      setTab(tabParam);
+    }
+  }, [tabParam]);
 
   return (
     <div className="space-y-6">
@@ -85,7 +97,14 @@ export function SellerDetailShell({
           onUpdated={setDocumentRows}
         />
       ) : null}
-      {tab === "payouts" ? <SellerAdminPayoutsTab payouts={payouts} /> : null}
+      {tab === "payouts" ? (
+        <SellerAdminPayoutsTab
+          sellerId={seller.id}
+          shopName={seller.shopName}
+          payouts={payouts}
+          canManage={canManage}
+        />
+      ) : null}
     </div>
   );
 }
