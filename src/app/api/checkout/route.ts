@@ -6,8 +6,10 @@ import {
   getClientIp,
   logApiRequest,
 } from "@/lib/security/api";
+import type { ShippingAddress } from "@/types/cart";
 import { checkoutSchema } from "@/lib/validation/checkout";
 import { createOrder } from "@/services/order-service";
+import { saveCustomerAddressFromCheckout } from "@/services/customer-address-service";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/admin";
 import Stripe from "stripe";
@@ -16,6 +18,19 @@ function getStripe(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key || key.startsWith("sk_test_xxx")) return null;
   return new Stripe(key);
+}
+
+async function persistSavedAddress(
+  userId: string | null,
+  saveAddress: boolean | undefined,
+  shippingAddress: ShippingAddress,
+) {
+  if (!userId || saveAddress === false) return;
+  try {
+    await saveCustomerAddressFromCheckout(userId, shippingAddress);
+  } catch {
+    // Address save is best-effort and must not block checkout.
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -84,6 +99,8 @@ export async function POST(request: NextRequest) {
           .eq("order_number", order.orderNumber);
       }
 
+      await persistSavedAddress(userId, parsed.data.saveAddress, parsed.data.shippingAddress);
+
       await logApiRequest("/api/checkout", "POST", ip, 200);
       return secureJsonResponse({
         orderNumber: order.orderNumber,
@@ -97,6 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     const order = await createOrder(parsed.data, userId);
+    await persistSavedAddress(userId, parsed.data.saveAddress, parsed.data.shippingAddress);
 
     await logApiRequest("/api/checkout", "POST", ip, 200);
     return secureJsonResponse({

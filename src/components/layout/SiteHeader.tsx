@@ -173,6 +173,7 @@ export function SiteHeader({ activeCategory, searchQuery = "", variant = "page" 
     const navLinks = [
       { label: "Shop all", href: "/products" },
       { label: "Deals", href: "/products?deals=true" },
+      { label: "Businesses", href: "/businesses" },
       { label: "Track", href: "/track" },
     ];
 

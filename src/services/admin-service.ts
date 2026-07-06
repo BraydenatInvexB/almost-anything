@@ -32,6 +32,7 @@ export {
   listAdminCouriers,
 } from "./admin/settings";
 export { getAdminNotificationSummary } from "./admin/notifications";
+export { listAllSellers, getSellerAdminDetail, updateSellerStatus, updatePayoutStatus } from "./admin/sellers";
 export type {
   AdminOrderSummary,
   AdminOrderLineItem,

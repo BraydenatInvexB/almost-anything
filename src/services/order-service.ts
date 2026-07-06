@@ -15,6 +15,7 @@ import {
 } from "@/lib/orders/order-service-helpers";
 import { generateOrderNumber, normalizeOrderNumber } from "@/lib/orders/order-number";
 import { resolveOrderPromo } from "@/lib/promo/validate-checkout-promo";
+import { activateSellerSubscriptionOnFirstSale } from "@/services/seller/subscription";
 
 export async function createOrder(
   payload: CheckoutPayload,
@@ -108,6 +109,11 @@ export async function createOrder(
             },
           })),
         );
+
+        const productIds = payload.items
+          .map((item) => item.productId)
+          .filter((id): id is string => Boolean(id));
+        await activateSellerSubscriptionOnFirstSale(productIds);
 
         if (payload.paymentMethod === "demo") {
           await supabase

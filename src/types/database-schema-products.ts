@@ -33,6 +33,9 @@ export interface DatabaseProductsTables {
       show_in_hot: boolean;
       show_in_steals: boolean;
       show_in_fresh_drops: boolean;
+      seller_id: string | null;
+      listing_status: string | null;
+      stock_quantity: number;
       metadata: Json;
       created_at: string;
       updated_at: string;
@@ -63,6 +66,9 @@ export interface DatabaseProductsTables {
       show_in_hot?: boolean;
       show_in_steals?: boolean;
       show_in_fresh_drops?: boolean;
+      seller_id?: string | null;
+      listing_status?: string | null;
+      stock_quantity?: number;
       metadata?: Json;
       created_at?: string;
       updated_at?: string;

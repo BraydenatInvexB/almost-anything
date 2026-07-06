@@ -40,6 +40,7 @@ export const checkoutSchema = z.object({
   shippingInternalCost: z.number().min(0).optional(),
   customerShippingCharge: z.number().min(0).optional(),
   promoCode: z.string().min(2).max(40).optional(),
+  saveAddress: z.boolean().optional().default(true),
 });
 
 export const sourcingRequestSchema = z.object({

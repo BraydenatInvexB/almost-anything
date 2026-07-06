@@ -67,6 +67,9 @@ export function product(p: SeedInput): SeedProduct {
     show_in_hot: p.hot ?? p.featured ?? false,
     show_in_steals: p.steals ?? p.deal !== undefined,
     show_in_fresh_drops: p.fresh ?? p.badge === "New",
+    seller_id: null,
+    listing_status: "published",
+    stock_quantity: 0,
     metadata: {
       ...(p.badge ? { badge: p.badge } : {}),
       ...(p.variants ? { variants: p.variants } : {}),

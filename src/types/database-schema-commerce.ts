@@ -74,6 +74,10 @@ export interface DatabaseCommerceTables {
       quantity: number;
       image_url: string | null;
       metadata: Json;
+      seller_id: string | null;
+      seller_fulfilled: boolean;
+      seller_tracking_number: string | null;
+      seller_courier: string | null;
       created_at: string;
     };
     Insert: {
@@ -88,9 +92,93 @@ export interface DatabaseCommerceTables {
       quantity?: number;
       image_url?: string | null;
       metadata?: Json;
+      seller_id?: string | null;
+      seller_fulfilled?: boolean;
+      seller_tracking_number?: string | null;
+      seller_courier?: string | null;
       created_at?: string;
     };
     Update: Partial<DatabaseCommerceTables["order_items"]["Insert"]>;
+    Relationships: [];
+  };
+  customer_addresses: {
+    Row: {
+      id: string;
+      user_id: string;
+      label: string | null;
+      full_name: string;
+      phone: string;
+      address_line1: string;
+      address_line2: string | null;
+      city: string;
+      state: string;
+      postal_code: string;
+      country: string;
+      is_default: boolean;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      user_id: string;
+      label?: string | null;
+      full_name: string;
+      phone: string;
+      address_line1: string;
+      address_line2?: string | null;
+      city: string;
+      state: string;
+      postal_code: string;
+      country?: string;
+      is_default?: boolean;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: Partial<DatabaseCommerceTables["customer_addresses"]["Insert"]>;
+    Relationships: [];
+  };
+  promo_codes: {
+    Row: {
+      id: string;
+      code: string;
+      label: string | null;
+      status: string;
+      discount_type: string;
+      discount_value: number;
+      scope: string;
+      product_ids: string[];
+      category_slugs: string[];
+      min_order_amount: number | null;
+      max_discount_amount: number | null;
+      starts_at: string | null;
+      ends_at: string | null;
+      usage_limit: number | null;
+      usage_count: number;
+      seller_id: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      code: string;
+      label?: string | null;
+      status?: string;
+      discount_type?: string;
+      discount_value: number;
+      scope?: string;
+      product_ids?: string[];
+      category_slugs?: string[];
+      min_order_amount?: number | null;
+      max_discount_amount?: number | null;
+      starts_at?: string | null;
+      ends_at?: string | null;
+      usage_limit?: number | null;
+      usage_count?: number;
+      seller_id?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: Partial<DatabaseCommerceTables["promo_codes"]["Insert"]>;
     Relationships: [];
   };
 }

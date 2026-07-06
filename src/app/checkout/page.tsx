@@ -7,7 +7,6 @@ import { ArrowLeft, Lock, CreditCard, Truck } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/context/CartProvider";
 import { usePromo } from "@/context/PromoProvider";
@@ -18,6 +17,7 @@ import { COURIERS } from "@/config/couriers";
 import { useStorefrontSettings, defaultCouriersFromSettings } from "@/hooks/useStorefrontSettings";
 import { computeStorefrontTotals } from "@/lib/pricing/storefront-totals";
 import { PromoCodeInput } from "@/components/checkout/PromoCodeInput";
+import { ShippingAddressSection } from "@/components/checkout/ShippingAddressSection";
 
 const PAYMENT_METHODS = [
   { id: "card", label: "Credit / debit card" },
@@ -31,12 +31,13 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   const { applied, discountAmount } = usePromo();
-  const { user } = useAuth();
+  const { user, isConfigured } = useAuth();
   const { settings } = useStorefrontSettings();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [courierId, setCourierId] = useState("aramex");
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [saveAddress, setSaveAddress] = useState(true);
 
   const [address, setAddress] = useState<ShippingAddress>({
     fullName: "",
@@ -56,6 +57,7 @@ export default function CheckoutPage() {
       ...prev,
       fullName: prev.fullName || (user.user_metadata?.full_name as string) || "",
       email: prev.email || user.email || "",
+      phone: prev.phone || (user.user_metadata?.phone as string) || "",
     }));
   }, [user]);
 
@@ -99,6 +101,7 @@ export default function CheckoutPage() {
           shippingInternalCost: shippingCalc.internalCost,
           customerShippingCharge: shipping,
           promoCode: applied?.code,
+          saveAddress: Boolean(user && isConfigured && saveAddress),
         }),
       });
 
@@ -147,23 +150,14 @@ export default function CheckoutPage() {
 
         <form onSubmit={handleCheckout} className="mt-8 grid gap-8 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
-            <Card variant="elevated" className="bg-white p-6">
-              <h2 className="text-lg font-semibold">Shipping Address</h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <Input placeholder="Full name" value={address.fullName} onChange={(e) => setAddress({ ...address, fullName: e.target.value })} required className="rounded-2xl" />
-                </div>
-                <Input type="email" placeholder="Email" value={address.email} onChange={(e) => setAddress({ ...address, email: e.target.value })} required className="rounded-2xl" />
-                <Input placeholder="Phone" value={address.phone} onChange={(e) => setAddress({ ...address, phone: e.target.value })} required className="rounded-2xl" />
-                <div className="sm:col-span-2">
-                  <Input placeholder="Address line 1" value={address.addressLine1} onChange={(e) => setAddress({ ...address, addressLine1: e.target.value })} required className="rounded-2xl" />
-                </div>
-                <Input placeholder="City" value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} required className="rounded-2xl" />
-                <Input placeholder="Province" value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })} required className="rounded-2xl" />
-                <Input placeholder="Postal code" value={address.postalCode} onChange={(e) => setAddress({ ...address, postalCode: e.target.value })} required className="rounded-2xl" />
-                <Input placeholder="Country" value={address.country} onChange={(e) => setAddress({ ...address, country: e.target.value })} required className="rounded-2xl" />
-              </div>
-            </Card>
+            <ShippingAddressSection
+              isLoggedIn={Boolean(user && isConfigured)}
+              userEmail={user?.email}
+              address={address}
+              onAddressChange={setAddress}
+              saveForLater={saveAddress}
+              onSaveForLaterChange={setSaveAddress}
+            />
 
             <Card variant="elevated" className="bg-white p-6">
               <h2 className="flex items-center gap-2 text-lg font-semibold">

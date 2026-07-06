@@ -33,21 +33,16 @@ export const FOOTER_NAV = [
     ],
   },
   {
-    title: "Company",
-    links: [
-      { label: "About Us", href: "/about" },
-      { label: "Contact Us", href: `mailto:${SITE_CONFIG.supportEmail}` },
-    ],
-  },
-  {
     title: "Legal",
     links: [
+      { label: "About Us", href: "/about" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms & Conditions", href: "/terms" },
       { label: "Refund Policy", href: "/refund-policy" },
       { label: "Cookie Policy", href: "/cookies" },
       { label: "Shipping Policy", href: "/help/shipping" },
       { label: "Returns Policy", href: "/help/returns" },
+      { label: "Contact Us", href: `mailto:${SITE_CONFIG.supportEmail}` },
     ],
   },
 ] as const;

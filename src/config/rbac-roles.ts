@@ -27,6 +27,8 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
     "searches.view",
     "settings.view",
     "activity.view",
+    "sellers.view",
+    "sellers.manage",
   ],
   support_agent: [
     "dashboard.view",

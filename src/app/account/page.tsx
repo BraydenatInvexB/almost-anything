@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Package, Heart, LogOut, User, RotateCcw, Shield } from "lucide-react";
+import { Package, Heart, LogOut, User, RotateCcw, Shield, MapPin } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Card } from "@/components/ui/Card";
@@ -134,6 +134,19 @@ export default function AccountPage() {
                   <h3 className="mt-3 font-semibold">Returns</h3>
                   <p className="mt-1 text-sm text-neutral-500">
                     Request and track return requests
+                  </p>
+                </Card>
+              </Link>
+
+              <Link href="/account/addresses">
+                <Card
+                  variant="elevated"
+                  className="bg-white p-6 transition-shadow hover:shadow-md"
+                >
+                  <MapPin className="h-8 w-8 text-neutral-600" />
+                  <h3 className="mt-3 font-semibold">Addresses</h3>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    Saved shipping addresses for checkout
                   </p>
                 </Card>
               </Link>

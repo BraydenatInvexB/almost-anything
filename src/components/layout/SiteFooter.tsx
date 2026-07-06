@@ -8,7 +8,21 @@ import {
   FOOTER_PAYMENTS,
   FOOTER_CATEGORIES,
 } from "@/config/footer";
+import { FOOTER_SELLER_LINKS, FOOTER_SELLER_TITLE } from "@/config/seller-footer";
 import { FooterNewsletter } from "@/components/layout/FooterNewsletter";
+
+const FOOTER_TITLE_CLASS =
+  "min-h-11 text-sm font-semibold leading-snug tracking-wide text-brand";
+const FOOTER_LINK_CLASS =
+  "block text-sm leading-5 text-neutral-600 transition-colors hover:text-neutral-900";
+const FOOTER_LINK_HIGHLIGHT_CLASS =
+  "block text-sm font-medium leading-5 text-brand transition-colors hover:text-brand/80";
+
+export interface FooterLinkItem {
+  label: string;
+  href: string;
+  highlight?: boolean;
+}
 
 function FooterColumn({
   title,
@@ -18,9 +32,9 @@ function FooterColumn({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-col">
-      <h3 className="text-sm font-semibold tracking-wide text-brand">{title}</h3>
-      <div className="mt-4 flex-1">{children}</div>
+    <div className="flex min-w-0 flex-col items-start">
+      <h3 className={FOOTER_TITLE_CLASS}>{title}</h3>
+      <div className="mt-4 w-full">{children}</div>
     </div>
   );
 }
@@ -29,13 +43,14 @@ function FooterLink({
   href,
   children,
   external,
+  highlight,
 }: {
   href: string;
   children: ReactNode;
   external?: boolean;
+  highlight?: boolean;
 }) {
-  const className =
-    "text-sm leading-relaxed text-neutral-600 transition-colors hover:text-neutral-900";
+  const className = highlight ? FOOTER_LINK_HIGHLIGHT_CLASS : FOOTER_LINK_CLASS;
 
   if (external || href.startsWith("mailto:")) {
     return (
@@ -49,6 +64,24 @@ function FooterLink({
     <Link href={href} className={className}>
       {children}
     </Link>
+  );
+}
+
+function FooterLinkList({ links }: { links: readonly FooterLinkItem[] }) {
+  return (
+    <ul className="flex flex-col gap-2.5">
+      {links.map((link) => (
+        <li key={link.label} className="min-h-5">
+          <FooterLink
+            href={link.href}
+            external={link.href.startsWith("mailto:")}
+            highlight={link.highlight}
+          >
+            {link.label}
+          </FooterLink>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -80,19 +113,21 @@ function SocialIcon({ label }: { label: string }) {
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
-  const topCategories = FOOTER_CATEGORIES.slice(0, 5);
+  const categoryLinks: FooterLinkItem[] = [
+    ...FOOTER_CATEGORIES.slice(0, 5).map((cat) => ({ label: cat.label, href: cat.href })),
+    { label: "All categories", href: "/categories", highlight: true },
+  ];
 
   return (
     <footer className="mt-auto border-t border-neutral-200 bg-white text-neutral-900">
       <div className="mx-auto max-w-[1400px] px-8 py-14 lg:px-12 lg:py-16">
-        <div className="flex flex-col gap-14 lg:flex-row lg:items-start lg:gap-16 xl:gap-24">
-          {/* Brand column — logo, contact, socials */}
-          <div className="w-full shrink-0 lg:w-72 xl:w-80">
+        <div className="flex flex-col gap-14 lg:flex-row lg:items-start lg:gap-16 xl:gap-20">
+          <div className="w-full shrink-0 lg:w-64 xl:w-72">
             <SiteLogo variant="full" />
             <p className="mt-10 text-sm font-semibold text-neutral-900">Contact</p>
             <a
               href={`mailto:${SITE_CONFIG.supportEmail}`}
-              className="mt-2 block text-sm text-neutral-600 transition-colors hover:text-neutral-900"
+              className="mt-2 block text-sm leading-5 text-neutral-600 transition-colors hover:text-neutral-900"
             >
               {SITE_CONFIG.supportEmail}
             </a>
@@ -117,45 +152,26 @@ export function SiteFooter() {
             )}
           </div>
 
-          {/* Nav + newsletter — top-aligned with logo */}
-          <div className="flex min-w-0 flex-1 flex-col gap-12 lg:gap-14">
-            <div className="grid grid-cols-2 gap-x-10 gap-y-12 sm:grid-cols-3 sm:gap-x-12 lg:grid-cols-3 lg:gap-y-14 xl:grid-cols-6 xl:gap-x-10 2xl:gap-x-14">
+          <div className="flex min-w-0 flex-1 flex-col gap-12">
+            <div className="grid grid-cols-2 items-start gap-x-8 gap-y-10 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 xl:gap-x-10 xl:gap-y-0">
               {FOOTER_NAV.map((col) => (
                 <FooterColumn key={col.title} title={col.title}>
-                  <ul className="space-y-3.5">
-                    {col.links.map((link) => (
-                      <li key={link.label}>
-                        <FooterLink href={link.href} external={link.href.startsWith("mailto:")}>
-                          {link.label}
-                        </FooterLink>
-                      </li>
-                    ))}
-                  </ul>
+                  <FooterLinkList links={col.links} />
                 </FooterColumn>
               ))}
 
+              <FooterColumn title={FOOTER_SELLER_TITLE}>
+                <FooterLinkList links={FOOTER_SELLER_LINKS} />
+              </FooterColumn>
+
               <FooterColumn title="Categories">
-                <ul className="space-y-3.5">
-                  {topCategories.map((cat) => (
-                    <li key={cat.href}>
-                      <FooterLink href={cat.href}>{cat.label}</FooterLink>
-                    </li>
-                  ))}
-                  <li>
-                    <Link
-                      href="/categories"
-                      className="text-sm font-medium text-brand transition-colors hover:text-brand/80"
-                    >
-                      All categories
-                    </Link>
-                  </li>
-                </ul>
+                <FooterLinkList links={categoryLinks} />
               </FooterColumn>
             </div>
 
-            <div className="max-w-xl pt-2">
-              <p className="text-sm font-semibold tracking-wide text-brand">Stay in the loop</p>
-              <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+            <div className="max-w-xl border-t border-neutral-100 pt-10">
+              <p className={FOOTER_TITLE_CLASS}>Stay in the loop</p>
+              <p className="mt-4 text-sm leading-relaxed text-neutral-600">
                 New arrivals, member deals, and exclusive offers.
               </p>
               <div className="mt-5">
@@ -166,7 +182,6 @@ export function SiteFooter() {
         </div>
       </div>
 
-      {/* Bottom bar */}
       <div className="border-t border-neutral-200">
         <div className="mx-auto max-w-[1400px] px-8 py-7 lg:px-12">
           <div className="flex flex-col items-center gap-5 text-center lg:flex-row lg:justify-between lg:text-left">

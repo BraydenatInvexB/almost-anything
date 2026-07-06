@@ -10,9 +10,10 @@ type Mode = "upload" | "url";
 interface ProductImageFieldProps {
   value: string[];
   onChange: (urls: string[]) => void;
+  uploadUrl?: string;
 }
 
-export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
+export function ProductImageField({ value, onChange, uploadUrl = "/api/admin/products/upload" }: ProductImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<Mode>("upload");
   const [uploading, setUploading] = useState(false);
@@ -27,7 +28,7 @@ export function ProductImageField({ value, onChange }: ProductImageFieldProps) {
     try {
       const body = new FormData();
       body.append("file", file);
-      const res = await fetch("/api/admin/products/upload", { method: "POST", body });
+      const res = await fetch(uploadUrl, { method: "POST", body });
       const data = await res.json();
       if (!res.ok) {
         setUploadError(data.error ?? "Upload failed");

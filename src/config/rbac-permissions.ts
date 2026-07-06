@@ -28,7 +28,9 @@ export type Permission =
   | "hr.manage"
   | "settings.view"
   | "settings.manage"
-  | "activity.view";
+  | "activity.view"
+  | "sellers.view"
+  | "sellers.manage";
 
 export const ALL_PERMISSIONS: Permission[] = [
   "dashboard.view",
@@ -61,4 +63,6 @@ export const ALL_PERMISSIONS: Permission[] = [
   "settings.view",
   "settings.manage",
   "activity.view",
+  "sellers.view",
+  "sellers.manage",
 ];

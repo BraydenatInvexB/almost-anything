@@ -14,6 +14,8 @@ import type { DatabaseAdminTables } from "@/types/database-schema-admin";
 import type { DatabaseCommerceTables } from "@/types/database-schema-commerce";
 import type { DatabaseProductsTables } from "@/types/database-schema-products";
 
+import type { DatabaseSellerTables } from "@/types/database-schema-sellers";
+
 export type Database = {
   public: {
     Tables: {
@@ -25,6 +27,13 @@ export type Database = {
       api_audit_log: DatabaseCommerceTables["api_audit_log"];
       orders: DatabaseCommerceTables["orders"];
       order_items: DatabaseCommerceTables["order_items"];
+      customer_addresses: DatabaseCommerceTables["customer_addresses"];
+      promo_codes: DatabaseCommerceTables["promo_codes"];
+      sellers: DatabaseSellerTables["sellers"];
+      seller_documents: DatabaseSellerTables["seller_documents"];
+      seller_team_members: DatabaseSellerTables["seller_team_members"];
+      seller_payouts: DatabaseSellerTables["seller_payouts"];
+      seller_stock_imports: DatabaseSellerTables["seller_stock_imports"];
       staff_members: DatabaseAdminTables["staff_members"];
       platform_settings: DatabaseAdminTables["platform_settings"];
       support_tickets: DatabaseAdminTables["support_tickets"];
