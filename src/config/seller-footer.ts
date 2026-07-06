@@ -10,7 +10,7 @@ export const FOOTER_SELLER_TITLE = "Sell with us";
 export const FOOTER_SELLER_LINKS: readonly FooterSellerLink[] = [
   { label: "Why sell with us", href: "/sell" },
   { label: "Start selling", href: "/sell/register" },
-  { label: "Seller sign in", href: "/login?redirect=/seller" },
+  { label: "Seller sign in", href: "/seller/login" },
   { label: "Browse businesses", href: "/businesses" },
   { label: "Pricing & plans", href: "/sell#pricing" },
 ];

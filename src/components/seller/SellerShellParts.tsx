@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ExternalLink, Menu, X } from "lucide-react";
 import { SITE_CONFIG } from "@/config/site";
+import { SELLER_LOGIN_PATH } from "@/config/console-auth";
 import { ConsoleSignOutButton } from "@/components/layout/ConsoleSignOutButton";
 import { SellerNavList, type SellerNavGroup } from "@/components/seller/SellerNavList";
 import type { SellerProfile } from "@/types/seller";
@@ -48,7 +49,7 @@ export function SellerShellSidebar({
         <ExternalLink className="h-4 w-4" />
         View storefront
       </Link>
-      <ConsoleSignOutButton redirectTo="/login?redirect=/seller" />
+      <ConsoleSignOutButton redirectTo={SELLER_LOGIN_PATH} />
     </>
   );
 
@@ -102,7 +103,7 @@ export function SellerShellHeader({
         <Link href="/sell" className="hidden text-sm font-medium text-brand hover:underline sm:inline">
           Seller resources
         </Link>
-        <ConsoleSignOutButton redirectTo="/login?redirect=/seller" variant="header" />
+        <ConsoleSignOutButton redirectTo={SELLER_LOGIN_PATH} variant="header" />
       </div>
     </header>
   );

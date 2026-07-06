@@ -14,8 +14,10 @@ export default function SellRegisterPage() {
           <p className="text-sm font-semibold uppercase tracking-wide text-brand">Seller application</p>
           <h1 className="mt-2 text-3xl font-bold">Register your business</h1>
           <p className="mt-2 text-neutral-600">
-            Takes a few minutes. Upload documents after signup. Already applied?{" "}
-            <Link href="/seller" className="font-semibold text-brand hover:underline">Open dashboard</Link>
+            Already have a seller account?{" "}
+            <Link href="/seller/login" className="font-semibold text-brand hover:underline">
+              Sign in to dashboard
+            </Link>
           </p>
         </div>
         <SellerRegisterForm />

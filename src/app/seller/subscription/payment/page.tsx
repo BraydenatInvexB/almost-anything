@@ -54,7 +54,7 @@ function SellerSubscriptionPaymentContent() {
         title="Pay subscription"
         description={loadError}
       >
-        <Link href="/login?redirect=/seller/subscription/payment">
+        <Link href="/seller/login?redirect=/seller/subscription/payment">
           <Button className="rounded-full">Seller sign in</Button>
         </Link>
       </PaymentPageShell>

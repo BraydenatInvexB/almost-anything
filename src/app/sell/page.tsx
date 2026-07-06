@@ -38,8 +38,8 @@ export default function SellLandingPage() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/seller">
-              <Button variant="secondary" className="rounded-full px-8">Seller dashboard</Button>
+            <Link href="/seller/login">
+              <Button variant="secondary" className="rounded-full px-8">Seller sign in</Button>
             </Link>
           </div>
         </section>

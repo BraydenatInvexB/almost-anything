@@ -36,16 +36,7 @@ function LoginForm() {
       return;
     }
 
-    const sessionRes = await fetch("/api/admin/session");
-    const session = await sessionRes.json();
-    const explicitRedirect = searchParams.get("redirect");
     const destination = redirect.startsWith("/") ? redirect : "/account";
-
-    if (session.staff && !explicitRedirect) {
-      router.push("/admin");
-      return;
-    }
-
     router.push(destination);
   }
 
@@ -68,7 +59,11 @@ function LoginForm() {
 
       {reason === "staff-only" && (
         <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm text-blue-900">
-          Staff sign-in required to access the admin console.
+          Staff accounts should use the{" "}
+          <Link href="/admin/login" className="font-semibold underline underline-offset-2">
+            admin sign-in page
+          </Link>
+          .
         </div>
       )}
 

@@ -7,7 +7,7 @@ export const DEMO_SELLER = {
   slug: "demo-hardware-hub",
   companyName: "Demo Hardware (Pty) Ltd",
   contactPhone: "+27821234567",
-  loginUrl: "/login?redirect=/seller",
+  loginUrl: "/seller/login",
   sellerDashboardUrl: "/seller",
   storefrontUrl: "/businesses/demo-hardware-hub",
 } as const;
