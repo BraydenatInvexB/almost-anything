@@ -20,6 +20,8 @@ export function useStorefrontSettings() {
           flatShippingFee: data.flatShippingFee ?? DEFAULT_PRICING_SETTINGS.flatShippingFee,
           taxRate: data.taxRate ?? DEFAULT_PRICING_SETTINGS.taxRate,
           embedShippingInPrice: data.embedShippingInPrice ?? DEFAULT_PRICING_SETTINGS.embedShippingInPrice,
+          freeShippingEnabled: data.freeShippingEnabled ?? DEFAULT_PRICING_SETTINGS.freeShippingEnabled,
+          flatShippingFeeEnabled: data.flatShippingFeeEnabled ?? DEFAULT_PRICING_SETTINGS.flatShippingFeeEnabled,
           defaultCourierId: data.defaultCourierId ?? DEFAULT_PRICING_SETTINGS.defaultCourierId,
           currency: data.currency ?? DEFAULT_PRICING_SETTINGS.currency,
           config: data.config,

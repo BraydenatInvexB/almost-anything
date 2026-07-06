@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { SiteLogo } from "@/components/layout/SiteLogo";
 import { useAuth } from "@/context/AuthProvider";
 import type { ConsoleLoginTheme } from "@/config/console-login-themes";
 
@@ -50,12 +51,22 @@ export function ConsoleEmailSignIn({
   return (
     <div className="w-full">
       <div className="flex flex-col items-center text-center">
-        <span
-          className="flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-black shadow-[4px_4px_0_0_#000]"
-          style={{ backgroundColor: theme.accent }}
-        >
-          <HeaderIcon className="h-6 w-6 text-black" />
-        </span>
+        {theme.logoVariant ? (
+          <SiteLogo
+            variant={theme.logoVariant}
+            size="default"
+            priority
+            className="justify-center"
+            imageClassName="h-16 w-auto sm:h-20"
+          />
+        ) : HeaderIcon ? (
+          <span
+            className="flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-black shadow-[4px_4px_0_0_#000]"
+            style={{ backgroundColor: theme.accent }}
+          >
+            <HeaderIcon className="h-6 w-6 text-black" />
+          </span>
+        ) : null}
         <h1 className="mt-4 text-2xl font-black uppercase tracking-tight text-neutral-900 sm:text-3xl">
           {title}
         </h1>

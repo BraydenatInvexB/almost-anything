@@ -22,6 +22,8 @@ export type SellerCatalogShipping = {
   flatShippingFee: number;
   freeShippingThreshold: number;
   defaultMarkupPercent: number;
+  freeShippingEnabled: boolean;
+  flatShippingFeeEnabled: boolean;
 };
 
 export type { SellerDeliverySettings };

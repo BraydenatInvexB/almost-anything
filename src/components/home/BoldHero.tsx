@@ -266,7 +266,11 @@ export function BoldHero({ showcase }: BoldHeroProps) {
               </div>
             </div>
             <Link
-              href={`/products?q=${encodeURIComponent(item.searchQuery)}`}
+              href={
+                item.productSlug
+                  ? `/products/${item.productSlug}`
+                  : `/products?q=${encodeURIComponent(item.searchQuery)}`
+              }
               className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-black bg-black py-2.5 text-xs font-extrabold uppercase text-white transition-colors hover:bg-brand hover:text-white"
             >
               {showcase.buyButtonLabel}

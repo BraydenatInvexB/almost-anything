@@ -1,43 +1,48 @@
 import Link from "next/link";
-import { Truck, PackageCheck, Warehouse } from "lucide-react";
-import { getCurrentStaff, getFulfillmentQueue, listAdminOrders, listAdminCouriers } from "@/services/admin-service";
+import { getCurrentStaff, listAdminOrders, listAdminCouriers } from "@/services/admin-service";
 import { listProcurement } from "@/lib/admin/operations-persistence";
 import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
-import { OrdersTable } from "@/components/admin/OrdersTable";
-import { filterPipelineOrders } from "@/lib/orders/pipeline-filters";
-import { PageHeader, StatCard, Panel, WorkflowCard } from "@/components/admin/ui";
+import { OperationsDesk } from "@/components/admin/OperationsDesk";
+import { OperationsFlowBar } from "@/components/admin/OperationsFlowBar";
+import { countOrdersByStatus, type OperationsTabId } from "@/lib/orders/order-workflow";
+import { PageHeader, StatCard, WorkflowCard } from "@/components/admin/ui";
+import { PackageCheck, Truck, Warehouse } from "lucide-react";
 
-export default async function AdminFulfillmentPage() {
+const VALID_TABS = new Set<OperationsTabId>(["action", "shipping", "all"]);
+
+export default async function AdminFulfillmentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const staff = await getCurrentStaff();
   if (!staff || !staffCan(staff, "orders.view")) {
     return <AccessDenied feature="fulfillment" />;
   }
 
+  const params = await searchParams;
+  const initialTab: OperationsTabId = VALID_TABS.has(params.tab as OperationsTabId)
+    ? (params.tab as OperationsTabId)
+    : "action";
+
   const canManage = staffCan(staff, "orders.manage");
-  const [queue, allOrders, couriers] = await Promise.all([
-    getFulfillmentQueue(),
+  const [orders, couriers, procurement] = await Promise.all([
     listAdminOrders(),
     listAdminCouriers(),
+    listProcurement(),
   ]);
-  const procurement = await listProcurement();
-  const awaitingInbound = allOrders.filter((o) => o.status === "paid" || o.status === "sourcing").length;
-  const readyToShip = allOrders.filter((o) => o.status === "purchased").length;
-  const inTransitInbound = procurement.filter((p) => p.status === "in_transit").length;
-  const shippedToday = allOrders.filter((o) => {
-    if (o.status !== "shipped") return false;
-    const d = new Date(o.createdAt);
-    const today = new Date();
-    return d.toDateString() === today.toDateString();
-  }).length;
 
-  const pipelineOrders = filterPipelineOrders(allOrders);
+  const awaitingInbound = countOrdersByStatus(orders, ["paid", "sourcing"]);
+  const readyToShip = countOrdersByStatus(orders, ["purchased"]);
+  const inTransitInbound = procurement.filter((p) => p.status === "in_transit").length;
+  const outForDelivery = countOrdersByStatus(orders, ["shipped"]);
 
   return (
     <>
       <PageHeader
         title="Operations center"
-        subtitle="Manage the full pipeline: international warehouse → receive at hub → ship to customer."
+        subtitle="One queue, one status per order — work through payment → inbound → ship → deliver."
         action={
           <Link
             href="/admin/procurement"
@@ -54,14 +59,14 @@ export default async function AdminFulfillmentPage() {
           value={String(awaitingInbound)}
           icon={<Warehouse className="h-4 w-4" />}
           accent="bg-amber-500"
-          hint="Paid — stock moving from international warehouse"
+          hint="Paid or sourcing — stock moving to your hub"
         />
         <StatCard
           label="Inbound in transit"
           value={String(inTransitInbound)}
           icon={<Truck className="h-4 w-4" />}
           accent="bg-violet-600"
-          hint="Shipments en route to your warehouse"
+          hint="Supplier shipments en route to warehouse"
         />
         <StatCard
           label="Ready to ship"
@@ -71,52 +76,44 @@ export default async function AdminFulfillmentPage() {
           hint="Received at hub — pack and dispatch"
         />
         <StatCard
-          label="Shipped today"
-          value={String(shippedToday)}
+          label="Out for delivery"
+          value={String(outForDelivery)}
           icon={<Truck className="h-4 w-4" />}
           accent="bg-neutral-950"
+          hint="With courier — confirm delivery when done"
         />
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         <WorkflowCard
-          title="International warehouse"
-          count={awaitingInbound}
-          description="Confirm supplier orders and track inbound delivery to your hub."
-          href="/admin/orders?status=paid"
-          urgent={awaitingInbound > 0}
-        />
-        <WorkflowCard
-          title="Ready to ship"
-          count={readyToShip}
-          description="Add courier tracking and mark orders as shipped to customers."
-          href="/admin/orders?status=purchased"
-          urgent={readyToShip > 0}
+          title="Needs action"
+          count={countOrdersByStatus(orders, ["paid", "sourcing", "purchased"])}
+          description="Confirm suppliers, receive inbound stock, and dispatch to customers."
+          href="/admin/fulfillment?tab=action"
+          urgent={awaitingInbound + readyToShip > 0}
         />
         <WorkflowCard
           title="Out for delivery"
-          count={allOrders.filter((o) => o.status === "shipped").length}
-          description="Monitor customer deliveries and resolve exceptions."
-          href="/admin/orders?status=shipped"
+          count={outForDelivery}
+          description="Track parcels and mark orders delivered when they arrive."
+          href="/admin/fulfillment?tab=shipping"
+          urgent={outForDelivery > 0}
+        />
+        <WorkflowCard
+          title="Completed orders"
+          count={countOrdersByStatus(orders, ["delivered"])}
+          description="Review delivered and archived orders in the full order list."
+          href="/admin/orders?status=delivered"
         />
       </div>
 
-      <Panel
-        title="Fulfillment pipeline"
-        description="Update status, carrier, and tracking from each row"
-        className="mb-4"
-        clip
-      >
-        <OrdersTable orders={pipelineOrders} canManage={canManage} couriers={couriers} />
-      </Panel>
-
-      <Panel
-        title="Active operations queue"
-        description={`${queue.length} orders need action now`}
-        clip
-      >
-        <OrdersTable orders={queue} canManage={canManage} couriers={couriers} />
-      </Panel>
+      <OperationsFlowBar orders={orders} activeTab={initialTab} />
+      <OperationsDesk
+        orders={orders}
+        couriers={couriers}
+        canManage={canManage}
+        initialTab={initialTab}
+      />
     </>
   );
 }

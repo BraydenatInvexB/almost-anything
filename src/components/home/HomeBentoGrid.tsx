@@ -49,25 +49,6 @@ export async function HomeBentoGrid({ category, query }: HomeBentoGridProps) {
     getPublicStorefrontConfig(),
   ]);
 
-  if (!hot.length && !steals.length && !fresh.length) {
-    const { data: fallback } = await getProducts({ pageSize: 12 });
-    if (!fallback.length) {
-      return (
-        <div className="flex min-h-[400px] items-center justify-center text-neutral-400">
-          Loading catalog...
-        </div>
-      );
-    }
-    return (
-      <BoldHome
-        hot={fallback.slice(0, 8)}
-        steals={fallback.slice(4, 8)}
-        fresh={fallback.slice(0, 8)}
-        heroShowcase={storefrontConfig.heroShowcase}
-      />
-    );
-  }
-
   return (
     <BoldHome
       hot={hot}

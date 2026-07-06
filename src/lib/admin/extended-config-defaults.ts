@@ -4,6 +4,8 @@ import { DEFAULT_HERO_SHOWCASE, mergeHeroShowcase } from "@/lib/hero/defaults";
 
 export const DEFAULT_EXTENDED_CONFIG: ExtendedPlatformConfig = {
   embedShippingInPrice: true,
+  freeShippingEnabled: false,
+  flatShippingFeeEnabled: true,
   defaultCourierId: "aramex",
   enabledCourierIds: ["courier_guy", "fastway", "aramex"],
   currency: "ZAR",

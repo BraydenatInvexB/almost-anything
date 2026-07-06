@@ -19,6 +19,8 @@ export interface HeroShowcaseItem {
   imageUrl: string;
   inStock: boolean;
   stockLabel?: string;
+  /** When set, the hero buy button links to this catalog product. */
+  productSlug?: string;
 }
 
 export interface HeroSticker {
@@ -37,6 +39,10 @@ export interface HeroShowcaseConfig {
 
 export interface ExtendedPlatformConfig {
   embedShippingInPrice: boolean;
+  /** When true, orders above the threshold qualify for free delivery (if not embedded). */
+  freeShippingEnabled: boolean;
+  /** When true, charge the flat shipping fee at checkout (if not embedded and not free). */
+  flatShippingFeeEnabled: boolean;
   defaultCourierId: string;
   enabledCourierIds: string[];
   currency: string;

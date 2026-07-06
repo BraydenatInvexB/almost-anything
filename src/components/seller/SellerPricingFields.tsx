@@ -7,6 +7,7 @@ import {
   type SellerDeliverySettings,
   type SellerShippingContext,
 } from "@/lib/seller/product-pricing";
+import { describePlatformShipping } from "@/lib/shipping/platform-shipping";
 import { formatCurrency } from "@/lib/utils/cn";
 
 export function SellerPricingFields({
@@ -66,9 +67,7 @@ export function SellerPricingFields({
 
       <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-neutral-950">Customer delivery</h2>
-        <p className="mt-0.5 text-xs text-neutral-500">
-          Platform default shipping is {formatCurrency(shipping.flatShippingFee, "ZAR")} (free over {formatCurrency(shipping.freeShippingThreshold, "ZAR")}).
-        </p>
+        <p className="mt-0.5 text-xs text-neutral-500">{describePlatformShipping(shipping)}</p>
         <div className="mt-4 space-y-3">
           <label className="flex items-center gap-2 text-sm">
             <input

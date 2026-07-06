@@ -6,6 +6,8 @@ export interface StorefrontPricingSettings {
   flatShippingFee: number;
   taxRate: number;
   embedShippingInPrice: boolean;
+  freeShippingEnabled: boolean;
+  flatShippingFeeEnabled: boolean;
   defaultCourierId: string;
   currency: string;
   config?: ExtendedPlatformConfig;
@@ -16,6 +18,8 @@ export const DEFAULT_PRICING_SETTINGS: StorefrontPricingSettings = {
   flatShippingFee: 99,
   taxRate: 0.15,
   embedShippingInPrice: true,
+  freeShippingEnabled: false,
+  flatShippingFeeEnabled: true,
   defaultCourierId: "aramex",
   currency: "ZAR",
 };
@@ -32,6 +36,8 @@ export function computeStorefrontTotals(
     freeShippingThreshold: settings.freeShippingThreshold,
     flatShippingFee: settings.flatShippingFee,
     embedShippingInPrice: settings.embedShippingInPrice,
+    freeShippingEnabled: settings.freeShippingEnabled,
+    flatShippingFeeEnabled: settings.flatShippingFeeEnabled,
     config: settings.config,
   });
   const shipping = shippingCalc.customerCharge;

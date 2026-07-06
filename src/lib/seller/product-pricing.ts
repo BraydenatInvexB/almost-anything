@@ -4,6 +4,8 @@ export type SellerShippingContext = {
   flatShippingFee: number;
   freeShippingThreshold: number;
   defaultMarkupPercent: number;
+  freeShippingEnabled: boolean;
+  flatShippingFeeEnabled: boolean;
 };
 
 export type SellerDeliverySettings = {
@@ -40,10 +42,14 @@ export function markupFromPrices(costPrice: number, retailPrice: number): number
 export function resolveCustomerDeliveryFee(
   retailPrice: number,
   delivery: SellerDeliverySettings,
-  shipping: Pick<SellerShippingContext, "flatShippingFee" | "freeShippingThreshold">,
+  shipping: Pick<
+    SellerShippingContext,
+    "flatShippingFee" | "freeShippingThreshold" | "freeShippingEnabled" | "flatShippingFeeEnabled"
+  >,
 ): number {
   if (!delivery.customerPaysDelivery) return 0;
-  if (retailPrice >= shipping.freeShippingThreshold) return 0;
+  if (shipping.freeShippingEnabled && retailPrice >= shipping.freeShippingThreshold) return 0;
+  if (!shipping.flatShippingFeeEnabled) return delivery.deliveryFeeZar ?? 0;
   return delivery.deliveryFeeZar ?? shipping.flatShippingFee;
 }
 
@@ -61,10 +67,13 @@ export function buildPricingSnapshot(
 
   let deliveryLabel = "Included — you cover delivery";
   if (delivery.customerPaysDelivery) {
-    deliveryLabel =
-      customerDeliveryFee === 0
-        ? `Free delivery (order over ${formatZar(shipping.freeShippingThreshold)})`
-        : `Customer pays ${formatZar(customerDeliveryFee)} delivery`;
+    if (customerDeliveryFee === 0 && shipping.freeShippingEnabled) {
+      deliveryLabel = `Free delivery (order over ${formatZar(shipping.freeShippingThreshold)})`;
+    } else if (customerDeliveryFee === 0) {
+      deliveryLabel = "No separate delivery charge";
+    } else {
+      deliveryLabel = `Customer pays ${formatZar(customerDeliveryFee)} delivery`;
+    }
   }
 
   return {

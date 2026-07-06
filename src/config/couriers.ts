@@ -58,18 +58,26 @@ export function calculateCustomerShipping(
     freeShippingThreshold: number;
     flatShippingFee: number;
     embedShippingInPrice: boolean;
+    freeShippingEnabled?: boolean;
+    flatShippingFeeEnabled?: boolean;
     config?: ExtendedPlatformConfig | null;
   },
 ): { customerCharge: number; internalCost: number; displayFree: boolean } {
   const courier = getCourier(courierId, options.config) ?? getAllCouriers(options.config)[0];
-  const internalCost = courier.baseCost;
+  const internalCost = courier?.baseCost ?? 0;
+  const freeShippingEnabled = options.freeShippingEnabled ?? false;
+  const flatShippingFeeEnabled = options.flatShippingFeeEnabled ?? true;
 
   if (options.embedShippingInPrice) {
     return { customerCharge: 0, internalCost, displayFree: true };
   }
 
-  if (subtotal >= options.freeShippingThreshold) {
+  if (freeShippingEnabled && subtotal >= options.freeShippingThreshold) {
     return { customerCharge: 0, internalCost, displayFree: true };
+  }
+
+  if (!flatShippingFeeEnabled) {
+    return { customerCharge: internalCost, internalCost, displayFree: false };
   }
 
   return {

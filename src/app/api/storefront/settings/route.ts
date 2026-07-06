@@ -16,6 +16,8 @@ export async function GET() {
     flatShippingFee: settings.flat_shipping_fee,
     taxRate: settings.tax_rate,
     embedShippingInPrice: config.embedShippingInPrice,
+    freeShippingEnabled: config.freeShippingEnabled ?? false,
+    flatShippingFeeEnabled: config.flatShippingFeeEnabled ?? true,
     defaultCourierId: config.defaultCourierId,
     couriers: couriers.map((c) => ({ id: c.id, name: c.name, etaLabel: c.etaLabel })),
     config,

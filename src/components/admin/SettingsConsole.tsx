@@ -85,12 +85,15 @@ export function SettingsConsole({
   }
 
   function removeCourier(id: string) {
-    setExtConfig((c) => ({
-      ...c,
-      couriers: c.couriers.filter((x) => x.id !== id),
-      enabledCourierIds: c.enabledCourierIds.filter((x) => x !== id),
-      defaultCourierId: c.defaultCourierId === id ? (c.enabledCourierIds.find((x) => x !== id) ?? "") : c.defaultCourierId,
-    }));
+    setExtConfig((c) => {
+      const couriers = c.couriers.filter((x) => x.id !== id);
+      const enabledCourierIds = c.enabledCourierIds.filter((x) => x !== id);
+      const defaultCourierId =
+        c.defaultCourierId === id
+          ? enabledCourierIds[0] ?? couriers[0]?.id ?? ""
+          : c.defaultCourierId;
+      return { ...c, couriers, enabledCourierIds, defaultCourierId };
+    });
   }
 
   return (

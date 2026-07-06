@@ -50,7 +50,7 @@ export async function listAdminProducts(): Promise<Product[]> {
         .select("*")
         .order("created_at", { ascending: false })
         .limit(200);
-      if (data && data.length) return [...(data as Product[]), ...custom];
+      return [...((data ?? []) as Product[]), ...custom];
     } catch {
       /* fall through */
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { ProductImageField } from "@/components/admin/ProductImageField";
+import { HeroShowcaseItemEditor } from "@/components/admin/HeroShowcaseItemEditor";
 import type {
   HeroShowcaseConfig,
   HeroShowcaseItem,
@@ -99,7 +99,7 @@ export function HeroShowcaseEditor({
           <div>
             <p className="text-sm font-semibold text-neutral-900">Showcase products</p>
             <p className="text-xs text-neutral-500">
-              These rotate in the homepage hero — search text, image, price, and delivery.
+              Import from your catalog or edit manually — these rotate in the homepage hero.
             </p>
           </div>
           <button
@@ -115,91 +115,15 @@ export function HeroShowcaseEditor({
 
         <div className="space-y-4">
           {value.items.map((item, index) => (
-            <div
+            <HeroShowcaseItemEditor
               key={item.id}
-              className="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4"
-            >
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-neutral-900">Item {index + 1}</p>
-                <button
-                  type="button"
-                  disabled={disabled || value.items.length <= 1}
-                  onClick={() => removeItem(item.id)}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-red-600 disabled:opacity-40"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Remove
-                </button>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Typed search text">
-                  <input
-                    disabled={disabled}
-                    value={item.searchQuery}
-                    onChange={(e) => updateItem(item.id, { searchQuery: e.target.value })}
-                    className="input disabled:opacity-60"
-                    placeholder="louis vuitton neverfull"
-                  />
-                </Field>
-                <Field label="Product name">
-                  <input
-                    disabled={disabled}
-                    value={item.name}
-                    onChange={(e) => updateItem(item.id, { name: e.target.value })}
-                    className="input disabled:opacity-60"
-                    placeholder="Louis Vuitton Neverfull"
-                  />
-                </Field>
-                <Field label="Price">
-                  <input
-                    type="number"
-                    min={0}
-                    disabled={disabled}
-                    value={item.price}
-                    onChange={(e) => updateItem(item.id, { price: Number(e.target.value) })}
-                    className="input disabled:opacity-60"
-                  />
-                </Field>
-                <Field label="Delivery (days)">
-                  <input
-                    disabled={disabled}
-                    value={item.deliveryDays}
-                    onChange={(e) => updateItem(item.id, { deliveryDays: e.target.value })}
-                    className="input disabled:opacity-60"
-                    placeholder="3 to 5"
-                  />
-                </Field>
-                <Field label="Stock label">
-                  <input
-                    disabled={disabled}
-                    value={item.stockLabel ?? ""}
-                    onChange={(e) => updateItem(item.id, { stockLabel: e.target.value })}
-                    className="input disabled:opacity-60"
-                    placeholder="In stock"
-                  />
-                </Field>
-                <Field label="In stock">
-                  <label className="flex h-10 items-center gap-2 text-sm text-neutral-700">
-                    <input
-                      type="checkbox"
-                      disabled={disabled}
-                      checked={item.inStock}
-                      onChange={(e) => updateItem(item.id, { inStock: e.target.checked })}
-                      className="h-4 w-4 rounded border-neutral-300"
-                    />
-                    Show as available
-                  </label>
-                </Field>
-              </div>
-
-              <div className="mt-4">
-                <ProductImageField
-                  value={item.imageUrl ? [item.imageUrl] : []}
-                  onChange={(urls) => updateItem(item.id, { imageUrl: urls[0] ?? "" })}
-                />
-              </div>
-            </div>
+              item={item}
+              index={index}
+              disabled={disabled}
+              canRemove={value.items.length > 1}
+              onChange={(patch) => updateItem(item.id, patch)}
+              onRemove={() => removeItem(item.id)}
+            />
           ))}
         </div>
       </div>

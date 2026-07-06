@@ -203,7 +203,7 @@ export default function CartPage() {
                   <dd>{formatCurrency(total, currency)}</dd>
                 </div>
               </dl>
-              {settings && !settings.embedShippingInPrice && subtotal > 0 && subtotal < settings.freeShippingThreshold ? (
+              {settings && !settings.embedShippingInPrice && settings.freeShippingEnabled && subtotal > 0 && subtotal < settings.freeShippingThreshold ? (
                 <p className="mt-3 text-xs text-neutral-400">
                   Free shipping on orders over {formatCurrency(settings.freeShippingThreshold, currency)}
                 </p>

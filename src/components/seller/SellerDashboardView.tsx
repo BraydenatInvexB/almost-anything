@@ -3,15 +3,20 @@ import { Store, Package, ShoppingCart, AlertTriangle, CreditCard } from "lucide-
 import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils/cn";
 import { SellerPlatformMessagesPanel } from "@/components/seller/SellerPlatformMessagesPanel";
+import { PaymentGatewayFeesNotice } from "@/components/seller/PaymentGatewayFeesNotice";
+import { SellerDeliveryPartnersPanel } from "@/components/seller/SellerDeliveryPartnersPanel";
 import { SellerPanel, SellerPanelBody, SellerPanelHeader, SellerStat, SellerStatGrid } from "@/components/seller/SellerPanel";
 import type { SellerDashboardStats, SellerProfile } from "@/types/seller";
+import type { SellerPlatformContext } from "@/services/seller/platform-context";
 
 export function SellerDashboardView({
   seller,
   stats,
+  platform,
 }: {
   seller: SellerProfile;
   stats: SellerDashboardStats;
+  platform: SellerPlatformContext;
 }) {
   const limitLabel =
     stats.productLimit === null ? "Unlimited listings" : `${stats.productCount} / ${stats.productLimit} listings`;
@@ -91,6 +96,17 @@ export function SellerDashboardView({
             </div>
           </SellerPanelBody>
         </SellerPanel>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SellerDeliveryPartnersPanel
+          couriers={platform.couriers}
+          shipping={platform.shipping}
+          preferredCourierIds={seller.preferredCouriers}
+          title="Delivery partners"
+          description="Couriers enabled on the platform for your customer orders."
+        />
+        <PaymentGatewayFeesNotice compact />
       </div>
     </div>
   );

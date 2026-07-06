@@ -1,7 +1,9 @@
 import { getCurrentSeller, listSellerDocuments } from "@/services/seller-service";
+import { getSellerPlatformContext } from "@/services/seller/platform-context";
 import { SellerDocumentsPanel } from "@/components/seller/SellerDocumentsPanel";
+import { SellerDeliveryPartnersPanel } from "@/components/seller/SellerDeliveryPartnersPanel";
+import { PaymentGatewayFeesNotice } from "@/components/seller/PaymentGatewayFeesNotice";
 import { Card } from "@/components/ui/Card";
-import { COURIERS } from "@/config/couriers";
 import { getSellerEntityLabel } from "@/config/seller-entity-types";
 
 export default async function SellerSettingsPage({
@@ -11,8 +13,11 @@ export default async function SellerSettingsPage({
 }) {
   const seller = await getCurrentSeller();
   if (!seller) return null;
-  const documents = await listSellerDocuments(seller.id);
-  const params = await searchParams;
+  const [documents, platform, params] = await Promise.all([
+    listSellerDocuments(seller.id),
+    getSellerPlatformContext(),
+    searchParams,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -36,24 +41,13 @@ export default async function SellerSettingsPage({
         onboarding={Boolean(params.onboarding)}
       />
 
-      <Card variant="elevated" className="p-6">
-        <h2 className="text-lg font-semibold">Preferred couriers</h2>
-        <p className="mt-1 text-sm text-neutral-600">Couriers you use to ship orders to customers.</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {COURIERS.map((courier) => (
-            <span
-              key={courier.id}
-              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                seller.preferredCouriers.includes(courier.id)
-                  ? "border-brand bg-brand/10 text-brand"
-                  : "border-neutral-200 text-neutral-600"
-              }`}
-            >
-              {courier.name}
-            </span>
-          ))}
-        </div>
-      </Card>
+      <SellerDeliveryPartnersPanel
+        couriers={platform.couriers}
+        shipping={platform.shipping}
+        preferredCourierIds={seller.preferredCouriers}
+      />
+
+      <PaymentGatewayFeesNotice showLegal />
     </div>
   );
 }

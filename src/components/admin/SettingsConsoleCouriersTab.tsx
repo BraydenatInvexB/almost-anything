@@ -26,7 +26,7 @@ export function SettingsConsoleCouriersTab({
 }) {
   return (
     <>
-      <Panel title="Active courier partners" description="Enable partners for checkout. Add your own regional or international couriers below.">
+      <Panel title="Active courier partners" description="Enable partners for checkout, edit internal costs, or remove partners. Changes sync to the seller dashboard.">
         <div className="divide-y divide-neutral-100">
           {extConfig.couriers.map((c) => (
             <div key={c.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -66,11 +66,15 @@ export function SettingsConsoleCouriersTab({
                       }));
                     }}
                   />
-                  {!["courier_guy", "fastway", "aramex"].includes(c.id) && (
-                    <button type="button" onClick={() => onRemoveCourier(c.id)} className="rounded-lg p-2 text-red-500 hover:bg-red-50" aria-label="Remove courier">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => onRemoveCourier(c.id)}
+                    className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+                    aria-label={`Remove ${c.name}`}
+                    title="Remove courier partner"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               )}
             </div>

@@ -19,10 +19,13 @@ const heroShowcaseItemSchema = z.object({
   imageUrl: z.string(),
   inStock: z.boolean(),
   stockLabel: z.string().optional(),
+  productSlug: z.string().optional(),
 });
 
 const extendedConfigSchema = z.object({
   embedShippingInPrice: z.boolean(),
+  freeShippingEnabled: z.boolean().optional(),
+  flatShippingFeeEnabled: z.boolean().optional(),
   defaultCourierId: z.string(),
   enabledCourierIds: z.array(z.string()),
   couriers: z

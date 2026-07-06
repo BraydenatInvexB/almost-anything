@@ -1,9 +1,11 @@
 import type { LucideIcon } from "lucide-react";
-import { ShieldCheck, Store } from "lucide-react";
+import { Store } from "lucide-react";
 
 export interface ConsoleLoginTheme {
   accent: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
+  /** When set, shows the site logo instead of the accent icon badge. */
+  logoVariant?: "compact" | "full";
 }
 
 export const CONSOLE_LOGIN_THEMES = {
@@ -13,7 +15,7 @@ export const CONSOLE_LOGIN_THEMES = {
   },
   admin: {
     accent: "#e30613",
-    icon: ShieldCheck,
+    logoVariant: "full",
   },
 } as const satisfies Record<string, ConsoleLoginTheme>;
 

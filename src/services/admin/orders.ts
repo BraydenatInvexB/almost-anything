@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DEMO_CUSTOMERS } from "@/lib/admin/demo-data";
 import { listCheckoutOrders, getCheckoutOrder } from "@/lib/admin/operations-store";
 import { listProcurementByOrder } from "@/lib/admin/operations-persistence";
+import { dedupeAdminOrders } from "@/lib/orders/admin-order-dedupe";
 import { QUEUE_STATUSES } from "@/lib/orders/order-operations";
 import { resolveFulfillment } from "@/lib/orders/fulfillment";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
@@ -114,10 +115,7 @@ export async function listAdminOrders(): Promise<AdminOrderSummary[]> {
             shippingCountry: (addr.country as string) ?? undefined,
           });
         });
-        const live = listCheckoutOrders()
-          .map((o) => checkoutToSummary(o)!)
-          .filter((o) => !fromDb.some((d) => d.orderNumber === o.orderNumber));
-        return [...fromDb, ...live].sort(
+        return dedupeAdminOrders(fromDb).sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
       }
@@ -126,7 +124,7 @@ export async function listAdminOrders(): Promise<AdminOrderSummary[]> {
     }
   }
   const live = listCheckoutOrders().map((o) => checkoutToSummary(o)!);
-  return [...live, ...buildDemoOrders()].sort(
+  return dedupeAdminOrders([...live, ...buildDemoOrders()]).sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 }

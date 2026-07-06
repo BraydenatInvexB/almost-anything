@@ -7,7 +7,12 @@ import { Table, Th, Td, EmptyState } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { AdminOrderSummary } from "@/services/admin-service";
 import { resolveFulfillment } from "@/lib/orders/fulfillment";
-import { ORDER_STATUS_LABELS, ORDER_STATUSES } from "@/lib/orders/order-operations";
+import {
+  ORDER_STATUS_LABELS,
+  ORDER_STATUSES,
+  getOrderStatusLabel,
+} from "@/lib/orders/order-operations";
+import { getOrderNextAction } from "@/lib/orders/order-workflow";
 import { cn } from "@/lib/utils/cn";
 
 const STATUS_OPTIONS = ORDER_STATUSES.filter((s) => s !== "pending" && s !== "cancelled");
@@ -46,10 +51,12 @@ export function OrdersTable({
   orders,
   canManage,
   couriers,
+  showNextStep = false,
 }: {
   orders: AdminOrderSummary[];
   canManage: boolean;
   couriers: CourierSelectOption[];
+  showNextStep?: boolean;
 }) {
   const [rows, setRows] = useState<Record<string, RowState>>(() =>
     Object.fromEntries(orders.map((o) => [o.id, defaultRow(o)])),
@@ -57,11 +64,16 @@ export function OrdersTable({
 
   useEffect(() => {
     setRows((prev) => {
-      const next = { ...prev };
+      const next: Record<string, RowState> = {};
       for (const order of orders) {
-        if (!next[order.id]) {
-          next[order.id] = defaultRow(order);
-        }
+        const existing = prev[order.id];
+        next[order.id] = existing
+          ? {
+              ...existing,
+              status: order.status,
+              carrier: order.courierName ?? existing.carrier,
+            }
+          : defaultRow(order);
       }
       return next;
     });
@@ -125,6 +137,7 @@ export function OrdersTable({
           <Th>Items</Th>
           <Th>Fulfillment</Th>
           <Th>Status</Th>
+          {showNextStep ? <Th>Next step</Th> : null}
           <Th>Courier</Th>
           <Th>Payment</Th>
           <Th className="text-right">Total</Th>
@@ -175,12 +188,17 @@ export function OrdersTable({
                     </select>
                   ) : (
                     <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${STATUS_STYLES[o.status] ?? "bg-neutral-100 text-neutral-700"}`}
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[o.status] ?? "bg-neutral-100 text-neutral-700"}`}
                     >
-                      {o.status}
+                      {getOrderStatusLabel(o.status)}
                     </span>
                   )}
                 </Td>
+                {showNextStep ? (
+                  <Td className="max-w-xs text-xs text-neutral-600">
+                    {getOrderNextAction(o.status)}
+                  </Td>
+                ) : null}
                 <Td className="text-neutral-600">{o.courierName ?? "—"}</Td>
                 <Td className="text-neutral-600">{o.paymentMethod ?? "—"}</Td>
                 <Td className="text-right font-semibold">{formatCurrency(o.total, o.currency)}</Td>
@@ -197,7 +215,7 @@ export function OrdersTable({
               </tr>
               {canManage && row.open && (
                 <tr className="bg-neutral-50/60">
-                  <td colSpan={10} className="px-4 py-4">
+                  <td colSpan={showNextStep ? 11 : 10} className="px-4 py-4">
                     <div className="flex flex-wrap items-end gap-3">
                       <label className="flex flex-col gap-1 text-xs text-neutral-500">
                         Carrier

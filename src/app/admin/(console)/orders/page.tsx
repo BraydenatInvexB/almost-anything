@@ -7,7 +7,7 @@ import { OrdersTable } from "@/components/admin/OrdersTable";
 import { formatCurrency } from "@/lib/utils/cn";
 import { cn } from "@/lib/utils/cn";
 
-const FILTERS = ["all", "pending", "paid", "purchased", "shipped", "delivered", "cancelled"];
+const FILTERS = ["all", "pending", "paid", "sourcing", "purchased", "shipped", "delivered", "cancelled"];
 
 export default async function AdminOrdersPage({
   searchParams,
@@ -36,7 +36,9 @@ export default async function AdminOrdersPage({
     .filter((o) => o.status !== "cancelled")
     .reduce((s, o) => s + o.total, 0);
   const pending = orders.filter((o) => o.status === "pending").length;
-  const toShip = orders.filter((o) => o.status === "paid" || o.status === "purchased").length;
+  const toShip = orders.filter((o) =>
+    ["paid", "sourcing", "purchased"].includes(o.status),
+  ).length;
 
   return (
     <>
@@ -56,7 +58,7 @@ export default async function AdminOrdersPage({
             href="/admin/fulfillment"
             className="inline-flex h-9 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand/90"
           >
-            Fulfillment queue
+            Operations center
           </Link>
         }
       />
@@ -65,7 +67,7 @@ export default async function AdminOrdersPage({
         <StatCard label="Total orders" value={String(orders.length)} />
         <StatCard label="Revenue" value={formatCurrency(revenue, "ZAR")} />
         <StatCard label="Awaiting payment" value={String(pending)} />
-        <StatCard label="Ready to ship" value={String(toShip)} />
+        <StatCard label="Needs fulfillment" value={String(toShip)} />
       </div>
 
       {/* Filter tabs */}

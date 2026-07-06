@@ -12,7 +12,6 @@ import {
 } from "@/lib/data/seed-products";
 import {
   hasSupabaseProducts,
-  isLiveCatalogReady,
   shouldQuerySupabase,
 } from "@/lib/catalog/catalog-source";
 import { resolveStoreProduct, resolveStoreProductCard } from "@/lib/pricing/resolve-store-product";
@@ -192,18 +191,9 @@ export async function getProducts(
   const { page = 1, pageSize = 12 } = options;
   const isSearch = Boolean(options.query?.trim());
 
-  if (shouldQuerySupabase()) {
-    const useSupabase =
-      isSearch || (await isLiveCatalogReady()) || (await hasSupabaseProducts());
-
-    if (useSupabase) {
-      const result = await querySupabaseProducts(options);
-      if (result) {
-        if (isSearch || result.total > 0 || result.data.length > 0) {
-          return result;
-        }
-      }
-    }
+  if (shouldQuerySupabase() && (isSearch || (await hasSupabaseProducts()))) {
+    const result = await querySupabaseProducts(options);
+    if (result) return result;
   }
 
   const seedResults = filterSeedProducts(options);
@@ -229,8 +219,9 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
         .maybeSingle();
 
       if (!error && data) return resolveStoreProduct(data);
+      if (await hasSupabaseProducts()) return null;
     } catch {
-      /* fall through */
+      if (await hasSupabaseProducts()) return null;
     }
   }
 
@@ -251,11 +242,16 @@ export async function getRelatedProducts(
         .eq("category", category as ProductCategory)
         .neq("slug", slug)
         .limit(limit);
+
+      if (await hasSupabaseProducts()) {
+        return (data ?? []).map(resolveStoreProductCard);
+      }
       if (data?.length) return data.map(resolveStoreProductCard);
     } catch {
-      /* fall through */
+      if (await hasSupabaseProducts()) return [];
     }
   }
+
   return getRelatedSeedProducts(slug, category, limit).map(mapProductToCard);
 }
 
@@ -265,8 +261,8 @@ export async function getFeaturedProducts(): Promise<ProductCardData[]> {
 }
 
 export async function getDealProducts(): Promise<ProductCardData[]> {
-  const result = await getProducts({ section: "steals", pageSize: 4 });
-  if (result.data.length) return result.data;
+  const section = await getProducts({ section: "steals", pageSize: 4 });
+  if (section.data.length) return section.data;
   return (await getProducts({ dealsOnly: true, pageSize: 4 })).data;
 }
 
@@ -275,9 +271,7 @@ export async function getStealsProducts(): Promise<ProductCardData[]> {
 }
 
 export async function getHotProducts(): Promise<ProductCardData[]> {
-  const result = await getProducts({ section: "hot", pageSize: 8 });
-  if (result.data.length) return result.data;
-  return (await getProducts({ featuredOnly: true, pageSize: 8 })).data;
+  return (await getProducts({ section: "hot", pageSize: 8 })).data;
 }
 
 export async function getFreshDropProducts(): Promise<ProductCardData[]> {
