@@ -6,10 +6,12 @@ import { Loader2 } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { verifyPaystackReference } from "@/hooks/usePaystackPayment";
+import { useCart } from "@/context/CartProvider";
 
 function PaymentCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { clearCart } = useCart();
   const [message, setMessage] = useState("Confirming your payment…");
 
   useEffect(() => {
@@ -25,6 +27,7 @@ function PaymentCallbackContent() {
     verifyPaystackReference(reference)
       .then(({ ok, data }) => {
         if (ok && data.redirectUrl) {
+          clearCart();
           router.replace(data.redirectUrl as string);
           return;
         }
@@ -37,7 +40,7 @@ function PaymentCallbackContent() {
         setMessage("Verification failed. Redirecting…");
         router.replace(`/payment/failed?reference=${encodeURIComponent(reference)}`);
       });
-  }, [router, searchParams]);
+  }, [router, searchParams, clearCart]);
 
   return (
     <div className="flex min-h-full flex-col bg-white">

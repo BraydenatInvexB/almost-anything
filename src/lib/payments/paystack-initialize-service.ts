@@ -3,7 +3,6 @@ import { z } from "zod";
 import {
   isPaystackConfigured,
   paystackChannels,
-  SELLER_CARD_VERIFICATION_ZAR,
   type PaystackPaymentPurpose,
 } from "@/config/paystack";
 import { SELLER_PLAN_BY_ID } from "@/config/seller-plans";
@@ -31,40 +30,11 @@ export async function resolveInitializePayment(input: z.infer<typeof initializeP
         saveCard: input.saveCard,
         savedPaymentMethodId: input.savedPaymentMethodId,
       });
-    case "seller_signup":
-      return initializeSellerSignupPayment(input.sellerId);
     case "seller_subscription":
       return initializeSellerSubscriptionPayment(input.sellerId);
     default:
       throw new Error("Unsupported payment purpose.");
   }
-}
-
-async function initializeSellerSignupPayment(sellerId: string | undefined) {
-  if (!sellerId) throw new Error("Seller id is required.");
-  const seller = await getOwnedSeller(sellerId);
-
-  const reference = createPaystackReference("SEL", sellerId);
-  const result = await initializePaystackTransaction({
-    email: seller.contact_email,
-    amountZar: SELLER_CARD_VERIFICATION_ZAR,
-    reference,
-    callbackUrl: paystackCallbackUrl(),
-    channels: paystackChannels("card"),
-    metadata: {
-      purpose: "seller_signup" satisfies PaystackPaymentPurpose,
-      sellerId,
-      plan: seller.plan,
-    },
-  });
-
-  return {
-    mode: "redirect" as const,
-    authorizationUrl: result.authorization_url,
-    reference: result.reference,
-    amount: SELLER_CARD_VERIFICATION_ZAR,
-    currency: "ZAR",
-  };
 }
 
 async function initializeSellerSubscriptionPayment(sellerId: string | undefined) {

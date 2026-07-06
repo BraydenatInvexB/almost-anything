@@ -2,9 +2,6 @@ export type PaystackPaymentPurpose = "checkout" | "seller_signup" | "seller_subs
 
 export type CheckoutPaymentMethod = "card" | "eft" | "demo";
 
-/** Card verification charge during seller signup (ZAR). */
-export const SELLER_CARD_VERIFICATION_ZAR = 5;
-
 export const PAYSTACK_CURRENCY = "ZAR";
 
 function readSecretKey(): string | undefined {

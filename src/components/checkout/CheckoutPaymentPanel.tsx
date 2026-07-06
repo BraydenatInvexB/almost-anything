@@ -8,6 +8,7 @@ import { SavedCardPicker } from "@/components/checkout/SavedCardPicker";
 import { usePaystackPayment } from "@/hooks/usePaystackPayment";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useAuth } from "@/context/AuthProvider";
+import { useCart } from "@/context/CartProvider";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { Order } from "@/types/cart";
 import type { CheckoutPaymentMethod } from "@/config/paystack";
@@ -21,6 +22,7 @@ export function CheckoutPaymentPanel({
 }) {
   const router = useRouter();
   const { user, isConfigured } = useAuth();
+  const { clearCart } = useCart();
   const { startPayment, loading, error } = usePaystackPayment();
   const { methods, loading: cardsLoading, refresh } = usePaymentMethods(
     Boolean(user && isConfigured && paymentMethod === "card"),
@@ -48,6 +50,7 @@ export function CheckoutPaymentPanel({
   }
 
   if (order.status === "paid" || order.status === "sourcing") {
+    clearCart();
     router.replace(`/checkout/success?orderNumber=${encodeURIComponent(order.orderNumber)}`);
     return null;
   }

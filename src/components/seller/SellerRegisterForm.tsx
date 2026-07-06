@@ -58,9 +58,7 @@ export function SellerRegisterForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Application failed");
-      router.push(
-        `/sell/register/payment?sellerId=${encodeURIComponent(data.seller.id)}&plan=${encodeURIComponent(form.plan)}`,
-      );
+      router.push("/seller/settings?onboarding=1");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Application failed");
     } finally {

@@ -7,11 +7,21 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { OrderSuccessView } from "@/components/checkout/success/OrderSuccessView";
 import type { Order } from "@/types/cart";
 import { useAuth } from "@/context/AuthProvider";
+import { useCart } from "@/context/CartProvider";
+
+const CONFIRMED_STATUSES: Order["status"][] = [
+  "paid",
+  "sourcing",
+  "purchased",
+  "shipped",
+  "delivered",
+];
 
 export default function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("orderNumber");
   const { user } = useAuth();
+  const { clearCart } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(Boolean(orderNumber));
 
@@ -29,6 +39,12 @@ export default function CheckoutSuccessContent() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [orderNumber]);
+
+  useEffect(() => {
+    if (order && CONFIRMED_STATUSES.includes(order.status)) {
+      clearCart();
+    }
+  }, [order, clearCart]);
 
   return (
     <div className="flex min-h-full flex-col bg-neutral-50">
