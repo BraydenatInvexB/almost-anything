@@ -137,6 +137,38 @@ export interface DatabaseCommerceTables {
     Update: Partial<DatabaseCommerceTables["customer_addresses"]["Insert"]>;
     Relationships: [];
   };
+  customer_payment_methods: {
+    Row: {
+      id: string;
+      user_id: string;
+      provider: string;
+      authorization_code: string;
+      customer_code: string | null;
+      card_type: string | null;
+      last4: string;
+      exp_month: string | null;
+      exp_year: string | null;
+      is_default: boolean;
+      created_at: string;
+      updated_at: string;
+    };
+    Insert: {
+      id?: string;
+      user_id: string;
+      provider?: string;
+      authorization_code: string;
+      customer_code?: string | null;
+      card_type?: string | null;
+      last4: string;
+      exp_month?: string | null;
+      exp_year?: string | null;
+      is_default?: boolean;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: Partial<DatabaseCommerceTables["customer_payment_methods"]["Insert"]>;
+    Relationships: [];
+  };
   promo_codes: {
     Row: {
       id: string;

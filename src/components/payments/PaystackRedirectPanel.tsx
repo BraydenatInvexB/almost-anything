@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { isPaystackConfigured } from "@/config/paystack";
+import { isPaystackPublicKeyReady } from "@/lib/payments/paystack-public";
 
 export function PaystackRedirectPanel({
   loading,
@@ -16,7 +16,7 @@ export function PaystackRedirectPanel({
   payLabel: string;
   secureNote: string;
 }) {
-  const configured = isPaystackConfigured();
+  const configured = isPaystackPublicKeyReady();
 
   return (
     <div className="space-y-4">
@@ -24,7 +24,8 @@ export function PaystackRedirectPanel({
 
       {!configured ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Paystack is not configured yet. Add your keys to <code className="text-xs">.env.local</code>.
+          Paystack is not configured yet. Replace placeholder keys in{" "}
+          <code className="text-xs">.env.local</code> with your test keys from dashboard.paystack.com.
         </div>
       ) : null}
 

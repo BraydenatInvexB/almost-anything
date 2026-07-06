@@ -31,4 +31,6 @@ export interface PaystackPaymentMetadata {
   sellerId?: string;
   plan?: string;
   paymentMethod?: string;
+  saveCard?: boolean;
+  userId?: string;
 }

@@ -12,7 +12,7 @@ import { createOrder } from "@/services/order-service";
 import { saveCustomerAddressFromCheckout } from "@/services/customer-address-service";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
-import { isPaystackConfigured } from "@/config/paystack";
+import { isPaystackConfigured, paystackConfigIssue } from "@/config/paystack";
 import { checkoutPaymentPageUrl } from "@/lib/payments/payment-urls";
 
 async function persistSavedAddress(
@@ -83,8 +83,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!usePaystack) {
+      const issue = paystackConfigIssue();
       return secureErrorResponse(
-        "Online payments are temporarily unavailable. Please try again later.",
+        issue ??
+          "Online payments are temporarily unavailable. Use demo checkout in development or add Paystack keys.",
         "PAYMENTS_UNAVAILABLE",
         503,
       );

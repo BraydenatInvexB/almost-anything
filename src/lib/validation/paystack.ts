@@ -5,6 +5,8 @@ export const initializePaymentSchema = z.object({
   orderNumber: z.string().optional(),
   sellerId: z.string().uuid().optional(),
   paymentMethod: z.enum(["card", "eft"]).optional(),
+  saveCard: z.boolean().optional(),
+  savedPaymentMethodId: z.string().uuid().optional(),
 });
 
 export const verifyPaymentSchema = z.object({

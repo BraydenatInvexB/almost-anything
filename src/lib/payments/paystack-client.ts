@@ -68,3 +68,23 @@ export async function verifyPaystackTransaction(reference: string): Promise<Pays
   );
   return data;
 }
+
+export async function chargePaystackAuthorization(input: {
+  authorizationCode: string;
+  email: string;
+  amountZar: number;
+  reference: string;
+  metadata?: Record<string, unknown>;
+}): Promise<PaystackVerifyResult> {
+  return paystackRequest<PaystackVerifyResult>("/transaction/charge_authorization", {
+    method: "POST",
+    body: JSON.stringify({
+      authorization_code: input.authorizationCode,
+      email: input.email,
+      amount: toPaystackAmount(input.amountZar),
+      reference: input.reference,
+      currency: PAYSTACK_CURRENCY,
+      metadata: input.metadata,
+    }),
+  });
+}

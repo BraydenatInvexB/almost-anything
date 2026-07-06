@@ -3,6 +3,7 @@ import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin"
 import { SELLER_PLAN_BY_ID } from "@/config/seller-plans";
 import { ensureProcurementForSupabaseOrder } from "@/lib/admin/operations-persistence";
 import { activateSellerSubscriptionOnFirstSale } from "@/services/seller/subscription";
+import { savePaymentMethodFromVerification } from "@/services/customer-payment-methods";
 import type { PaystackPaymentMetadata, PaystackVerifyResult } from "@/lib/payments/paystack-types";
 import type { Json } from "@/types/database";
 import type { SellerPlan } from "@/types/seller";
@@ -85,6 +86,14 @@ async function fulfillCheckoutPayment(
       .map((item) => item.product_id)
       .filter((id): id is string => Boolean(id));
     await activateSellerSubscriptionOnFirstSale(productIds);
+  }
+
+  if (metadata.saveCard && metadata.userId && verification.authorization) {
+    try {
+      await savePaymentMethodFromVerification(metadata.userId, verification);
+    } catch {
+      // Card save is best-effort and must not block order fulfillment.
+    }
   }
 
   return {

@@ -8,6 +8,8 @@ interface StartPaymentInput {
   orderNumber?: string;
   sellerId?: string;
   paymentMethod?: CheckoutPaymentMethod;
+  saveCard?: boolean;
+  savedPaymentMethodId?: string;
 }
 
 export function usePaystackPayment() {
@@ -28,6 +30,11 @@ export function usePaystackPayment() {
 
       if (!res.ok) {
         throw new Error(data.error ?? "Unable to start payment");
+      }
+
+      if (data.mode === "charged" && data.redirectUrl) {
+        window.location.href = data.redirectUrl as string;
+        return;
       }
 
       if (!data.authorizationUrl) {

@@ -4,26 +4,33 @@ import {
   isPaystackConfigured,
   paystackChannels,
   SELLER_CARD_VERIFICATION_ZAR,
+  type PaystackPaymentPurpose,
 } from "@/config/paystack";
 import { SELLER_PLAN_BY_ID } from "@/config/seller-plans";
 import { createPaystackReference } from "@/lib/payments/paystack-reference";
 import { initializePaystackTransaction } from "@/lib/payments/paystack-client";
 import { paystackCallbackUrl } from "@/lib/payments/payment-urls";
-import { markOrderPaystackReference } from "@/lib/payments/paystack-fulfillment";
-import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { initializeCheckoutPayment } from "@/lib/payments/checkout-payment";
+import { createServiceClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { PaystackPaymentPurpose } from "@/config/paystack";
 import type { SellerPlan } from "@/types/seller";
 import type { initializePaymentSchema } from "@/lib/validation/paystack";
 
 export async function resolveInitializePayment(input: z.infer<typeof initializePaymentSchema>) {
   if (!isPaystackConfigured()) {
-    throw new Error("Paystack is not configured.");
+    throw new Error(
+      "Paystack is not configured. Add your test keys from dashboard.paystack.com to .env.local.",
+    );
   }
 
   switch (input.purpose) {
     case "checkout":
-      return initializeCheckoutPayment(input.orderNumber, input.paymentMethod ?? "card");
+      return initializeCheckoutPayment({
+        orderNumber: input.orderNumber!,
+        paymentMethod: input.paymentMethod ?? "card",
+        saveCard: input.saveCard,
+        savedPaymentMethodId: input.savedPaymentMethodId,
+      });
     case "seller_signup":
       return initializeSellerSignupPayment(input.sellerId);
     case "seller_subscription":
@@ -31,49 +38,6 @@ export async function resolveInitializePayment(input: z.infer<typeof initializeP
     default:
       throw new Error("Unsupported payment purpose.");
   }
-}
-
-async function initializeCheckoutPayment(orderNumber: string | undefined, paymentMethod: "card" | "eft") {
-  if (!orderNumber) throw new Error("Order number is required.");
-  if (!isSupabaseConfigured()) throw new Error("Database is not configured.");
-
-  const supabase = createServiceClient();
-  const { data: order, error } = await supabase
-    .from("orders")
-    .select("order_number, total, status, payment_method, shipping_address")
-    .eq("order_number", orderNumber)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!order) throw new Error("Order not found.");
-  if (order.status === "paid") throw new Error("This order is already paid.");
-
-  const address = order.shipping_address as { email?: string } | null;
-  const email = address?.email;
-  if (!email) throw new Error("Order email is missing.");
-
-  const reference = createPaystackReference("CHK", orderNumber);
-  const result = await initializePaystackTransaction({
-    email,
-    amountZar: Number(order.total),
-    reference,
-    callbackUrl: paystackCallbackUrl(),
-    channels: paystackChannels(paymentMethod),
-    metadata: {
-      purpose: "checkout" satisfies PaystackPaymentPurpose,
-      orderNumber,
-      paymentMethod,
-    },
-  });
-
-  await markOrderPaystackReference(orderNumber, reference);
-
-  return {
-    authorizationUrl: result.authorization_url,
-    reference: result.reference,
-    amount: Number(order.total),
-    currency: "ZAR",
-  };
 }
 
 async function initializeSellerSignupPayment(sellerId: string | undefined) {
@@ -95,6 +59,7 @@ async function initializeSellerSignupPayment(sellerId: string | undefined) {
   });
 
   return {
+    mode: "redirect" as const,
     authorizationUrl: result.authorization_url,
     reference: result.reference,
     amount: SELLER_CARD_VERIFICATION_ZAR,
@@ -109,7 +74,7 @@ async function initializeSellerSubscriptionPayment(sellerId: string | undefined)
   const planConfig = SELLER_PLAN_BY_ID[plan];
   if (!planConfig) throw new Error("Unknown seller plan.");
 
-  const reference = createPaystackReference("SUB", sellerId);
+  const reference = createPaystackReference("SEL", sellerId);
   const result = await initializePaystackTransaction({
     email: seller.contact_email,
     amountZar: planConfig.priceMonthly,
@@ -124,6 +89,7 @@ async function initializeSellerSubscriptionPayment(sellerId: string | undefined)
   });
 
   return {
+    mode: "redirect" as const,
     authorizationUrl: result.authorization_url,
     reference: result.reference,
     amount: planConfig.priceMonthly,

@@ -18,7 +18,10 @@ import { useStorefrontSettings, defaultCouriersFromSettings } from "@/hooks/useS
 import { computeStorefrontTotals } from "@/lib/pricing/storefront-totals";
 import { PromoCodeInput } from "@/components/checkout/PromoCodeInput";
 import { ShippingAddressSection } from "@/components/checkout/ShippingAddressSection";
-import { CHECKOUT_PAYMENT_METHODS } from "@/config/paystack";
+import {
+  checkoutPaymentMethodsClient,
+  isPaystackPublicKeyReady,
+} from "@/lib/payments/paystack-public";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -29,7 +32,10 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [courierId, setCourierId] = useState("aramex");
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const paymentOptions = checkoutPaymentMethodsClient();
+  const [paymentMethod, setPaymentMethod] = useState(
+    () => paymentOptions.find((m) => m.id === "demo")?.id ?? "card",
+  );
   const [saveAddress, setSaveAddress] = useState(true);
 
   const [address, setAddress] = useState<ShippingAddress>({
@@ -188,7 +194,7 @@ export default function CheckoutPage() {
                 Payment method
               </h2>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {CHECKOUT_PAYMENT_METHODS.map((m) => (
+                {paymentOptions.map((m) => (
                   <label key={m.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border-2 p-3 text-sm font-medium ${paymentMethod === m.id ? "border-brand bg-brand/5" : "border-neutral-200"}`}>
                     <input type="radio" name="payment" value={m.id} checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} />
                     {m.label}
@@ -197,7 +203,9 @@ export default function CheckoutPage() {
               </div>
               <div className="mt-4 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
                 <Lock className="mb-2 h-4 w-4" />
-                Secure checkout powered by Paystack. Card and Instant EFT are supported.
+                {isPaystackPublicKeyReady()
+                  ? "Secure checkout powered by Paystack. Card and Instant EFT are supported."
+                  : "Paystack keys are not configured. Use demo checkout in development, or add your test keys to .env.local."}
               </div>
             </Card>
           </div>

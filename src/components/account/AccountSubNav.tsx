@@ -5,6 +5,7 @@ const LINKS = [
   { href: "/account", label: "Overview", exact: true },
   { href: "/account/orders", label: "Orders" },
   { href: "/account/addresses", label: "Addresses" },
+  { href: "/account/payment-methods", label: "Payment methods" },
   { href: "/account/returns", label: "Returns" },
   { href: "/favorites", label: "Favorites" },
 ];

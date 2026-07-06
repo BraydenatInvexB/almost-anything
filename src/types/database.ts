@@ -28,6 +28,7 @@ export type Database = {
       orders: DatabaseCommerceTables["orders"];
       order_items: DatabaseCommerceTables["order_items"];
       customer_addresses: DatabaseCommerceTables["customer_addresses"];
+      customer_payment_methods: DatabaseCommerceTables["customer_payment_methods"];
       promo_codes: DatabaseCommerceTables["promo_codes"];
       sellers: DatabaseSellerTables["sellers"];
       seller_documents: DatabaseSellerTables["seller_documents"];
