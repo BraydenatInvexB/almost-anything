@@ -19,6 +19,7 @@ export default async function SellerProductsPage() {
           freeShippingThreshold: Number(settings.free_shipping_threshold),
           defaultMarkupPercent: Number(settings.default_markup_percent),
         }}
+        sellerApproved={seller.status === "approved"}
         defaultTab="products"
         canEdit={sellerCan(seller, "products.edit")}
         canManageStock={sellerCan(seller, "inventory.manage")}

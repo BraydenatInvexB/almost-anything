@@ -4,6 +4,7 @@ import { getCurrentStaff, listSellerProductsForAdmin, moderateSellerProduct, sen
 import { staffCan } from "@/config/rbac";
 
 const listingStatusSchema = z.enum([
+  "draft",
   "published",
   "pending_review",
   "flagged",

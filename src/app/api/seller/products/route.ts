@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentSeller } from "@/services/seller-service";
-import { createSellerProduct, listSellerProducts, updateSellerProductStock } from "@/services/seller/products";
+import {
+  createSellerProduct,
+  listSellerProducts,
+  setSellerProductListingIntent,
+  updateSellerProductStock,
+} from "@/services/seller/products";
 import { sellerCan } from "@/config/seller-rbac";
 
 const deliverySchema = z.object({
@@ -9,24 +14,36 @@ const deliverySchema = z.object({
   deliveryFeeZar: z.number().min(0).nullable().optional(),
 });
 
-const createSchema = z.object({
-  name: z.string().min(2),
-  costPrice: z.number().positive(),
-  markupPercent: z.number().min(0).max(500),
-  retailPrice: z.number().positive().optional(),
-  stockQuantity: z.number().int().min(0),
-  category: z.string().min(1),
-  imageUrls: z.array(z.string()).default([]),
-  description: z.string().optional(),
-  deliveryDaysMin: z.number().int().min(1).optional(),
-  deliveryDaysMax: z.number().int().min(1).optional(),
-  delivery: deliverySchema.optional(),
-});
+const createSchema = z
+  .object({
+    name: z.string().min(2),
+    costPrice: z.number().min(0),
+    markupPercent: z.number().min(0).max(500),
+    retailPrice: z.number().min(0).optional(),
+    stockQuantity: z.number().int().min(0),
+    category: z.string().min(1),
+    imageUrls: z.array(z.string()).default([]),
+    description: z.string().optional(),
+    deliveryDaysMin: z.number().int().min(1).optional(),
+    deliveryDaysMax: z.number().int().min(1).optional(),
+    delivery: deliverySchema.optional(),
+    saveIntent: z.enum(["draft", "list"]).default("list"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.saveIntent === "list" && data.costPrice <= 0) {
+      ctx.addIssue({ code: "custom", message: "Cost price is required to list a product", path: ["costPrice"] });
+    }
+  });
 
-const patchSchema = z.object({
-  id: z.string().uuid(),
-  stockQuantity: z.number().int().min(0),
-});
+const patchSchema = z
+  .object({
+    id: z.string().uuid(),
+    stockQuantity: z.number().int().min(0).optional(),
+    listingAction: z.enum(["draft", "list"]).optional(),
+  })
+  .refine((data) => data.stockQuantity !== undefined || data.listingAction !== undefined, {
+    message: "No update specified",
+  });
 
 export async function GET() {
   const seller = await getCurrentSeller();
@@ -45,7 +62,7 @@ export async function POST(request: Request) {
 
   const parsed = createSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid product data" }, { status: 400 });
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid product data" }, { status: 400 });
   }
 
   try {
@@ -67,9 +84,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const seller = await getCurrentSeller();
-  if (!seller || !sellerCan(seller, "inventory.manage")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  if (!seller) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const parsed = patchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -77,11 +92,26 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const product = await updateSellerProductStock(seller.id, parsed.data.id, parsed.data.stockQuantity);
-    return NextResponse.json({ ok: true, product });
+    if (parsed.data.stockQuantity !== undefined) {
+      if (!sellerCan(seller, "inventory.manage")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const product = await updateSellerProductStock(seller.id, parsed.data.id, parsed.data.stockQuantity);
+      return NextResponse.json({ ok: true, product });
+    }
+
+    if (parsed.data.listingAction) {
+      if (!sellerCan(seller, "products.edit")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const product = await setSellerProductListingIntent(seller, parsed.data.id, parsed.data.listingAction);
+      return NextResponse.json({ ok: true, product });
+    }
+
+    return NextResponse.json({ error: "Invalid update" }, { status: 400 });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Could not update stock" },
+      { error: err instanceof Error ? err.message : "Could not update product" },
       { status: 400 },
     );
   }

@@ -7,7 +7,17 @@ import { STOREFRONT_SECTION_BY_ID } from "@/config/storefront-sections";
 import { BoldHero } from "@/components/home/BoldHero";
 import { HomeProductRail } from "@/components/home/HomeProductRail";
 
-const POP = ["#e30613", "#5BC8FF", "#e30613", "#C7A8FF", "#e30613", "#7DE2A8", "#e30613", "#9BE7FF"];
+/** Bold category tile palette — brand red on key lanes only, pastels elsewhere. */
+const CATEGORY_TILE_COLORS = [
+  "#FF6B6B", // Electronics — lighter red
+  "#5BC8FF", // Computers
+  "#FFD23F", // Phones — warm yellow (was red)
+  "#C7A8FF", // Audio
+  "#B8E986", // Home & living — fresh lime (was red)
+  "#7DE2A8", // Kitchen
+  "#FF9F68", // Furniture — soft coral (was red)
+  "#9BE7FF", // Fashion
+];
 
 interface BoldHomeProps {
   hot: ProductCardData[];
@@ -36,7 +46,7 @@ export function BoldHome({ hot, steals, fresh, heroShowcase }: BoldHomeProps) {
             key={c.slug}
             href={`/products?category=${c.slug}`}
             className="group flex min-h-[140px] flex-col justify-between rounded-[22px] border-[3px] border-black p-5 shadow-[5px_5px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[7px_7px_0_0_#000]"
-            style={{ backgroundColor: POP[i % POP.length] }}
+            style={{ backgroundColor: CATEGORY_TILE_COLORS[i % CATEGORY_TILE_COLORS.length] }}
           >
             <span className="flex h-9 w-9 items-center justify-center self-end rounded-full border-2 border-black bg-white transition-transform group-hover:rotate-45">
               <ArrowUpRight className="h-4 w-4 text-black" />

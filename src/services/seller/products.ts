@@ -1,6 +1,12 @@
 import { getSellerItemLimit } from "@/config/seller-plans";
 import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
 import {
+  resolveListingStatusForPublish,
+  resolveListingStatusForSave,
+  type SellerSaveIntent,
+} from "@/lib/seller/listing-status";
+import type { SellerListingStatus } from "@/config/seller-listing-status";
+import {
   markupFromPrices,
   retailFromCost,
   sellerDeliveryMetadata,
@@ -41,6 +47,7 @@ export async function createSellerProduct(
     deliveryDaysMin?: number;
     deliveryDaysMax?: number;
     delivery?: SellerDeliverySettings;
+    saveIntent?: SellerSaveIntent;
   },
 ) {
   const limit = getSellerItemLimit(seller.plan);
@@ -51,9 +58,13 @@ export async function createSellerProduct(
     }
   }
 
+  const saveIntent = input.saveIntent ?? "list";
   const costPrice = input.costPrice;
   const markupPercent = input.markupPercent;
-  const retailPrice = input.retailPrice ?? retailFromCost(costPrice, markupPercent);
+  const retailPrice =
+    input.retailPrice ??
+    (costPrice > 0 ? retailFromCost(costPrice, markupPercent) : 0);
+  const listingStatus = resolveListingStatusForSave(seller, saveIntent);
   const slug = slugify(input.name);
   const imageUrl = input.imageUrls[0] ?? null;
   const delivery = input.delivery ?? { customerPaysDelivery: true, deliveryFeeZar: null };
@@ -80,10 +91,10 @@ export async function createSellerProduct(
       delivery_days_min: input.deliveryDaysMin ?? SA_WAREHOUSE_DELIVERY_DAYS.min,
       delivery_days_max: input.deliveryDaysMax ?? SA_WAREHOUSE_DELIVERY_DAYS.max,
       stock_status: input.stockQuantity > 0 ? "in_stock" : "out_of_stock",
-      listing_status: seller.status === "approved" ? "published" : "pending_review",
+      listing_status: listingStatus,
       metadata,
     })
-    .select("id, slug, name, base_price, retail_price, markup_percent")
+    .select("id, slug, name, base_price, retail_price, markup_percent, listing_status")
     .single();
 
   if (error) throw error;
@@ -117,6 +128,7 @@ export async function importSellerStockCsv(
         category: row.category ?? "general",
         imageUrls: row.imageUrl ? [row.imageUrl] : [],
         description: row.description,
+        saveIntent: "list",
       });
       successCount += 1;
     } catch (err) {
@@ -157,4 +169,45 @@ export async function updateSellerProductStock(
 
   if (error) throw error;
   return data;
+}
+
+export async function updateSellerProductListing(
+  seller: SellerProfile,
+  productId: string,
+  listingStatus: SellerListingStatus,
+) {
+  const { data, error } = await sellerDb()
+    .from("products")
+    .update({ listing_status: listingStatus })
+    .eq("id", productId)
+    .eq("seller_id", seller.id)
+    .select("id, listing_status")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function setSellerProductListingIntent(
+  seller: SellerProfile,
+  productId: string,
+  intent: SellerSaveIntent,
+) {
+  const { data: existing, error: fetchError } = await sellerDb()
+    .from("products")
+    .select("listing_status")
+    .eq("id", productId)
+    .eq("seller_id", seller.id)
+    .maybeSingle();
+
+  if (fetchError) throw fetchError;
+  if (!existing) throw new Error("Product not found.");
+
+  const current = (existing.listing_status ?? "draft") as SellerListingStatus;
+  const nextStatus =
+    intent === "draft"
+      ? "draft"
+      : resolveListingStatusForPublish(seller, current);
+
+  return updateSellerProductListing(seller, productId, nextStatus);
 }

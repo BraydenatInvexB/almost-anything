@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { Plus, Upload } from "lucide-react";
-import { BtnPrimary, BtnSecondary, EmptyState, StatusBadge, Table, Td, Th } from "@/components/admin/ui";
+import { BtnPrimary, BtnSecondary, EmptyState, Table, Td, Th } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
 import {
   formatDeliveryWindow,
@@ -11,24 +11,38 @@ import {
   formatProductDelivery,
 } from "@/lib/seller/catalog-display";
 import { SellerCatalogToolbar } from "@/components/seller/SellerCatalogToolbar";
+import { SellerCatalogListingActions } from "@/components/seller/SellerCatalogListingActions";
+import { SellerListingBadge } from "@/components/seller/SellerListingBadge";
 import { SellerStockBadge } from "@/components/seller/SellerPanel";
+import { normalizeListingStatus } from "@/config/seller-listing-status";
 import type { SellerCatalogProduct, SellerCatalogShipping } from "@/types/seller-catalog";
+
+const LISTING_FILTERS = [
+  { id: "all", label: "All listings" },
+  { id: "draft", label: "Drafts" },
+  { id: "live", label: "Live & pending" },
+] as const;
 
 export function SellerCatalogProductsTab({
   products,
   shipping,
+  sellerApproved,
   onGoAdd,
   onGoImport,
   canEdit,
+  onListingUpdated,
 }: {
   products: SellerCatalogProduct[];
   shipping: SellerCatalogShipping;
+  sellerApproved: boolean;
   onGoAdd: () => void;
   onGoImport: () => void;
   canEdit: boolean;
+  onListingUpdated: (productId: string, listingStatus: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
+  const [listingFilter, setListingFilter] = useState<(typeof LISTING_FILTERS)[number]["id"]>("all");
 
   const categories = useMemo(
     () => ["all", ...Array.from(new Set(products.map((p) => p.category ?? "general")))],
@@ -40,7 +54,14 @@ export function SellerCatalogProductsTab({
       p.name.toLowerCase().includes(query.toLowerCase()) ||
       p.slug.toLowerCase().includes(query.toLowerCase());
     const matchesCat = category === "all" || (p.category ?? "general") === category;
-    return matchesQuery && matchesCat;
+    const status = normalizeListingStatus(p.listing_status);
+    const matchesListing =
+      listingFilter === "all"
+        ? true
+        : listingFilter === "draft"
+          ? status === "draft"
+          : status === "published" || status === "pending_review";
+    return matchesQuery && matchesCat && matchesListing;
   });
 
   if (!products.length) {
@@ -60,8 +81,15 @@ export function SellerCatalogProductsTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-        <div className="flex-1">
-          <SellerCatalogToolbar query={query} onQueryChange={setQuery} category={category} onCategoryChange={setCategory} categories={categories} />
+        <div className="flex flex-1 flex-col gap-3 lg:flex-row">
+          <div className="flex-1">
+            <SellerCatalogToolbar query={query} onQueryChange={setQuery} category={category} onCategoryChange={setCategory} categories={categories} />
+          </div>
+          <select value={listingFilter} onChange={(e) => setListingFilter(e.target.value as typeof listingFilter)} className="input h-10 w-full min-w-[160px] lg:w-auto">
+            {LISTING_FILTERS.map((filter) => (
+              <option key={filter.id} value={filter.id}>{filter.label}</option>
+            ))}
+          </select>
         </div>
         {canEdit ? (
           <div className="flex shrink-0 gap-2">
@@ -83,6 +111,7 @@ export function SellerCatalogProductsTab({
               <Th>Delivery</Th>
               <Th>Stock</Th>
               <Th>Status</Th>
+              {canEdit ? <Th>Actions</Th> : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-50">
@@ -108,7 +137,17 @@ export function SellerCatalogProductsTab({
                     <SellerStockBadge quantity={Number(product.stock_quantity)} />
                   </div>
                 </Td>
-                <Td><StatusBadge status={product.listing_status ?? "published"} /></Td>
+                <Td><SellerListingBadge status={product.listing_status} /></Td>
+                {canEdit ? (
+                  <Td>
+                    <SellerCatalogListingActions
+                      product={product}
+                      sellerApproved={sellerApproved}
+                      canEdit={canEdit}
+                      onUpdated={onListingUpdated}
+                    />
+                  </Td>
+                ) : null}
               </tr>
             ))}
           </tbody>

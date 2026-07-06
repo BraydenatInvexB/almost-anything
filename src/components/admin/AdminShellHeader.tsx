@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Menu, ChevronDown, LogOut } from "lucide-react";
 import type { StaffProfile } from "@/types/staff-access";
 import { ROLE_META } from "@/config/rbac";
@@ -12,6 +13,7 @@ import { useAuth } from "@/context/AuthProvider";
 import type { AdminNotificationSummary } from "@/lib/admin/notifications";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { AdminSearch } from "@/components/admin/AdminSearch";
+import { ConsoleSignOutButton } from "@/components/layout/ConsoleSignOutButton";
 
 export function AdminShellHeader({
   staff,
@@ -27,6 +29,7 @@ export function AdminShellHeader({
   onOpenMobileMenu: () => void;
 }) {
   const { signOut } = useAuth();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const roleMeta = ROLE_META[staff.role];
 
@@ -61,6 +64,7 @@ export function AdminShellHeader({
 
         <div className="ml-auto flex items-center gap-2">
           {showNotifications && <AdminNotifications initial={notifications} />}
+          <ConsoleSignOutButton redirectTo="/admin/login" variant="header" className="hidden md:inline-flex" />
 
           <div className="relative">
             <button
@@ -109,7 +113,12 @@ export function AdminShellHeader({
                     Admin settings
                   </Link>
                   <button
-                    onClick={() => signOut()}
+                    onClick={async () => {
+                      setMenuOpen(false);
+                      await signOut();
+                      router.push("/admin/login");
+                      router.refresh();
+                    }}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <LogOut className="h-4 w-4" />

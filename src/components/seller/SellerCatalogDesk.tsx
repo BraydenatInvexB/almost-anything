@@ -24,12 +24,14 @@ const TABS: { id: SellerCatalogTab; label: string }[] = [
 export function SellerCatalogDesk({
   products: initialProducts,
   shipping,
+  sellerApproved,
   defaultTab = "products",
   canEdit,
   canManageStock,
 }: {
   products: SellerCatalogProduct[];
   shipping: SellerCatalogShipping;
+  sellerApproved: boolean;
   defaultTab?: SellerCatalogTab;
   canEdit: boolean;
   canManageStock: boolean;
@@ -96,7 +98,17 @@ export function SellerCatalogDesk({
       </div>
 
       {activeTab === "products" ? (
-        <SellerCatalogProductsTab products={products} shipping={shipping} onGoAdd={() => setTab("add")} onGoImport={() => setTab("import")} canEdit={canEdit} />
+        <SellerCatalogProductsTab
+          products={products}
+          shipping={shipping}
+          sellerApproved={sellerApproved}
+          onGoAdd={() => setTab("add")}
+          onGoImport={() => setTab("import")}
+          canEdit={canEdit}
+          onListingUpdated={(id, listingStatus) =>
+            setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, listing_status: listingStatus } : p)))
+          }
+        />
       ) : null}
       {activeTab === "stock" ? (
         <SellerCatalogStockTab
@@ -108,6 +120,7 @@ export function SellerCatalogDesk({
       {activeTab === "add" && canEdit ? (
         <SellerCatalogAddTab
           shipping={shipping}
+          sellerApproved={sellerApproved}
           onAdded={(product) => {
             setProducts((prev) => [product, ...prev]);
             setTab("products");

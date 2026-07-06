@@ -1,4 +1,5 @@
 export type SellerListingStatus =
+  | "draft"
   | "published"
   | "pending_review"
   | "flagged"
@@ -6,6 +7,7 @@ export type SellerListingStatus =
   | "archived";
 
 export const SELLER_LISTING_STATUSES: SellerListingStatus[] = [
+  "draft",
   "published",
   "pending_review",
   "flagged",
@@ -17,6 +19,11 @@ export const SELLER_LISTING_STATUS_META: Record<
   SellerListingStatus,
   { label: string; className: string; description: string }
 > = {
+  draft: {
+    label: "Draft",
+    className: "bg-neutral-100 text-neutral-700",
+    description: "Saved privately — not visible to customers",
+  },
   published: {
     label: "Published",
     className: "bg-emerald-100 text-emerald-800",
@@ -48,5 +55,5 @@ export function normalizeListingStatus(value: string | null | undefined): Seller
   if (value && value in SELLER_LISTING_STATUS_META) {
     return value as SellerListingStatus;
   }
-  return "pending_review";
+  return "draft";
 }

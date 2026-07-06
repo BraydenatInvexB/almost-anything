@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ExternalLink, X } from "lucide-react";
 import { SITE_CONFIG } from "@/config/site";
+import { ConsoleSignOutButton } from "@/components/layout/ConsoleSignOutButton";
 import { AdminNavList, type AdminNavGroup } from "@/components/admin/AdminNavList";
 
 export function AdminShellSidebar({
@@ -45,6 +46,7 @@ export function AdminShellSidebar({
           <ExternalLink className="h-4 w-4" />
           View storefront
         </Link>
+        <ConsoleSignOutButton redirectTo="/admin/login" />
       </aside>
 
       {mobileOpen && (
@@ -83,6 +85,15 @@ export function AdminShellSidebar({
                 onNavigate={onMobileClose}
               />
             </div>
+            <Link
+              href="/"
+              onClick={onMobileClose}
+              className="mt-4 flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm font-medium text-neutral-600"
+            >
+              <ExternalLink className="h-4 w-4" />
+              View storefront
+            </Link>
+            <ConsoleSignOutButton redirectTo="/admin/login" />
           </aside>
         </div>
       )}
