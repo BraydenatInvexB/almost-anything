@@ -8,6 +8,7 @@ import { Check, Phone } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { GoogleIcon, FacebookIcon } from "@/components/ui/BrandIcons";
+import { SocialAuthButton } from "@/components/auth/SocialAuthButton";
 import { useAuth, type OAuthProvider } from "@/context/AuthProvider";
 import { AVATARS, DEFAULT_AVATAR } from "@/config/avatars";
 import { cn } from "@/lib/utils/cn";
@@ -67,33 +68,21 @@ export function SignupFormPanel() {
         </Link>
       </p>
 
-      <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-        <button
-          type="button"
+      <div className="mt-6 flex flex-col gap-2.5">
+        <SocialAuthButton
+          label="Continue with Google"
           onClick={() => handleOAuth("google")}
           disabled={!isConfigured || oauthLoading !== null}
-          className="flex h-11 items-center justify-center gap-2.5 rounded-full border border-neutral-200 bg-white text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {oauthLoading === "google" ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-700" />
-          ) : (
-            <GoogleIcon className="h-4 w-4" />
-          )}
-          Continue with Google
-        </button>
-        <button
-          type="button"
+          loading={oauthLoading === "google"}
+          icon={<GoogleIcon className="h-5 w-5" />}
+        />
+        <SocialAuthButton
+          label="Continue with Facebook"
           onClick={() => handleOAuth("facebook")}
           disabled={!isConfigured || oauthLoading !== null}
-          className="flex h-11 items-center justify-center gap-2.5 rounded-full border border-neutral-200 bg-white text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {oauthLoading === "facebook" ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-700" />
-          ) : (
-            <FacebookIcon className="h-4 w-4" />
-          )}
-          Continue with Facebook
-        </button>
+          loading={oauthLoading === "facebook"}
+          icon={<FacebookIcon className="h-5 w-5" />}
+        />
       </div>
 
       <div className="mt-5 flex items-center gap-3">

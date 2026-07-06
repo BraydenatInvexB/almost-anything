@@ -21,11 +21,11 @@ interface SiteHeaderProps {
 }
 
 const ICON_BTN =
-  "relative flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand";
-const PRIMARY_PILL =
-  "inline-flex items-center rounded-lg border-2 border-black bg-black px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-white shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white";
-const SECONDARY_PILL =
-  "inline-flex items-center rounded-lg border-2 border-black bg-white px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-black shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white";
+  "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand";
+const AUTH_PILL =
+  "inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border-2 border-black px-3 text-[11px] font-extrabold uppercase tracking-wide shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 sm:px-4 sm:text-xs";
+const PRIMARY_PILL = cn(AUTH_PILL, "bg-black text-white hover:bg-brand hover:text-white");
+const SECONDARY_PILL = cn(AUTH_PILL, "bg-white text-black hover:bg-brand hover:text-white");
 const COUNT_BADGE =
   "absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-black bg-brand px-1 text-[9px] font-extrabold text-white";
 
@@ -101,10 +101,7 @@ export function SiteHeader({ activeCategory, searchQuery = "", variant = "page" 
   const [catOpen, setCatOpen] = useState(false);
 
   const actions = (
-    <div className="flex shrink-0 items-center gap-1.5">
-      <Link href="/products" className={ICON_BTN} aria-label="Search products">
-        <Search className="h-4 w-4 text-black" />
-      </Link>
+    <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
       <Link href="/cart" className={ICON_BTN} aria-label="Cart">
         <ShoppingBag
           key={`cart-icon-${cartPulseKey}`}
@@ -158,11 +155,14 @@ export function SiteHeader({ activeCategory, searchQuery = "", variant = "page" 
         </Link>
       ) : (
         <>
-          <Link href="/signup" className={SECONDARY_PILL}>
+          <Link href="/signup" className={cn(SECONDARY_PILL, "hidden sm:inline-flex")}>
             Register
           </Link>
-          <Link href="/login" className={PRIMARY_PILL}>
+          <Link href="/login" className={cn(PRIMARY_PILL, "hidden sm:inline-flex")}>
             Sign in
+          </Link>
+          <Link href="/login" className={cn(ICON_BTN, "bg-black sm:hidden")} aria-label="Sign in">
+            <User className="h-4 w-4 text-white" />
           </Link>
         </>
       )}
@@ -178,8 +178,8 @@ export function SiteHeader({ activeCategory, searchQuery = "", variant = "page" 
     ];
 
     return (
-      <header className="mb-4 flex items-center gap-4 px-1 py-3">
-        <SiteLogo priority size="large" />
+      <header className="mb-4 flex min-w-0 items-center gap-2 px-1 py-3 sm:gap-4">
+        <SiteLogo priority size="large" className="min-w-0 max-w-[42%] sm:max-w-none" imageClassName="max-h-14 sm:max-h-none" />
         <nav className="mx-auto hidden items-center gap-1 lg:flex">
           <CategoriesMenu open={catOpen} setOpen={setCatOpen} activeCategory={activeCategory} />
           {navLinks.map((l) => (
