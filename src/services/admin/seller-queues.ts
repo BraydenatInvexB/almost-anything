@@ -1,4 +1,4 @@
-import { sellerDb, trySellerDb } from "@/lib/seller/db";
+import { trySellerDb } from "@/lib/seller/db";
 import { getDocumentLabel } from "@/config/seller-document-requirements";
 import { mapSellerDocument, mapSellerPayout } from "@/lib/seller/seller-mapper";
 import type { SellerDocumentQueueRow, SellerPayoutQueueRow } from "@/types/seller-admin";
