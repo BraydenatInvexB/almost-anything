@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { mapSellerRow } from "@/lib/seller/seller-mapper";
-import { sellerDb } from "@/lib/seller/db";
+import { isSellerDbConfigured, sellerDb, trySellerDb } from "@/lib/seller/db";
 import { activateSellerTeamMembership } from "@/services/seller/team";
 import type { SellerProfile, SellerTeamRole } from "@/types/seller";
 
@@ -26,6 +26,8 @@ async function resolveTeamRole(
 }
 
 export async function getCurrentSeller(): Promise<SellerProfile | null> {
+  if (!isSellerDbConfigured()) return null;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -67,7 +69,10 @@ export async function getCurrentSeller(): Promise<SellerProfile | null> {
 }
 
 export async function listApprovedSellers(): Promise<SellerProfile[]> {
-  const { data, error } = await sellerDb()
+  const db = trySellerDb();
+  if (!db) return [];
+
+  const { data, error } = await db
     .from("sellers")
     .select("*")
     .eq("status", "approved")
@@ -78,7 +83,10 @@ export async function listApprovedSellers(): Promise<SellerProfile[]> {
 }
 
 export async function getSellerBySlug(slug: string): Promise<SellerProfile | null> {
-  const { data, error } = await sellerDb()
+  const db = trySellerDb();
+  if (!db) return null;
+
+  const { data, error } = await db
     .from("sellers")
     .select("*")
     .eq("slug", slug)

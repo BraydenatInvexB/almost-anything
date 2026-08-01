@@ -1,11 +1,14 @@
 import { mapSellerDocument, mapSellerPayout, mapSellerRow } from "@/lib/seller/seller-mapper";
-import { sellerDb } from "@/lib/seller/db";
+import { sellerDb, trySellerDb } from "@/lib/seller/db";
 import type { SellerDocument, SellerPayout, SellerProfile, SellerStatus } from "@/types/seller";
 
 import type { SellerDeskFilter } from "@/types/seller-admin";
 
 export async function countPendingSellerApplications(): Promise<number> {
-  const { count, error } = await sellerDb()
+  const db = trySellerDb();
+  if (!db) return 0;
+
+  const { count, error } = await db
     .from("sellers")
     .select("*", { count: "exact", head: true })
     .eq("status", "pending_review");
@@ -15,7 +18,10 @@ export async function countPendingSellerApplications(): Promise<number> {
 }
 
 export async function listAllSellers(filter: SellerDeskFilter = "all"): Promise<SellerProfile[]> {
-  let query = sellerDb().from("sellers").select("*").order("created_at", { ascending: false });
+  const db = trySellerDb();
+  if (!db) return [];
+
+  let query = db.from("sellers").select("*").order("created_at", { ascending: false });
 
   if (filter !== "all") {
     query = query.eq("status", filter);
@@ -32,7 +38,8 @@ export async function getSellerAdminDetail(id: string): Promise<{
   documents: SellerDocument[];
   payouts: SellerPayout[];
 } | null> {
-  const db = sellerDb();
+  const db = trySellerDb();
+  if (!db) return null;
   const { data: seller, error: sellerError } = await db
     .from("sellers")
     .select("*")

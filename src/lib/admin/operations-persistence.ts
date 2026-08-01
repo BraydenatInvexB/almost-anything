@@ -1,11 +1,11 @@
-import { isSupabaseConfigured } from "@/lib/supabase/admin";
+import { isSupabaseServiceConfigured } from "@/lib/supabase/admin";
 import * as store from "@/lib/admin/operations-store";
 import * as repo from "@/lib/supabase/operations-repository";
 
 export type { CreateReturnInput } from "@/lib/admin/operations-store";
 
 export function canUseSupabaseOps(): boolean {
-  return isSupabaseConfigured() && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return isSupabaseServiceConfigured();
 }
 
 async function withRepo<T>(fn: () => Promise<T>, fallback: () => T | Promise<T>): Promise<T> {

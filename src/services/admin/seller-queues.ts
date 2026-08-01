@@ -1,11 +1,13 @@
-import { sellerDb } from "@/lib/seller/db";
+import { sellerDb, trySellerDb } from "@/lib/seller/db";
 import { getDocumentLabel } from "@/config/seller-document-requirements";
 import { mapSellerDocument, mapSellerPayout } from "@/lib/seller/seller-mapper";
 import type { SellerDocumentQueueRow, SellerPayoutQueueRow } from "@/types/seller-admin";
 
 async function sellerNameMap(sellerIds: string[]) {
   if (!sellerIds.length) return {};
-  const { data } = await sellerDb()
+  const db = trySellerDb();
+  if (!db) return {};
+  const { data } = await db
     .from("sellers")
     .select("id, shop_name, company_name")
     .in("id", sellerIds);
@@ -15,7 +17,10 @@ async function sellerNameMap(sellerIds: string[]) {
 export async function listSellerDocumentsQueue(
   status: "pending" | "all" = "pending",
 ): Promise<SellerDocumentQueueRow[]> {
-  let query = sellerDb()
+  const db = trySellerDb();
+  if (!db) return [];
+
+  let query = db
     .from("seller_documents")
     .select("id, seller_id, doc_type, file_name, file_url, status, uploaded_at, notes")
     .order("uploaded_at", { ascending: false });
@@ -50,7 +55,10 @@ export async function listSellerDocumentsQueue(
 export async function listSellerPayoutsQueue(
   status: "pending" | "all" = "pending",
 ): Promise<SellerPayoutQueueRow[]> {
-  let query = sellerDb()
+  const db = trySellerDb();
+  if (!db) return [];
+
+  let query = db
     .from("seller_payouts")
     .select("id, seller_id, amount, currency, status, requested_at, notes")
     .order("requested_at", { ascending: false });
@@ -81,7 +89,10 @@ export async function listSellerPayoutsQueue(
 }
 
 export async function countPendingSellerDocuments(): Promise<number> {
-  const { count, error } = await sellerDb()
+  const db = trySellerDb();
+  if (!db) return 0;
+
+  const { count, error } = await db
     .from("seller_documents")
     .select("*", { count: "exact", head: true })
     .eq("status", "pending");
@@ -90,7 +101,10 @@ export async function countPendingSellerDocuments(): Promise<number> {
 }
 
 export async function countPendingSellerPayouts(): Promise<number> {
-  const { count, error } = await sellerDb()
+  const db = trySellerDb();
+  if (!db) return 0;
+
+  const { count, error } = await db
     .from("seller_payouts")
     .select("*", { count: "exact", head: true })
     .eq("status", "pending");
