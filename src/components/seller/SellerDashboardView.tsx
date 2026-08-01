@@ -61,7 +61,19 @@ export function SellerDashboardView({
       <SellerStatGrid>
         <SellerStat label="Listings" value={stats.productCount} hint={limitLabel} />
         <SellerStat label="Orders" value={stats.orderCount} hint={`${stats.pendingOrders} awaiting shipment`} />
-        <SellerStat label="Gross sales" value={formatCurrency(stats.revenueTotal, "ZAR")} hint="Lifetime revenue" />
+        {stats.canViewFinance ? (
+          <SellerStat
+            label="Gross sales"
+            value={formatCurrency(stats.revenueTotal, "ZAR")}
+            hint="Lifetime revenue"
+          />
+        ) : (
+          <SellerStat
+            label="Gross sales"
+            value="—"
+            hint="Ask the shop owner to enable revenue access"
+          />
+        )}
         <SellerStat
           label="Low stock"
           value={stats.lowStockCount}

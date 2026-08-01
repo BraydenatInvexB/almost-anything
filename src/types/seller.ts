@@ -112,6 +112,8 @@ export interface SellerDashboardStats {
   productLimit: number | null;
   orderCount: number;
   revenueTotal: number;
+  /** False when the signed-in team member cannot see financial figures. */
+  canViewFinance: boolean;
   pendingOrders: number;
   lowStockCount: number;
   subscriptionStatus: SellerSubscriptionStatus;

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApprovedSellerApi } from "@/services/seller/access-guard";
+import {
+  ALL_SELLER_PERMISSIONS,
+  type SellerPermission,
+} from "@/config/seller-permissions";
 import { sellerCan } from "@/config/seller-rbac";
 import { SELLER_ASSIGNABLE_ROLES } from "@/config/seller-team-roles";
 import {
@@ -11,11 +15,15 @@ import {
 } from "@/services/seller/team";
 
 const roleEnum = z.enum(SELLER_ASSIGNABLE_ROLES);
+const permissionEnum = z.enum(
+  ALL_SELLER_PERMISSIONS as [SellerPermission, ...SellerPermission[]],
+);
 
 const inviteSchema = z.object({
   email: z.string().email(),
   fullName: z.string().min(2),
   role: roleEnum.default("staff"),
+  permissions: z.array(permissionEnum).optional(),
 });
 
 const updateSchema = z.object({
@@ -23,6 +31,7 @@ const updateSchema = z.object({
   role: roleEnum.optional(),
   status: z.enum(["invited", "active", "suspended"]).optional(),
   fullName: z.string().min(2).optional(),
+  permissions: z.array(permissionEnum).optional(),
 });
 
 export async function GET() {

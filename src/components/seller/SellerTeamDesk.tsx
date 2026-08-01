@@ -5,6 +5,11 @@ import { CheckCircle2, Loader2, Mail, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { SellerTeamGrantToggle } from "@/components/seller/SellerTeamGrantToggle";
+import {
+  applyTeamGrant,
+  SELLER_FINANCE_GRANT,
+} from "@/config/seller-team-grants";
 import {
   SELLER_ASSIGNABLE_ROLES,
   SELLER_TEAM_ROLE_META,
@@ -20,6 +25,7 @@ export function SellerTeamDesk() {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<SellerAssignableRole>("staff");
+  const [showRevenue, setShowRevenue] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -43,6 +49,10 @@ export function SellerTeamDesk() {
     void loadTeam();
   }, [loadTeam]);
 
+  function invitePermissions() {
+    return showRevenue ? [...SELLER_FINANCE_GRANT.permissions] : [];
+  }
+
   async function invite() {
     setLoading(true);
     setFeedback(null);
@@ -50,7 +60,12 @@ export function SellerTeamDesk() {
       const res = await fetch("/api/seller/team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, fullName, role }),
+        body: JSON.stringify({
+          email,
+          fullName,
+          role,
+          permissions: invitePermissions(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Invite failed");
@@ -62,6 +77,7 @@ export function SellerTeamDesk() {
       setEmail("");
       setFullName("");
       setRole("staff");
+      setShowRevenue(false);
       setFeedback({
         tone: "ok",
         text: `Password setup email sent to ${data.member.email}. They open the link, choose a password, and join your shop.`,
@@ -78,7 +94,11 @@ export function SellerTeamDesk() {
 
   async function updateMember(
     member: SellerTeamMember,
-    updates: { role?: SellerAssignableRole; status?: SellerTeamMember["status"] },
+    updates: {
+      role?: SellerAssignableRole;
+      status?: SellerTeamMember["status"];
+      permissions?: string[];
+    },
   ) {
     setBusyId(member.id);
     setFeedback(null);
@@ -102,6 +122,36 @@ export function SellerTeamDesk() {
     }
   }
 
+  async function toggleFinanceGrant(member: SellerTeamMember, enabled: boolean) {
+    const permissions = applyTeamGrant(member.permissions ?? [], SELLER_FINANCE_GRANT, enabled);
+    setBusyId(member.id);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/seller/team", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: member.id, permissions }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Update failed");
+      setTeam((list) => list.map((m) => (m.id === member.id ? data.member : m)));
+      setFeedback({
+        tone: "ok",
+        text: enabled
+          ? `${member.fullName || member.email} can now see gross revenue and payouts.`
+          : `Revenue access removed for ${member.fullName || member.email}.`,
+      });
+    } catch (err) {
+      setFeedback({
+        tone: "error",
+        text: err instanceof Error ? err.message : "Update failed",
+      });
+      await loadTeam();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function resendInvite(member: SellerTeamMember) {
     setBusyId(member.id);
     setFeedback(null);
@@ -113,6 +163,7 @@ export function SellerTeamDesk() {
           email: member.email,
           fullName: member.fullName,
           role: member.role === "owner" ? "staff" : member.role,
+          permissions: member.permissions,
         }),
       });
       const data = await res.json();
@@ -192,6 +243,18 @@ export function SellerTeamDesk() {
               </option>
             ))}
           </select>
+          <label className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50/70 px-3 py-3 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={showRevenue}
+              onChange={(e) => setShowRevenue(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-neutral-300"
+            />
+            <span>
+              <span className="font-semibold text-neutral-900">{SELLER_FINANCE_GRANT.label}</span>
+              <span className="mt-0.5 block text-neutral-500">{SELLER_FINANCE_GRANT.description}</span>
+            </span>
+          </label>
           <Button
             type="button"
             className="sm:col-span-2"
@@ -224,7 +287,12 @@ export function SellerTeamDesk() {
 
       <Card variant="elevated" className="p-6">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Team members</h2>
+          <div>
+            <h2 className="text-lg font-semibold">Team members</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Use Show revenue to let teammates see gross sales and payouts.
+            </p>
+          </div>
           {loadingList ? <Loader2 className="h-4 w-4 animate-spin text-neutral-400" /> : null}
         </div>
 
@@ -251,7 +319,7 @@ export function SellerTeamDesk() {
                   </div>
 
                   {isOwner ? (
-                    <span className="text-sm font-medium text-neutral-600">Owner · Active</span>
+                    <span className="text-sm font-medium text-neutral-600">Owner · Full access</span>
                   ) : (
                     <div className="flex flex-wrap items-center gap-2">
                       <select
@@ -292,6 +360,13 @@ export function SellerTeamDesk() {
                         <option value="active">Active</option>
                         <option value="suspended">Suspended</option>
                       </select>
+
+                      <SellerTeamGrantToggle
+                        member={member}
+                        grant={SELLER_FINANCE_GRANT}
+                        busy={busy}
+                        onToggle={(enabled) => void toggleFinanceGrant(member, enabled)}
+                      />
 
                       {member.status === "invited" ? (
                         <button

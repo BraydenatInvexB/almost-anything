@@ -26,7 +26,12 @@ export async function listSellerTeam(sellerId: string): Promise<SellerTeamMember
 
 export async function inviteSellerTeamMember(
   seller: SellerProfile,
-  input: { email: string; fullName: string; role: SellerAssignableRole },
+  input: {
+    email: string;
+    fullName: string;
+    role: SellerAssignableRole;
+    permissions?: string[];
+  },
   options?: { resend?: boolean; request?: Request },
 ): Promise<{ member: SellerTeamMember; emailSent: boolean; redirectTo: string }> {
   const email = input.email.trim().toLowerCase();
@@ -72,7 +77,7 @@ export async function inviteSellerTeamMember(
     role: input.role,
     status,
     user_id: auth.userId,
-    permissions: [] as string[],
+    permissions: input.permissions ?? [],
     updated_at: new Date().toISOString(),
   };
 
@@ -110,6 +115,7 @@ export async function updateSellerTeamMember(
     role?: SellerAssignableRole;
     status?: "invited" | "active" | "suspended";
     fullName?: string;
+    permissions?: string[];
   },
 ): Promise<SellerTeamMember> {
   const db = sellerDb();
@@ -136,6 +142,7 @@ export async function updateSellerTeamMember(
       ...(updates.role ? { role: updates.role } : {}),
       ...(updates.status ? { status: updates.status } : {}),
       ...(updates.fullName?.trim() ? { full_name: updates.fullName.trim() } : {}),
+      ...(updates.permissions ? { permissions: updates.permissions } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq("id", memberId)
