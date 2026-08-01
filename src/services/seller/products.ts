@@ -7,11 +7,11 @@ import {
 } from "@/lib/seller/listing-status";
 import type { SellerListingStatus } from "@/config/seller-listing-status";
 import {
-  markupFromPrices,
   retailFromCost,
   sellerDeliveryMetadata,
   type SellerDeliverySettings,
 } from "@/lib/seller/product-pricing";
+import { normalizeStockImportRow } from "@/lib/seller/stock-import-normalize";
 import { parseStockCsv } from "@/lib/seller/stock-import-parser";
 import { parseStockOrigin, stockStatusForOrigin } from "@/lib/product/stock-origin";
 import type { StockOrigin } from "@/lib/admin/operations-inventory-types";
@@ -111,34 +111,40 @@ export async function importSellerStockCsv(
   csv: string,
   fileName: string,
   defaultMarkupPercent = 25,
-): Promise<{ successCount: number; errors: string[] }> {
-  const rows = parseStockCsv(csv);
+): Promise<{ successCount: number; draftCount: number; errors: string[] }> {
+  const { rows, sourceRowNumbers } = parseStockCsv(csv);
   const errors: string[] = [];
   let successCount = 0;
+  let draftCount = 0;
+
+  if (rows.length === 0) {
+    throw new Error("No product rows found in this CSV. Add a header row and at least one data row.");
+  }
 
   for (const [index, row] of rows.entries()) {
+    const spreadsheetRow = sourceRowNumbers[index] ?? index + 2;
     try {
-      if (!row.name || row.retailPrice <= 0) {
-        throw new Error("Name and price are required");
-      }
-      const costPrice = row.costPrice ?? row.retailPrice / (1 + (row.markupPercent ?? defaultMarkupPercent) / 100);
-      const markupPercent = row.markupPercent ?? markupFromPrices(costPrice, row.retailPrice);
+      const product = normalizeStockImportRow(row, index, {
+        defaultMarkupPercent,
+        defaultStockOrigin: seller.defaultStockOrigin,
+      });
 
       await createSellerProduct(seller, {
-        name: row.name,
-        costPrice: Number(costPrice.toFixed(2)),
-        markupPercent,
-        retailPrice: row.retailPrice,
-        stockQuantity: row.quantity,
-        category: row.category ?? "general",
-        imageUrls: row.imageUrl ? [row.imageUrl] : [],
-        description: row.description,
-        stockOrigin: row.stockOrigin ?? seller.defaultStockOrigin,
-        saveIntent: "list",
+        name: product.name,
+        costPrice: product.costPrice,
+        markupPercent: product.markupPercent,
+        retailPrice: product.retailPrice,
+        stockQuantity: product.stockQuantity,
+        category: product.category,
+        imageUrls: product.imageUrls,
+        description: product.description,
+        stockOrigin: product.stockOrigin ?? seller.defaultStockOrigin,
+        saveIntent: product.saveIntent,
       });
       successCount += 1;
+      if (product.incomplete) draftCount += 1;
     } catch (err) {
-      errors.push(`Row ${index + 2}: ${err instanceof Error ? err.message : "Failed"}`);
+      errors.push(`Row ${spreadsheetRow}: ${err instanceof Error ? err.message : "Failed"}`);
     }
   }
 
@@ -154,7 +160,7 @@ export async function importSellerStockCsv(
 
   if (importError) throw importError;
 
-  return { successCount, errors };
+  return { successCount, draftCount, errors };
 }
 
 export async function updateSellerProductStock(

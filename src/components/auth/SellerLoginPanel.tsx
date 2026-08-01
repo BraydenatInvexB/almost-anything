@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CUSTOMER_LOGIN_PATH, SELLER_LOGIN_DEFAULT_REDIRECT } from "@/config/console-auth";
 import { CONSOLE_LOGIN_THEMES } from "@/config/console-login-themes";
@@ -23,6 +23,19 @@ function SellerLoginForm() {
   const { signIn } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const isInvite =
+      params.get("type") === "invite" ||
+      hashParams.get("type") === "invite" ||
+      Boolean(params.get("token_hash")) ||
+      Boolean(hashParams.get("access_token"));
+    if (isInvite) {
+      router.replace(`/seller/accept-invite${window.location.search}${window.location.hash}`);
+    }
+  }, [router]);
 
   const resolveRedirect = useCallback(
     (data: Record<string, unknown>) =>

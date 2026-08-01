@@ -4,10 +4,8 @@ import { useRef, useState, type DragEvent } from "react";
 import { CheckCircle2, Download, FileSpreadsheet, Loader2, Upload, XCircle } from "lucide-react";
 import { BtnSecondary } from "@/components/admin/ui";
 import { Panel } from "@/components/admin/ui";
-import { stockImportTemplate } from "@/lib/seller/stock-import-parser";
+import { STOCK_IMPORT_COLUMNS, stockImportTemplate } from "@/lib/seller/stock-import-parser";
 import { cn } from "@/lib/utils/cn";
-
-const CSV_COLUMNS = ["name", "sku", "cost_price", "markup_percent", "price", "quantity", "warehouse", "category", "description", "image_url"];
 
 export function StockImportPanel({
   embedded = false,
@@ -19,7 +17,7 @@ export function StockImportPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [result, setResult] = useState<{ success: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<{ success: number; drafts: number; errors: string[] } | null>(null);
 
   async function importFile(file: File | null) {
     if (!file) return;
@@ -34,10 +32,14 @@ export function StockImportPanel({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Import failed");
-      setResult({ success: data.successCount ?? 0, errors: data.errors ?? [] });
+      setResult({
+        success: data.successCount ?? 0,
+        drafts: data.draftCount ?? 0,
+        errors: data.errors ?? [],
+      });
       if ((data.successCount ?? 0) > 0) onImported?.();
     } catch (err) {
-      setResult({ success: 0, errors: [err instanceof Error ? err.message : "Import failed"] });
+      setResult({ success: 0, drafts: 0, errors: [err instanceof Error ? err.message : "Import failed"] });
     } finally {
       setLoading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -63,12 +65,15 @@ export function StockImportPanel({
 
   const body = (
     <div className="space-y-4 p-5">
-      <div className="flex flex-wrap gap-2">
-        {CSV_COLUMNS.map((column) => (
-          <span key={column} className="rounded-md bg-neutral-100 px-2.5 py-1 font-mono text-xs text-neutral-600">
-            {column}
-          </span>
-        ))}
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Supported columns (all optional)</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {STOCK_IMPORT_COLUMNS.map((column) => (
+            <span key={column} className="rounded-md bg-neutral-100 px-2.5 py-1 font-mono text-xs text-neutral-600">
+              {column}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div
@@ -86,8 +91,8 @@ export function StockImportPanel({
         <p className="mt-4 text-sm font-medium text-neutral-900">
           {loading ? "Importing products…" : "Drag and drop your stock list CSV here"}
         </p>
-        <p className="mt-1 text-sm text-neutral-500">
-          Each row becomes a product with price, stock quantity, and optional warehouse column
+        <p className="mt-1 max-w-md text-sm text-neutral-500">
+          Upload any CSV — missing prices, names, or other fields are fine. Incomplete rows import as drafts so you can finish them later.
         </p>
         <button
           type="button"
@@ -108,9 +113,14 @@ export function StockImportPanel({
             {result.errors.length && !result.success ? <XCircle className="mt-0.5 h-4 w-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
             <div>
               <p className="font-semibold">{result.success} product{result.success === 1 ? "" : "s"} added to your catalog</p>
+              {result.drafts > 0 ? (
+                <p className="mt-1 text-emerald-800/80">
+                  {result.drafts} saved as draft{result.drafts === 1 ? "" : "s"} — edit them anytime to add pricing or details before listing.
+                </p>
+              ) : null}
               {result.errors.length ? (
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-red-700">
-                  {result.errors.slice(0, 5).map((err) => <li key={err}>{err}</li>)}
+                  {result.errors.slice(0, 8).map((err) => <li key={err}>{err}</li>)}
                 </ul>
               ) : null}
             </div>
@@ -124,7 +134,7 @@ export function StockImportPanel({
     return (
       <Panel
         title="Import stock list"
-        description="Upload a CSV to bulk-add products with prices and inventory quantities."
+        description="Upload any CSV to bulk-add products. Columns are optional — fill in missing details later."
         action={
           <BtnSecondary onClick={downloadTemplate}>
             <Download className="h-4 w-4" />
@@ -141,7 +151,7 @@ export function StockImportPanel({
   return (
     <Panel
       title="Import stock list"
-      description="Bulk-add products from a CSV file."
+      description="Bulk-add products from any CSV. Missing fields import as drafts you can complete later."
       action={
         <BtnSecondary onClick={downloadTemplate}>
           <Download className="h-4 w-4" />

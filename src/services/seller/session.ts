@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { mapSellerRow } from "@/lib/seller/seller-mapper";
 import { sellerDb } from "@/lib/seller/db";
+import { activateSellerTeamMembership } from "@/services/seller/team";
 import type { SellerProfile, SellerTeamRole } from "@/types/seller";
 
 async function resolveTeamRole(
@@ -45,20 +46,14 @@ export async function getCurrentSeller(): Promise<SellerProfile | null> {
     return mapSellerRow(owned as Record<string, unknown>, team.role, team.permissions);
   }
 
-  const { data: membership, error: memberError } = await db
-    .from("seller_team_members")
-    .select("seller_id, role, permissions")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (memberError) throw memberError;
-  if (!membership) return null;
+  // Activate pending invites (email match / invited → active) then load membership.
+  const membership = await activateSellerTeamMembership(user.id, user.email);
+  if (!membership || membership.status !== "active") return null;
 
   const { data: seller, error: sellerError } = await db
     .from("sellers")
     .select("*")
-    .eq("id", membership.seller_id)
+    .eq("id", membership.sellerId)
     .maybeSingle();
 
   if (sellerError) throw sellerError;
@@ -66,8 +61,8 @@ export async function getCurrentSeller(): Promise<SellerProfile | null> {
 
   return mapSellerRow(
     seller as Record<string, unknown>,
-    membership.role as SellerTeamRole,
-    Array.isArray(membership.permissions) ? membership.permissions.map(String) : [],
+    membership.role,
+    membership.permissions,
   );
 }
 

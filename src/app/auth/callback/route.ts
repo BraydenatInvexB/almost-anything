@@ -22,6 +22,9 @@ export async function GET(request: Request) {
   if (nextParam?.startsWith("/admin")) {
     return NextResponse.redirect(`${origin}/admin/accept-invite?error=auth_callback_failed`);
   }
+  if (nextParam?.startsWith("/seller")) {
+    return NextResponse.redirect(`${origin}/seller/accept-invite?error=auth_callback_failed`);
+  }
 
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
 }
