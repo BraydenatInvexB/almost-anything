@@ -9,12 +9,11 @@ import { SiteLogo } from "@/components/layout/SiteLogo";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthProvider";
+import { establishInviteSession } from "@/lib/auth/establish-invite-session";
 import { createClient } from "@/lib/supabase/client";
 
-function readHashParams(): URLSearchParams {
-  if (typeof window === "undefined") return new URLSearchParams();
-  return new URLSearchParams(window.location.hash.replace(/^#/, ""));
-}
+const EXPIRED_MESSAGE =
+  "This invitation or password link is invalid or has expired. Ask for a new one from your admin.";
 
 function AcceptInviteForm() {
   const searchParams = useSearchParams();
@@ -44,51 +43,25 @@ function AcceptInviteForm() {
 
     async function establishSession() {
       try {
-        if (callbackError) {
-          setError(
-            "This invitation link is invalid or has expired. Ask your admin to resend it.",
-          );
+        const supabase = createClient();
+        const result = await establishInviteSession(supabase, {
+          code,
+          tokenHash,
+          type: inviteType,
+          callbackError,
+          cleanPath: "/admin/accept-invite",
+          expiredMessage: EXPIRED_MESSAGE,
+        });
+
+        if ("error" in result) {
+          if (!cancelled) setError(result.error);
           return;
         }
 
-        const supabase = createClient();
-        const hashParams = readHashParams();
-        const hashType = hashParams.get("type");
-        const accessToken = hashParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token");
-
-        if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) throw exchangeError;
-          window.history.replaceState(null, "", "/admin/accept-invite");
-        } else if (tokenHash && inviteType === "invite") {
-          const { error: verifyError } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: "invite",
-          });
-          if (verifyError) throw verifyError;
-          window.history.replaceState(null, "", "/admin/accept-invite");
-        } else if (accessToken && refreshToken && (hashType === "invite" || !hashType)) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (sessionError) throw sessionError;
-          window.history.replaceState(null, "", "/admin/accept-invite");
-        }
-
-        const { data: { user: resolvedUser }, error: userError } = await supabase.auth.getUser();
-        if (userError) throw userError;
-        if (resolvedUser && !cancelled) {
-          setInvitedUser(resolvedUser);
-        }
+        if (!cancelled && result.user) setInvitedUser(result.user);
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "This invitation link is invalid or has expired. Ask your admin to resend it.",
-          );
+          setError(err instanceof Error ? err.message : EXPIRED_MESSAGE);
         }
       } finally {
         if (!cancelled) setEstablishingSession(false);
@@ -141,7 +114,7 @@ function AcceptInviteForm() {
     return (
       <div className="flex min-h-[320px] flex-col items-center justify-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
-        <p className="text-sm text-neutral-500">Verifying your invitation…</p>
+        <p className="text-sm text-neutral-500">Verifying your link…</p>
       </div>
     );
   }
@@ -172,7 +145,7 @@ function AcceptInviteForm() {
     return (
       <div className="space-y-4 text-center">
         <p className="text-sm text-neutral-600">
-          Open the invitation link from your email to activate your staff account.
+          Open the invitation or password-setup link from your email to activate your staff account.
         </p>
         <Link
           href="/admin/login"
@@ -195,7 +168,9 @@ function AcceptInviteForm() {
             Set your password
           </h1>
           <p className="text-sm text-neutral-500">
-            {activeUser.email ? `Welcome, ${activeUser.email}` : "Create a password for admin access"}
+            {activeUser.email
+              ? `Choose a password for ${activeUser.email}`
+              : "Create a password for admin access"}
           </p>
         </div>
       </div>
@@ -223,7 +198,7 @@ function AcceptInviteForm() {
         />
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         <Button type="submit" className="w-full rounded-xl" isLoading={loading}>
-          Activate admin account
+          Save password & open admin
         </Button>
       </form>
     </div>

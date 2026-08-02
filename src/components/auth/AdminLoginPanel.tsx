@@ -32,12 +32,15 @@ function AdminLoginForm() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const isInvite =
-      params.get("type") === "invite" ||
-      hashParams.get("type") === "invite" ||
+    const linkType = params.get("type") ?? hashParams.get("type");
+    const isPasswordSetupLink =
+      linkType === "invite" ||
+      linkType === "recovery" ||
+      linkType === "magiclink" ||
       params.has("token_hash") ||
-      params.has("code");
-    if (isInvite) {
+      params.has("code") ||
+      hashParams.has("access_token");
+    if (isPasswordSetupLink) {
       router.replace(`/admin/accept-invite${window.location.search}${window.location.hash}`);
     }
   }, [router]);
