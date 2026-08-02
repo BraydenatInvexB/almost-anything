@@ -20,6 +20,7 @@ export function ProductImageField({ value, onChange, uploadUrl = "/api/admin/pro
   const [uploadError, setUploadError] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
+  const [whiteBackground, setWhiteBackground] = useState(true);
 
   async function handleFile(file: File | null) {
     if (!file) return;
@@ -28,6 +29,7 @@ export function ProductImageField({ value, onChange, uploadUrl = "/api/admin/pro
     try {
       const body = new FormData();
       body.append("file", file);
+      body.append("whiteBackground", whiteBackground ? "true" : "false");
       const res = await fetch(uploadUrl, { method: "POST", body });
       const data = await res.json();
       if (!res.ok) {
@@ -48,13 +50,32 @@ export function ProductImageField({ value, onChange, uploadUrl = "/api/admin/pro
     onChange(value.filter((_, i) => i !== index));
   }
 
-  function addUrl() {
+  async function addUrl() {
     const trimmed = urlDraft.trim();
     if (!trimmed) return;
-    if (!value.includes(trimmed)) {
-      onChange([...value, trimmed]);
+    setUploadError("");
+    setUploading(true);
+    try {
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmed, whiteBackground }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUploadError(data.error ?? "Couldn't use that image URL");
+        return;
+      }
+      if (!value.includes(data.url)) {
+        onChange([...value, data.url]);
+      }
+      setUrlDraft("");
+      setMode("upload");
+    } catch {
+      setUploadError("Network error — try again.");
+    } finally {
+      setUploading(false);
     }
-    setUrlDraft("");
   }
 
   return (
@@ -87,6 +108,23 @@ export function ProductImageField({ value, onChange, uploadUrl = "/api/admin/pro
           </button>
         </div>
       </div>
+
+      <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50/80 px-3 py-2.5">
+        <input
+          type="checkbox"
+          checked={whiteBackground}
+          onChange={(e) => setWhiteBackground(e.target.checked)}
+          disabled={uploading}
+          className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
+        />
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-neutral-800">Add white background</span>
+          <span className="mt-0.5 block text-xs text-neutral-500">
+            Turn off if the photo already has a clean white backdrop. When on, we keep the product
+            the same and only replace the background.
+          </span>
+        </span>
+      </label>
 
       {mode === "upload" ? (
         <div className="mt-2 space-y-3">
@@ -162,7 +200,14 @@ export function ProductImageField({ value, onChange, uploadUrl = "/api/admin/pro
             {uploading ? (
               <>
                 <Loader2 className="h-6 w-6 animate-spin text-brand" />
-                <p className="mt-2 text-sm font-medium text-neutral-700">Uploading…</p>
+                <p className="mt-2 text-sm font-medium text-neutral-700">
+                  {whiteBackground ? "Adding white background…" : "Uploading…"}
+                </p>
+                {whiteBackground ? (
+                  <p className="mt-1 text-xs text-neutral-400">
+                    Product stays the same — we only replace the backdrop.
+                  </p>
+                ) : null}
               </>
             ) : (
               <>
@@ -194,16 +239,17 @@ export function ProductImageField({ value, onChange, uploadUrl = "/api/admin/pro
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                addUrl();
+                void addUrl();
               }
             }}
           />
           <button
             type="button"
-            onClick={addUrl}
-            className="h-10 shrink-0 rounded-lg border border-neutral-200 px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+            onClick={() => void addUrl()}
+            disabled={uploading}
+            className="h-10 shrink-0 rounded-lg border border-neutral-200 px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
           >
-            Add
+            {uploading ? "Working…" : "Add"}
           </button>
         </div>
       )}

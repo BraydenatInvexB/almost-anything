@@ -35,17 +35,10 @@ export async function enhanceImageBytes(input: Buffer): Promise<Buffer> {
     throw new Error("Image failed quality validation");
   }
 
-  const sharp = (await import("sharp")).default;
-  return sharp(input)
-    .rotate()
-    .resize(1200, 1200, {
-      fit: "contain",
-      background: { r: 248, g: 248, b: 248, alpha: 1 },
-    })
-    .sharpen({ sigma: 0.85 })
-    .modulate({ brightness: 1.02, saturation: 1.04 })
-    .jpeg({ quality: 90, mozjpeg: true })
-    .toBuffer();
+  // White catalog backdrop only — do not recolour or sharpen the product.
+  const { applyWhiteBackground } = await import("@/lib/product-images/white-background");
+  const prepared = await applyWhiteBackground(input);
+  return prepared.bytes;
 }
 
 export async function downloadAndValidateImage(
