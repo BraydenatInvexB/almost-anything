@@ -23,6 +23,7 @@ export type SellerCatalogTab = "products" | "stock" | "add" | "import";
 
 export type SellerCatalogShipping = {
   flatShippingFee: number;
+  largeItemShippingFee?: number;
   freeShippingThreshold: number;
   defaultMarkupPercent: number;
   freeShippingEnabled: boolean;

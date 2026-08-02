@@ -54,7 +54,6 @@ export function AdminShell({
     if (pathname.includes("/returns/")) return "Return detail";
     if (pathname.includes("/sellers/")) return "Seller review";
     if (pathname.startsWith("/admin/sellers")) return "Marketplace sellers";
-    if (pathname.includes("/requests")) return "Item requests";
     return match?.label ?? "Admin";
   }, [pathname]);
 

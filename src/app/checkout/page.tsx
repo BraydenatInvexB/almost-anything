@@ -118,7 +118,7 @@ export default function CheckoutPage() {
     : "We'll arrange delivery";
 
   const pricing = settings
-    ? computeStorefrontTotals(subtotal, settings, courierId, discountAmount)
+    ? computeStorefrontTotals(subtotal, settings, courierId, discountAmount, deliverySize?.size)
     : {
         shipping: 0,
         tax: 0,
@@ -126,6 +126,7 @@ export default function CheckoutPage() {
         promoDiscount: discountAmount,
         discountedSubtotal: Math.max(0, subtotal - discountAmount),
         shippingCalc: { displayFree: true, customerCharge: 0, internalCost: 0 },
+        deliveryFeeZar: 0,
       };
   const { shipping, tax, total, shippingCalc, promoDiscount, discountedSubtotal } = pricing;
   const selectedCourier = couriers.find((c) => c.id === courierId);
@@ -323,11 +324,12 @@ export default function CheckoutPage() {
               ) : null}
               <div className="flex justify-between">
                 <dt className="text-neutral-500">
-                  Delivery{" "}
-                  {showCourierPicker && selectedCourier
-                    ? `(${selectedCourier.name})`
-                    : fulfillmentMode
-                      ? `(${fulfillmentLabel})`
+                  Delivery
+                  {deliverySize &&
+                  (deliverySize.size === "large" || deliverySize.size === "bulky")
+                    ? " (large item)"
+                    : showCourierPicker && selectedCourier
+                      ? ` (${selectedCourier.name})`
                       : ""}
                 </dt>
                 <dd className={shippingCalc.displayFree ? "font-semibold text-emerald-600" : ""}>

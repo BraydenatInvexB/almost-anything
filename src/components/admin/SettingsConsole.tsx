@@ -54,12 +54,22 @@ export function SettingsConsole({
           min_markup_percent: Number(form.min_markup_percent),
           max_markup_percent: Number(form.max_markup_percent),
           free_shipping_threshold: Number(form.free_shipping_threshold),
-          flat_shipping_fee: Number(form.flat_shipping_fee),
+          flat_shipping_fee: Number(
+            extConfig.deliveryFees?.standardZar ?? form.flat_shipping_fee,
+          ),
           tax_rate: Number(form.tax_rate),
           auto_publish_sourced: form.auto_publish_sourced,
           maintenance_mode: form.maintenance_mode,
           currency: form.currency,
-          extendedConfig: extConfig,
+          extendedConfig: {
+            ...extConfig,
+            deliveryFees: {
+              standardZar: Number(
+                extConfig.deliveryFees?.standardZar ?? form.flat_shipping_fee,
+              ),
+              largeItemZar: Number(extConfig.deliveryFees?.largeItemZar ?? 200),
+            },
+          },
         }),
       });
     } catch {

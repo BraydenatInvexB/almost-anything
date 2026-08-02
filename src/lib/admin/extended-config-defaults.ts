@@ -2,6 +2,7 @@ import { COURIERS } from "@/config/couriers";
 import type { ExtendedPlatformConfig } from "@/lib/admin/operations-types";
 import { DEFAULT_HERO_SHOWCASE, mergeHeroShowcase } from "@/lib/hero/defaults";
 import { DEFAULT_DELIVERY_ROUTING, mergeDeliveryRouting } from "@/lib/delivery/types";
+import { DEFAULT_DELIVERY_FEES, mergeDeliveryFees } from "@/lib/delivery/fees";
 
 export const DEFAULT_EXTENDED_CONFIG: ExtendedPlatformConfig = {
   embedShippingInPrice: true,
@@ -13,6 +14,7 @@ export const DEFAULT_EXTENDED_CONFIG: ExtendedPlatformConfig = {
   couriers: COURIERS.map((c) => ({ ...c })),
   heroShowcase: DEFAULT_HERO_SHOWCASE,
   deliveryRouting: { ...DEFAULT_DELIVERY_ROUTING },
+  deliveryFees: { ...DEFAULT_DELIVERY_FEES },
   liveSourcingEnabled: false,
 };
 
@@ -23,6 +25,10 @@ export function mergeExtendedConfig(
   const routingPartial =
     partial.deliveryRouting && typeof partial.deliveryRouting === "object"
       ? (partial.deliveryRouting as Partial<ExtendedPlatformConfig["deliveryRouting"]>)
+      : null;
+  const feesPartial =
+    partial.deliveryFees && typeof partial.deliveryFees === "object"
+      ? (partial.deliveryFees as Partial<ExtendedPlatformConfig["deliveryFees"]>)
       : null;
   return {
     ...DEFAULT_EXTENDED_CONFIG,
@@ -39,6 +45,7 @@ export function mergeExtendedConfig(
       partial.heroShowcase as Partial<ExtendedPlatformConfig["heroShowcase"]> | undefined,
     ),
     deliveryRouting: mergeDeliveryRouting(routingPartial),
+    deliveryFees: mergeDeliveryFees(feesPartial),
     liveSourcingEnabled: Boolean(
       partial.liveSourcingEnabled ?? DEFAULT_EXTENDED_CONFIG.liveSourcingEnabled,
     ),

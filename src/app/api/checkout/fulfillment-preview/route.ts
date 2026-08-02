@@ -15,6 +15,7 @@ import {
   summarizeOrderDeliverySize,
   type DeliverySize,
 } from "@/lib/delivery/size";
+import { resolveDeliveryFeeZar } from "@/lib/delivery/fees";
 import { getPublicStorefrontConfig } from "@/services/storefront-settings-service";
 
 const schema = z.object({
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
 
   const mode = resolveDeliveryMode(uniqueSellerCount || 1, policy);
   const deliverySize = summarizeOrderDeliverySize(sizes);
+  const deliveryFeeZar = resolveDeliveryFeeZar(deliverySize.size, config.deliveryFees);
 
   return NextResponse.json({
     mode,
@@ -58,5 +60,6 @@ export async function POST(request: Request) {
     showCourierPicker: mode === "courier_partner",
     policy,
     deliverySize,
+    deliveryFeeZar,
   });
 }

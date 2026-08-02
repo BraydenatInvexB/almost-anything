@@ -19,7 +19,6 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Drivers", href: "/admin/drivers", icon: "Car", permission: "orders.view", group: "Commerce" },
   { label: "Fulfillment ops", href: "/admin/fulfillment", icon: "Warehouse", permission: "orders.view", group: "Commerce" },
   { label: "Procurement", href: "/admin/procurement", icon: "Globe", permission: "procurement.view", group: "Commerce" },
-  { label: "Item Requests", href: "/admin/requests", icon: "Search", permission: "procurement.view", group: "Commerce" },
   { label: "Returns", href: "/admin/returns", icon: "RotateCcw", permission: "returns.view", group: "Commerce" },
   { label: "Sellers", href: "/admin/sellers", icon: "Store", permission: "sellers.view", group: "Commerce" },
   { label: "Customers", href: "/admin/customers", icon: "Users", permission: "customers.view", group: "People" },

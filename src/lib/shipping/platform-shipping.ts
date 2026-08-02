@@ -14,8 +14,10 @@ export function buildSellerShippingContext(
   config: ExtendedPlatformConfig,
 ): SellerShippingContext {
   const flags = shippingFlagsFromConfig(config);
+  const standardFee = Number(config.deliveryFees?.standardZar ?? settings.flat_shipping_fee);
   return {
-    flatShippingFee: Number(settings.flat_shipping_fee),
+    flatShippingFee: standardFee,
+    largeItemShippingFee: Number(config.deliveryFees?.largeItemZar ?? 200),
     freeShippingThreshold: Number(settings.free_shipping_threshold),
     defaultMarkupPercent: Number(settings.default_markup_percent),
     ...flags,
@@ -25,17 +27,22 @@ export function buildSellerShippingContext(
 export function describePlatformShipping(
   shipping: Pick<
     SellerShippingContext,
-    "flatShippingFee" | "freeShippingThreshold" | "freeShippingEnabled" | "flatShippingFeeEnabled"
+    | "flatShippingFee"
+    | "largeItemShippingFee"
+    | "freeShippingThreshold"
+    | "freeShippingEnabled"
+    | "flatShippingFeeEnabled"
   >,
 ): string {
   if (!shipping.flatShippingFeeEnabled && !shipping.freeShippingEnabled) {
     return "Delivery fees are configured per product.";
   }
+  const large = shipping.largeItemShippingFee ?? Math.max(shipping.flatShippingFee, 200);
   if (shipping.freeShippingEnabled && shipping.flatShippingFeeEnabled) {
-    return `Default delivery fee ${formatZar(shipping.flatShippingFee)} (free over ${formatZar(shipping.freeShippingThreshold)}).`;
+    return `Normal delivery ${formatZar(shipping.flatShippingFee)}, large items ${formatZar(large)} (free over ${formatZar(shipping.freeShippingThreshold)}).`;
   }
   if (shipping.flatShippingFeeEnabled) {
-    return `Default delivery fee ${formatZar(shipping.flatShippingFee)} on checkout.`;
+    return `Normal delivery ${formatZar(shipping.flatShippingFee)}, large / bulky items ${formatZar(large)}.`;
   }
   return `Free delivery on orders over ${formatZar(shipping.freeShippingThreshold)}.`;
 }

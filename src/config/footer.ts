@@ -29,7 +29,6 @@ export const FOOTER_NAV = [
       { label: "Create Account", href: "/signup" },
       { label: "Order History", href: "/account/orders" },
       { label: "My Favorites", href: "/favorites" },
-      { label: "Request a Product", href: "/request" },
     ],
   },
   {

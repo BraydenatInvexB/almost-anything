@@ -113,20 +113,62 @@ export function SettingsConsoleTabPanels({
                 className="input disabled:opacity-60"
               />
             </Field>
+            <Field label="VAT rate (decimal)" hint="e.g. 0.15 for 15%">
+              <input type="number" step="0.01" disabled={disabled} value={form.tax_rate} onChange={(e) => update("tax_rate", Number(e.target.value))} className="input disabled:opacity-60" />
+            </Field>
+          </div>
+        </Panel>
+        <Panel
+          title="Delivery fees"
+          description="What customers pay at checkout when delivery is not built into item prices. Large/bulky items (TV, fridge) use the higher fee."
+        >
+          <div className="grid gap-4 p-5 sm:grid-cols-2">
             <Field
-              label="Flat shipping fee (ZAR)"
-              hint="Charged at checkout when delivery is not embedded in price."
+              label="Normal delivery (ZAR)"
+              hint="Small and medium parcels — usually R100."
             >
               <input
                 type="number"
+                min={0}
+                step={1}
                 disabled={disabled || !extConfig.flatShippingFeeEnabled}
-                value={form.flat_shipping_fee}
-                onChange={(e) => update("flat_shipping_fee", Number(e.target.value))}
+                value={extConfig.deliveryFees?.standardZar ?? form.flat_shipping_fee}
+                onChange={(e) => {
+                  const standardZar = Number(e.target.value);
+                  update("flat_shipping_fee", standardZar);
+                  setExtConfig((c) => ({
+                    ...c,
+                    deliveryFees: {
+                      standardZar,
+                      largeItemZar: c.deliveryFees?.largeItemZar ?? 200,
+                    },
+                  }));
+                }}
                 className="input disabled:opacity-60"
               />
             </Field>
-            <Field label="VAT rate (decimal)" hint="e.g. 0.15 for 15%">
-              <input type="number" step="0.01" disabled={disabled} value={form.tax_rate} onChange={(e) => update("tax_rate", Number(e.target.value))} className="input disabled:opacity-60" />
+            <Field
+              label="Large / bulky items (ZAR)"
+              hint="TVs, fridges, furniture — usually R200."
+            >
+              <input
+                type="number"
+                min={0}
+                step={1}
+                disabled={disabled || !extConfig.flatShippingFeeEnabled}
+                value={extConfig.deliveryFees?.largeItemZar ?? 200}
+                onChange={(e) => {
+                  const largeItemZar = Number(e.target.value);
+                  setExtConfig((c) => ({
+                    ...c,
+                    deliveryFees: {
+                      standardZar: c.deliveryFees?.standardZar ?? (Number(form.flat_shipping_fee) || 100),
+                      largeItemZar,
+                    },
+                  }));
+                }}
+                className="input disabled:opacity-60"
+              />
             </Field>
           </div>
         </Panel>
@@ -201,8 +243,8 @@ export function SettingsConsoleTabPanels({
             onChange={(v) => setExtConfig((c) => ({ ...c, freeShippingEnabled: v }))}
           />
           <Toggle
-            label="Charge flat delivery fee at checkout"
-            description="When on, customers pay the flat shipping fee. Used mainly with courier partners."
+            label="Charge delivery fee at checkout"
+            description="When on, customers pay the normal or large-item fee above (unless free shipping applies). Turn off if delivery is already built into prices."
             checked={extConfig.flatShippingFeeEnabled}
             disabled={disabled}
             onChange={(v) => setExtConfig((c) => ({ ...c, flatShippingFeeEnabled: v }))}

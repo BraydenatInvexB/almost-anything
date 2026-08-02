@@ -120,13 +120,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   }
 
   const fromPhoto = params.from === "photo";
-  const requestHref = (() => {
-    const requestParams = new URLSearchParams();
-    if (fromPhoto) requestParams.set("from", "photo");
-    if (params.q) requestParams.set("q", params.q);
-    const qs = requestParams.toString();
-    return qs ? `/request?${qs}` : "/request";
-  })();
 
   const pageBody = (
     <>
@@ -246,17 +239,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 No products match &ldquo;{params.q}&rdquo;
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
-                Nothing on the site matches yet. Try different keywords, browse categories, or tell
-                us what you need and we&apos;ll source it.
+                Nothing on the site matches yet. Try different keywords or browse categories.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <Link href="/products">
                   <Button>Browse all products</Button>
-                </Link>
-                <Link href={requestHref}>
-                  <Button variant="secondary">
-                    {fromPhoto ? "Request this item" : "Request a product"}
-                  </Button>
                 </Link>
               </div>
             </Card>
@@ -269,19 +256,13 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
                 {fromPhoto
-                  ? "Your photo is saved. Type what you're looking for above, or request it and we'll source it."
+                  ? "Your photo is saved. Type what you're looking for above to search the catalog."
                   : "We are always sourcing new stock. Try another category or browse the full catalog."}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
-                {fromPhoto ? (
-                  <Link href={requestHref}>
-                    <Button>Request this item</Button>
-                  </Link>
-                ) : (
-                  <Link href="/products">
-                    <Button>Browse all products</Button>
-                  </Link>
-                )}
+                <Link href="/products">
+                  <Button>Browse all products</Button>
+                </Link>
                 {STORE_CATEGORIES.slice(0, 4).map((cat) => (
                   <Link key={cat.slug} href={`/products?category=${cat.slug}`}>
                     <Button variant="secondary">{cat.label}</Button>

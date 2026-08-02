@@ -62,6 +62,12 @@ const extendedConfigSchema = z.object({
       multiStoreMode: fulfillmentModeSchema,
     })
     .optional(),
+  deliveryFees: z
+    .object({
+      standardZar: z.number().min(0),
+      largeItemZar: z.number().min(0),
+    })
+    .optional(),
   liveSourcingEnabled: z.boolean().optional(),
 });
 

@@ -54,14 +54,11 @@ export default function CartPage() {
               Your cart is empty
             </p>
             <p className="mt-2 text-neutral-500">
-              Browse our catalog or tell us what you need.
+              Browse our catalog to get started.
             </p>
             <div className="mt-6 flex justify-center gap-3">
               <Link href="/products">
                 <Button>Browse Products</Button>
-              </Link>
-              <Link href="/request">
-                <Button variant="secondary">Request a Product</Button>
               </Link>
             </div>
           </Card>

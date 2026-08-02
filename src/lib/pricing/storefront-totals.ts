@@ -1,5 +1,7 @@
 import { calculateCustomerShipping } from "@/config/couriers";
 import type { ExtendedPlatformConfig } from "@/lib/admin/operations-types";
+import { resolveDeliveryFeeZar } from "@/lib/delivery/fees";
+import type { DeliverySize } from "@/lib/delivery/size";
 
 export interface StorefrontPricingSettings {
   freeShippingThreshold: number;
@@ -15,7 +17,7 @@ export interface StorefrontPricingSettings {
 
 export const DEFAULT_PRICING_SETTINGS: StorefrontPricingSettings = {
   freeShippingThreshold: 1000,
-  flatShippingFee: 99,
+  flatShippingFee: 100,
   taxRate: 0.15,
   embedShippingInPrice: true,
   freeShippingEnabled: false,
@@ -29,12 +31,20 @@ export function computeStorefrontTotals(
   settings: StorefrontPricingSettings,
   courierId?: string,
   promoDiscount = 0,
+  deliverySize?: DeliverySize | null,
 ) {
   const discountedSubtotal = Math.max(0, subtotal - promoDiscount);
   const cid = courierId ?? settings.defaultCourierId;
+  const sizeBasedFee = resolveDeliveryFeeZar(
+    deliverySize,
+    settings.config?.deliveryFees ?? {
+      standardZar: settings.flatShippingFee,
+      largeItemZar: Math.max(settings.flatShippingFee, 200),
+    },
+  );
   const shippingCalc = calculateCustomerShipping(discountedSubtotal, cid, {
     freeShippingThreshold: settings.freeShippingThreshold,
-    flatShippingFee: settings.flatShippingFee,
+    flatShippingFee: sizeBasedFee,
     embedShippingInPrice: settings.embedShippingInPrice,
     freeShippingEnabled: settings.freeShippingEnabled,
     flatShippingFeeEnabled: settings.flatShippingFeeEnabled,
@@ -43,5 +53,13 @@ export function computeStorefrontTotals(
   const shipping = shippingCalc.customerCharge;
   const tax = Math.round(discountedSubtotal * settings.taxRate * 100) / 100;
   const total = Math.round((discountedSubtotal + shipping + tax) * 100) / 100;
-  return { shipping, tax, total, shippingCalc, promoDiscount, discountedSubtotal };
+  return {
+    shipping,
+    tax,
+    total,
+    shippingCalc,
+    promoDiscount,
+    discountedSubtotal,
+    deliveryFeeZar: sizeBasedFee,
+  };
 }

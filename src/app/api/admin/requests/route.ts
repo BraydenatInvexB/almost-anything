@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCurrentStaff } from "@/services/admin-service";
-import { staffCan } from "@/config/rbac";
-import { listAllItemRequests } from "@/services/sourcing-request-service";
 
+/** Item requests are retired from the admin console. */
 export async function GET() {
-  const staff = await getCurrentStaff();
-  if (!staff || !staffCan(staff, "procurement.view")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  return NextResponse.json({ requests: await listAllItemRequests() });
+  return NextResponse.json({ error: "Item requests have been removed." }, { status: 410 });
 }

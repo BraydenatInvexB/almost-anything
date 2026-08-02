@@ -58,6 +58,14 @@ export interface ExtendedPlatformConfig {
     singleStoreMode: "seller_self" | "platform_driver" | "courier_partner";
     multiStoreMode: "seller_self" | "platform_driver" | "courier_partner";
   };
+  /**
+   * Customer delivery fees at checkout (when not embedded in item price).
+   * Normal = small/medium · Large item = large/bulky (e.g. TV, fridge).
+   */
+  deliveryFees: {
+    standardZar: number;
+    largeItemZar: number;
+  };
   /** When true, live search can source missing products into the catalog. Default false. */
   liveSourcingEnabled?: boolean;
 }

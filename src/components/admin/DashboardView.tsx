@@ -2,7 +2,6 @@ import {
   LifeBuoy,
   Package,
   Truck,
-  ClipboardList,
   Store,
 } from "lucide-react";
 import type { StaffProfile } from "@/types/staff-access";
@@ -24,8 +23,6 @@ interface DashboardViewProps {
   staff: StaffProfile;
   stats: DashboardStats;
   fulfillmentCount: number;
-  openItemRequests: number;
-  showItemRequests: boolean;
   pendingSellerApplications: number;
   showSellers: boolean;
 }
@@ -34,8 +31,6 @@ export function DashboardView({
   staff,
   stats,
   fulfillmentCount,
-  openItemRequests,
-  showItemRequests,
   pendingSellerApplications,
   showSellers,
 }: DashboardViewProps) {
@@ -55,19 +50,6 @@ export function DashboardView({
       urgent: fulfillmentCount > 0,
       color: "bg-brand",
     },
-    ...(showItemRequests
-      ? [
-          {
-            title: "Item requests",
-            count: openItemRequests,
-            description: "Custom product lookups",
-            href: "/admin/requests",
-            icon: ClipboardList,
-            urgent: openItemRequests > 0,
-            color: "bg-violet-600",
-          },
-        ]
-      : []),
     ...(showSellers
       ? [
           {

@@ -2,6 +2,7 @@ export const SELLER_DEFAULT_MARKUP_PERCENT = 25;
 
 export type SellerShippingContext = {
   flatShippingFee: number;
+  largeItemShippingFee?: number;
   freeShippingThreshold: number;
   defaultMarkupPercent: number;
   freeShippingEnabled: boolean;

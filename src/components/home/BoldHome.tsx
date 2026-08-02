@@ -99,8 +99,6 @@ export function BoldHome({ hot, steals, fresh, heroShowcase }: BoldHomeProps) {
 
       {/* How it works — after product discovery */}
       <HowItWorksBold />
-
-      <BoldCTA />
     </div>
   );
 }
@@ -181,40 +179,5 @@ function HowItWorksBold() {
         </div>
       ))}
     </div>
-  );
-}
-
-function BoldCTA() {
-  return (
-    <section className="relative overflow-hidden rounded-[28px] border-[3px] border-black bg-brand px-6 py-12 text-white shadow-[7px_7px_0_0_#000] sm:px-12">
-      <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-        <div>
-          <h3 className="max-w-xl text-3xl font-black uppercase leading-[0.95] tracking-tight sm:text-5xl">
-            Can&apos;t find it?
-            <br />
-            Just ask.
-          </h3>
-          <p className="mt-4 max-w-md text-base font-semibold text-white/85">
-            Tell us exactly what you want. We&apos;ve probably got it, and we&apos;ll
-            land it on your doorstep at one simple price.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col gap-3">
-          <Link
-            href="/request"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border-[3px] border-black bg-black px-7 py-3.5 text-sm font-extrabold uppercase text-white shadow-[4px_4px_0_0_rgba(0,0,0,0.25)] transition-transform hover:-translate-y-0.5"
-          >
-            Tell us what you want
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/products"
-            className="text-center text-xs font-extrabold uppercase text-white/80 underline underline-offset-4 hover:text-white"
-          >
-            Or browse the store
-          </Link>
-        </div>
-      </div>
-    </section>
   );
 }

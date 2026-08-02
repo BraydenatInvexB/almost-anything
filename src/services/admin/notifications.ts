@@ -2,7 +2,6 @@ import { staffCan } from "@/config/rbac";
 import type { AdminNotificationItem, AdminNotificationSummary } from "@/lib/admin/notifications";
 import { notificationTotal } from "@/lib/admin/notifications";
 import type { StaffProfile } from "@/types/staff-access";
-import { countOpenItemRequests } from "@/services/sourcing-request-service";
 import { countPendingSellerApplications } from "@/services/admin/sellers";
 import { getFulfillmentQueue } from "./orders";
 import { listAdminProducts } from "./products";
@@ -22,19 +21,6 @@ export async function getAdminNotificationSummary(
         description: `${fulfillment.length} order${fulfillment.length === 1 ? "" : "s"} to process or ship`,
         href: "/admin/fulfillment",
         count: fulfillment.length,
-      });
-    }
-  }
-
-  if (staffCan(staff, "procurement.view")) {
-    const requests = await countOpenItemRequests();
-    if (requests > 0) {
-      items.push({
-        id: "requests",
-        title: "Item requests",
-        description: `${requests} custom product lookup${requests === 1 ? "" : "s"}`,
-        href: "/admin/requests",
-        count: requests,
       });
     }
   }
