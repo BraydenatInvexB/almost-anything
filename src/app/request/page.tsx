@@ -10,7 +10,7 @@ import { Card, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { clearSearchPhoto, readSearchPhoto } from "@/lib/utils/search-photo";
+import { clearSearchPhoto, readSearchPhoto } from "@/lib/search/photo";
 
 export default function RequestPage() {
   return (

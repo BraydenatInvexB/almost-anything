@@ -7,12 +7,28 @@ import Link from "next/link";
 import { ArrowRight, Check, ImagePlus, Mic, MicOff, Search, X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/cn";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
-import { readImageFile, storeSearchPhoto } from "@/lib/utils/search-photo";
+import { readImageFile, storeSearchPhoto } from "@/lib/search/photo";
 import type { HeroShowcaseConfig } from "@/lib/admin/operations-types";
 import { getHeroItems, HERO_STICKER_ROTATE, HERO_STICKER_STYLES } from "@/lib/hero/showcase-styles";
 
 interface BoldHeroProps {
   showcase: HeroShowcaseConfig;
+}
+
+async function resolvePhotoQuery(dataUrl: string, typedQuery: string): Promise<string> {
+  if (typedQuery) return typedQuery;
+  try {
+    const res = await fetch("/api/search/photo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataUrl }),
+    });
+    if (!res.ok) return "";
+    const data = (await res.json()) as { query?: string | null };
+    return typeof data.query === "string" ? data.query.trim() : "";
+  } catch {
+    return "";
+  }
 }
 
 export function BoldHero({ showcase }: BoldHeroProps) {
@@ -25,6 +41,7 @@ export function BoldHero({ showcase }: BoldHeroProps) {
   const [photoName, setPhotoName] = useState("");
   const [photoError, setPhotoError] = useState("");
   const [searchHint, setSearchHint] = useState("");
+  const [searching, setSearching] = useState(false);
   const { supported: voiceSupported, listening, error: voiceError, start, stop, clearError } =
     useSpeechRecognition();
 
@@ -61,11 +78,12 @@ export function BoldHero({ showcase }: BoldHeroProps) {
   async function handlePhotoSelect(file: File | null) {
     if (!file) return;
     setPhotoError("");
+    setSearchHint("Preparing photo…");
     try {
       const dataUrl = await readImageFile(file);
       setPhotoPreview(dataUrl);
       setPhotoName(file.name);
-      setSearchHint("Photo attached — add a note or tap Find it to send.");
+      setSearchHint("Photo attached — we'll search products on our site first.");
     } catch (err) {
       clearPhoto();
       setPhotoError(err instanceof Error ? err.message : "Couldn't use that photo.");
@@ -89,19 +107,32 @@ export function BoldHero({ showcase }: BoldHeroProps) {
     });
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = value.trim();
+    if (!trimmed && !photoPreview) return;
 
-    if (photoPreview) {
-      storeSearchPhoto({ dataUrl: photoPreview, name: photoName || "upload.jpg" });
-      const params = new URLSearchParams({ from: "photo" });
-      if (trimmed) params.set("q", trimmed);
-      router.push(`/request?${params.toString()}`);
+    // Text/voice without a photo → catalog search only.
+    if (!photoPreview) {
+      router.push(`/products?q=${encodeURIComponent(trimmed)}`);
       return;
     }
 
-    if (trimmed) router.push(`/products?q=${encodeURIComponent(trimmed)}`);
+    // Photo search: match listed products first; request is a fallback on results.
+    setSearching(true);
+    setPhotoError("");
+    setSearchHint("Searching our catalog…");
+    try {
+      storeSearchPhoto({ dataUrl: photoPreview, name: photoName || "upload.jpg" });
+      const query = await resolvePhotoQuery(photoPreview, trimmed);
+      const params = new URLSearchParams({ from: "photo" });
+      if (query) params.set("q", query);
+      router.push(`/products?${params.toString()}`);
+    } catch {
+      setPhotoError("Couldn't start photo search. Try again.");
+      setSearchHint("");
+      setSearching(false);
+    }
   }
 
   return (
@@ -192,10 +223,10 @@ export function BoldHero({ showcase }: BoldHeroProps) {
 
               <button
                 type="submit"
-                disabled={!value.trim() && !photoPreview}
+                disabled={searching || (!value.trim() && !photoPreview)}
                 className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl border-2 border-black bg-black px-4 text-sm font-extrabold uppercase text-white transition-colors hover:bg-brand hover:text-white disabled:cursor-not-allowed disabled:opacity-40 sm:px-5"
               >
-                Find it
+                {searching ? "Finding…" : "Find it"}
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>

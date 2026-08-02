@@ -13,6 +13,7 @@ import { ProductSort } from "@/components/products/ProductSort";
 import { CategoryFilterRail } from "@/components/products/CategoryFilterRail";
 import { ProductsCategorySidebar } from "@/components/products/ProductsCategorySidebar";
 import { ActiveFilterChips } from "@/components/products/ActiveFilterChips";
+import { SearchPhotoBanner } from "@/components/products/SearchPhotoBanner";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { getProducts } from "@/services/product-service";
@@ -29,6 +30,7 @@ interface ProductsPageProps {
     sort?: string;
     deals?: string;
     section?: string;
+    from?: string;
   }>;
 }
 
@@ -117,8 +119,19 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     });
   }
 
+  const fromPhoto = params.from === "photo";
+  const requestHref = (() => {
+    const requestParams = new URLSearchParams();
+    if (fromPhoto) requestParams.set("from", "photo");
+    if (params.q) requestParams.set("q", params.q);
+    const qs = requestParams.toString();
+    return qs ? `/request?${qs}` : "/request";
+  })();
+
   const pageBody = (
     <>
+      <SearchPhotoBanner searchQuery={params.q} />
+
       {/* Page hero */}
       <header className="rounded-2xl border border-neutral-200 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -233,15 +246,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 No products match &ldquo;{params.q}&rdquo;
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
-                Search only includes products already listed on our site. Try different keywords, browse
-                categories, or tell us what you need.
+                Nothing on the site matches yet. Try different keywords, browse categories, or tell
+                us what you need and we&apos;ll source it.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <Link href="/products">
                   <Button>Browse all products</Button>
                 </Link>
-                <Link href="/request">
-                  <Button variant="secondary">Request a product</Button>
+                <Link href={requestHref}>
+                  <Button variant="secondary">
+                    {fromPhoto ? "Request this item" : "Request a product"}
+                  </Button>
                 </Link>
               </div>
             </Card>
@@ -250,15 +265,23 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           {products.length === 0 && !params.q ? (
             <Card variant="elevated" className="mt-4 border border-dashed border-neutral-300 bg-white py-20 text-center shadow-none">
               <p className="text-lg font-semibold text-neutral-900">
-                No products in this category yet
+                {fromPhoto ? "Add a few words to search the catalog" : "No products in this category yet"}
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
-                We are always sourcing new stock. Try another category or browse the full catalog.
+                {fromPhoto
+                  ? "Your photo is saved. Type what you're looking for above, or request it and we'll source it."
+                  : "We are always sourcing new stock. Try another category or browse the full catalog."}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
-                <Link href="/products">
-                  <Button>Browse all products</Button>
-                </Link>
+                {fromPhoto ? (
+                  <Link href={requestHref}>
+                    <Button>Request this item</Button>
+                  </Link>
+                ) : (
+                  <Link href="/products">
+                    <Button>Browse all products</Button>
+                  </Link>
+                )}
                 {STORE_CATEGORIES.slice(0, 4).map((cat) => (
                   <Link key={cat.slug} href={`/products?category=${cat.slug}`}>
                     <Button variant="secondary">{cat.label}</Button>
