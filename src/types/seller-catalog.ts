@@ -4,6 +4,7 @@ export type SellerCatalogProduct = {
   id: string;
   name: string;
   slug: string;
+  description?: string | null;
   base_price: number | string;
   retail_price: number | string;
   markup_percent: number | string;
