@@ -15,6 +15,8 @@ export type SellerCatalogProduct = {
   delivery_days_min: number | string;
   delivery_days_max: number | string;
   metadata: unknown;
+  is_deal?: boolean | null;
+  deal_discount_percent?: number | string | null;
 };
 
 export type SellerCatalogTab = "products" | "stock" | "add" | "import";

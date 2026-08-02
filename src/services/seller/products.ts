@@ -8,14 +8,15 @@ import {
 } from "@/lib/seller/listing-status";
 import type { SellerListingStatus } from "@/config/seller-listing-status";
 import {
-  retailFromCost,
-  sellerDeliveryMetadata,
   type SellerDeliverySettings,
 } from "@/lib/seller/product-pricing";
+import { type SellerSupplierInfo } from "@/lib/seller/product-supplier";
 import {
-  applySellerSupplierMetadata,
-  type SellerSupplierInfo,
-} from "@/lib/seller/product-supplier";
+  buildSellerProductMetadata,
+  resolveSellerDealFields,
+  resolveSellerRetailPrice,
+  type SellerSpecialPricingInput,
+} from "@/lib/seller/product-metadata";
 import {
   mapSellerCatalogProduct,
   sellerCatalogProductSelect,
@@ -25,7 +26,8 @@ import { parseStockCsv } from "@/lib/seller/stock-import-parser";
 import { parseStockOrigin, stockStatusForOrigin } from "@/lib/product/stock-origin";
 import type { StockOrigin } from "@/lib/admin/operations-inventory-types";
 import { sellerDb } from "@/lib/seller/db";
-import type { Json } from "@/types/database";
+import type { ProductEnrichment } from "@/types/product-enrichment";
+import type { ProductVariantsConfig } from "@/types/product-variants";
 import type { SellerProfile } from "@/types/seller";
 import type { SellerCatalogProduct } from "@/types/seller-catalog";
 
@@ -48,6 +50,9 @@ export type SellerProductWriteInput = {
   saveIntent?: SellerSaveIntent;
   stockOrigin?: StockOrigin;
   supplier?: SellerSupplierInfo | null;
+  variants?: ProductVariantsConfig | null;
+  enrichment?: ProductEnrichment | null;
+  special?: SellerSpecialPricingInput | null;
 };
 
 export async function listSellerProducts(sellerId: string): Promise<SellerCatalogProduct[]> {
@@ -77,23 +82,27 @@ export async function createSellerProduct(
   const saveIntent = input.saveIntent ?? "list";
   const costPrice = input.costPrice;
   const markupPercent = input.markupPercent;
-  const retailPrice =
-    input.retailPrice ??
-    (costPrice > 0 ? retailFromCost(costPrice, markupPercent) : 0);
+  const deal = resolveSellerDealFields(input.special);
+  const retailPrice = resolveSellerRetailPrice({
+    costPrice,
+    markupPercent,
+    retailPrice: input.retailPrice,
+    special: input.special,
+  });
   const listingStatus = resolveListingStatusForSave(seller, saveIntent);
   const slug = slugify(input.name);
   const imageUrl = input.imageUrls[0] ?? null;
   const delivery = input.delivery ?? { customerPaysDelivery: true, deliveryFeeZar: null };
   const stockOrigin = parseStockOrigin(input.stockOrigin ?? seller.defaultStockOrigin);
-  const metadata = applySellerSupplierMetadata(
-    {
-      gallery: input.imageUrls,
-      sellerListing: true,
-      stock_origin: stockOrigin,
-      ...sellerDeliveryMetadata(delivery),
-    },
-    input.supplier,
-  ) as Json;
+  const metadata = buildSellerProductMetadata({
+    imageUrls: input.imageUrls,
+    stockOrigin,
+    delivery,
+    supplier: input.supplier,
+    variants: input.variants,
+    enrichment: input.enrichment,
+    special: input.special,
+  });
 
   const { data, error } = await sellerDb()
     .from("products")
@@ -113,6 +122,8 @@ export async function createSellerProduct(
       delivery_days_max: input.deliveryDaysMax ?? SA_WAREHOUSE_DELIVERY_DAYS.max,
       stock_status: stockStatusForOrigin(stockOrigin, input.stockQuantity),
       listing_status: listingStatus,
+      is_deal: deal.isDeal,
+      deal_discount_percent: deal.dealDiscountPercent,
       metadata,
     })
     .select(sellerCatalogProductSelect())
@@ -146,9 +157,13 @@ export async function updateSellerProduct(
   const saveIntent = input.saveIntent ?? "draft";
   const costPrice = input.costPrice;
   const markupPercent = input.markupPercent;
-  const retailPrice =
-    input.retailPrice ??
-    (costPrice > 0 ? retailFromCost(costPrice, markupPercent) : 0);
+  const deal = resolveSellerDealFields(input.special);
+  const retailPrice = resolveSellerRetailPrice({
+    costPrice,
+    markupPercent,
+    retailPrice: input.retailPrice,
+    special: input.special,
+  });
   const listingStatus = resolveListingStatusForSave(seller, saveIntent);
   const delivery = input.delivery ?? { customerPaysDelivery: true, deliveryFeeZar: null };
   const stockOrigin = parseStockOrigin(input.stockOrigin ?? seller.defaultStockOrigin);
@@ -157,16 +172,16 @@ export async function updateSellerProduct(
       ? (existing.metadata as Record<string, unknown>)
       : {};
 
-  const metadata = applySellerSupplierMetadata(
-    {
-      ...existingMeta,
-      gallery: input.imageUrls,
-      sellerListing: true,
-      stock_origin: stockOrigin,
-      ...sellerDeliveryMetadata(delivery),
-    },
-    input.supplier,
-  ) as Json;
+  const metadata = buildSellerProductMetadata({
+    existingMeta,
+    imageUrls: input.imageUrls,
+    stockOrigin,
+    delivery,
+    supplier: input.supplier,
+    variants: input.variants,
+    enrichment: input.enrichment,
+    special: input.special,
+  });
 
   const { data, error } = await db
     .from("products")
@@ -183,6 +198,8 @@ export async function updateSellerProduct(
       delivery_days_max: input.deliveryDaysMax ?? SA_WAREHOUSE_DELIVERY_DAYS.max,
       stock_status: stockStatusForOrigin(stockOrigin, input.stockQuantity),
       listing_status: listingStatus,
+      is_deal: deal.isDeal,
+      deal_discount_percent: deal.dealDiscountPercent,
       metadata,
       updated_at: new Date().toISOString(),
     })

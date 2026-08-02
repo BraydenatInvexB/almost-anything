@@ -28,6 +28,17 @@ export function parseVariantsConfig(metadata: unknown): ProductVariantsConfig | 
   return raw.variants;
 }
 
+/** Load variants into an editor even when combinations have not been generated yet. */
+export function parseVariantsConfigForEditor(metadata: unknown): ProductVariantsConfig {
+  if (!metadata || typeof metadata !== "object") return emptyVariantsConfig();
+  const raw = (metadata as { variants?: ProductVariantsConfig }).variants;
+  if (!raw?.options?.length) return emptyVariantsConfig();
+  return {
+    options: raw.options,
+    variants: Array.isArray(raw.variants) ? raw.variants : [],
+  };
+}
+
 export function variantLabel(variant: ProductVariant): string {
   return Object.values(variant.selections).join(" · ");
 }

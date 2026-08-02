@@ -4,7 +4,7 @@ import type { StockOrigin } from "@/lib/admin/operations-inventory-types";
 import type { SellerCatalogProduct } from "@/types/seller-catalog";
 
 const CATALOG_PRODUCT_SELECT =
-  "id, name, slug, description, base_price, retail_price, markup_percent, stock_quantity, category, listing_status, image_url, delivery_days_min, delivery_days_max, metadata";
+  "id, name, slug, description, base_price, retail_price, markup_percent, stock_quantity, category, listing_status, image_url, delivery_days_min, delivery_days_max, metadata, is_deal, deal_discount_percent";
 
 export function sellerCatalogProductSelect() {
   return CATALOG_PRODUCT_SELECT;
@@ -26,6 +26,9 @@ export function mapSellerCatalogProduct(row: Record<string, unknown>): SellerCat
     delivery_days_min: row.delivery_days_min as number | string,
     delivery_days_max: row.delivery_days_max as number | string,
     metadata: row.metadata,
+    is_deal: row.is_deal == null ? null : Boolean(row.is_deal),
+    deal_discount_percent:
+      row.deal_discount_percent == null ? null : (row.deal_discount_percent as number | string),
   };
 }
 

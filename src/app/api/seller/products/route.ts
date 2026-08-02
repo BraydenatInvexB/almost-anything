@@ -25,6 +25,37 @@ const supplierSchema = z.object({
   notes: z.string().optional(),
 });
 
+const specialSchema = z.object({
+  enabled: z.boolean(),
+  compareAtPrice: z.number().min(0).nullable().optional(),
+  salePrice: z.number().min(0).nullable().optional(),
+});
+
+const variantsSchema = z.object({
+  options: z.array(
+    z.object({
+      name: z.string(),
+      values: z.array(z.string()),
+    }),
+  ),
+  variants: z.array(
+    z.object({
+      id: z.string(),
+      selections: z.record(z.string(), z.string()),
+      sku: z.string().optional(),
+      priceAdjust: z.number().optional(),
+      stock: z.number().optional(),
+      imageUrl: z.string().optional(),
+    }),
+  ),
+});
+
+const enrichmentSchema = z.object({
+  highlights: z.array(z.string()).default([]),
+  specifications: z.record(z.string(), z.string()).default({}),
+  summary: z.string().optional(),
+});
+
 const productWriteSchema = z
   .object({
     name: z.string().min(2),
@@ -41,6 +72,9 @@ const productWriteSchema = z
     saveIntent: z.enum(["draft", "list"]).default("list"),
     stockOrigin: z.enum(["sa_warehouse", "overseas"]).optional(),
     supplier: supplierSchema.optional().nullable(),
+    variants: variantsSchema.optional().nullable(),
+    enrichment: enrichmentSchema.optional().nullable(),
+    special: specialSchema.optional().nullable(),
   })
   .superRefine((data, ctx) => {
     if (data.saveIntent === "list" && data.costPrice <= 0) {
@@ -48,6 +82,18 @@ const productWriteSchema = z
         code: "custom",
         message: "Cost price is required to list a product",
         path: ["costPrice"],
+      });
+    }
+    if (
+      data.special?.enabled &&
+      data.special.compareAtPrice != null &&
+      data.special.salePrice != null &&
+      data.special.compareAtPrice <= data.special.salePrice
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Was price must be higher than the now price",
+        path: ["special", "compareAtPrice"],
       });
     }
   });

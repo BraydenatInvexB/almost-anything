@@ -28,7 +28,7 @@ export function SellerProductEditDrawer({
         className="absolute inset-0 bg-neutral-900/25 backdrop-blur-[2px]"
         onClick={onClose}
       />
-      <div className="relative flex h-full w-full max-w-xl flex-col border-l border-neutral-200 bg-neutral-50 shadow-2xl">
+      <div className="relative flex h-full w-full max-w-2xl flex-col border-l border-neutral-200 bg-neutral-50 shadow-2xl">
         <header className="flex items-start justify-between gap-3 border-b border-neutral-200 bg-white px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
@@ -36,7 +36,7 @@ export function SellerProductEditDrawer({
             </p>
             <h2 className="mt-0.5 text-lg font-semibold text-neutral-950">{product.name}</h2>
             <p className="mt-1 text-sm text-neutral-500">
-              Add photos, fix pricing, and update details anytime.
+              Photos, pricing, variants, features, specials, and supplier notes — same tools as admin.
             </p>
           </div>
           <button
