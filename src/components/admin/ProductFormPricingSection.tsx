@@ -1,5 +1,7 @@
 import { ProductFormField as Field } from "@/components/admin/ProductFormField";
+import { DeliverySizeField } from "@/components/product/DeliverySizeField";
 import { STOCK_STATUS_OPTIONS } from "@/config/product-stock";
+import type { DeliverySize } from "@/lib/delivery/size";
 
 type FormSlice = {
   base_price: string;
@@ -9,6 +11,7 @@ type FormSlice = {
   stock_origin: string;
   delivery_days_min: string;
   delivery_days_max: string;
+  delivery_size: DeliverySize;
   is_featured: boolean;
   is_deal: boolean;
 };
@@ -61,6 +64,11 @@ export function ProductFormPricingSection({
             <input type="number" className="input" value={form.delivery_days_max} onChange={(e) => update("delivery_days_max", e.target.value)} />
           </div>
         </Field>
+        <DeliverySizeField
+          className="sm:col-span-3"
+          value={form.delivery_size}
+          onChange={(size) => update("delivery_size", size)}
+        />
       </div>
       <div className="mt-4">
         <label className="flex items-center gap-2 text-sm">

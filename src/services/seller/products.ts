@@ -30,6 +30,7 @@ import type { ProductEnrichment } from "@/types/product-enrichment";
 import type { ProductVariantsConfig } from "@/types/product-variants";
 import type { SellerProfile } from "@/types/seller";
 import type { SellerCatalogProduct } from "@/types/seller-catalog";
+import type { DeliverySize } from "@/lib/delivery/size";
 
 function slugify(name: string): string {
   return `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -46,6 +47,7 @@ export type SellerProductWriteInput = {
   description?: string;
   deliveryDaysMin?: number;
   deliveryDaysMax?: number;
+  deliverySize?: DeliverySize;
   delivery?: SellerDeliverySettings;
   saveIntent?: SellerSaveIntent;
   stockOrigin?: StockOrigin;
@@ -98,6 +100,7 @@ export async function createSellerProduct(
     imageUrls: input.imageUrls,
     stockOrigin,
     delivery,
+    deliverySize: input.deliverySize,
     supplier: input.supplier,
     variants: input.variants,
     enrichment: input.enrichment,
@@ -177,6 +180,7 @@ export async function updateSellerProduct(
     imageUrls: input.imageUrls,
     stockOrigin,
     delivery,
+    deliverySize: input.deliverySize,
     supplier: input.supplier,
     variants: input.variants,
     enrichment: input.enrichment,

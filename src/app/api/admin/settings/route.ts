@@ -22,6 +22,8 @@ const heroShowcaseItemSchema = z.object({
   productSlug: z.string().optional(),
 });
 
+const fulfillmentModeSchema = z.enum(["seller_self", "platform_driver", "courier_partner"]);
+
 const extendedConfigSchema = z.object({
   embedShippingInPrice: z.boolean(),
   freeShippingEnabled: z.boolean().optional(),
@@ -54,6 +56,13 @@ const extendedConfigSchema = z.object({
       ),
     })
     .optional(),
+  deliveryRouting: z
+    .object({
+      singleStoreMode: fulfillmentModeSchema,
+      multiStoreMode: fulfillmentModeSchema,
+    })
+    .optional(),
+  liveSourcingEnabled: z.boolean().optional(),
 });
 
 const schema = z.object({

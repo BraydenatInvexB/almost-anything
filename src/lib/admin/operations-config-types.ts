@@ -48,4 +48,16 @@ export interface ExtendedPlatformConfig {
   currency: string;
   couriers: ConfigCourier[];
   heroShowcase: HeroShowcaseConfig;
+  /**
+   * Who delivers:
+   * - single store orders → usually the shop
+   * - multi store orders → usually Almost Anything drivers
+   * Admin can change both.
+   */
+  deliveryRouting: {
+    singleStoreMode: "seller_self" | "platform_driver" | "courier_partner";
+    multiStoreMode: "seller_self" | "platform_driver" | "courier_partner";
+  };
+  /** When true, live search can source missing products into the catalog. Default false. */
+  liveSourcingEnabled?: boolean;
 }

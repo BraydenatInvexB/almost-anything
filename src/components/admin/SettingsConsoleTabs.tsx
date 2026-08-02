@@ -130,24 +130,79 @@ export function SettingsConsoleTabPanels({
             </Field>
           </div>
         </Panel>
+        <Panel
+          title="Who delivers?"
+          description="Keep it simple: one store → shop delivers. Multiple stores → Almost Anything drivers. Change anytime."
+        >
+          <div className="grid gap-4 p-5 sm:grid-cols-2">
+            <Field
+              label="Customer buys from one store"
+              hint="Usually the shop owner delivers (no courier partners)."
+            >
+              <select
+                disabled={disabled}
+                className="input disabled:opacity-60"
+                value={extConfig.deliveryRouting?.singleStoreMode ?? "seller_self"}
+                onChange={(e) =>
+                  setExtConfig((c) => ({
+                    ...c,
+                    deliveryRouting: {
+                      ...c.deliveryRouting,
+                      singleStoreMode: e.target.value as ExtendedPlatformConfig["deliveryRouting"]["singleStoreMode"],
+                      multiStoreMode: c.deliveryRouting?.multiStoreMode ?? "platform_driver",
+                    },
+                  }))
+                }
+              >
+                <option value="seller_self">Store delivers</option>
+                <option value="platform_driver">Almost Anything drivers</option>
+                <option value="courier_partner">Courier partners</option>
+              </select>
+            </Field>
+            <Field
+              label="Customer buys from multiple stores"
+              hint="Usually Almost Anything collects from shops and delivers to the customer."
+            >
+              <select
+                disabled={disabled}
+                className="input disabled:opacity-60"
+                value={extConfig.deliveryRouting?.multiStoreMode ?? "platform_driver"}
+                onChange={(e) =>
+                  setExtConfig((c) => ({
+                    ...c,
+                    deliveryRouting: {
+                      ...c.deliveryRouting,
+                      singleStoreMode: c.deliveryRouting?.singleStoreMode ?? "seller_self",
+                      multiStoreMode: e.target.value as ExtendedPlatformConfig["deliveryRouting"]["multiStoreMode"],
+                    },
+                  }))
+                }
+              >
+                <option value="platform_driver">Almost Anything drivers</option>
+                <option value="courier_partner">Courier partners</option>
+                <option value="seller_self">Each store delivers their own items</option>
+              </select>
+            </Field>
+          </div>
+        </Panel>
         <Panel title="Delivery pricing strategy">
           <Toggle
             label="Embed delivery cost in product prices"
-            description="Customers always see FREE delivery at checkout. Courier fees are built into retail prices — finance tracks internal courier cost separately."
+            description="Customers see FREE delivery at checkout. Courier fees are built into retail prices."
             checked={extConfig.embedShippingInPrice}
             disabled={disabled}
             onChange={(v) => setExtConfig((c) => ({ ...c, embedShippingInPrice: v }))}
           />
           <Toggle
             label="Offer free shipping above threshold"
-            description="When off, customers pay delivery on every order (unless you embed delivery in product prices)."
+            description="When off, customers pay delivery on every order (unless delivery is embedded in prices)."
             checked={extConfig.freeShippingEnabled}
             disabled={disabled}
             onChange={(v) => setExtConfig((c) => ({ ...c, freeShippingEnabled: v }))}
           />
           <Toggle
             label="Charge flat delivery fee at checkout"
-            description="When on, customers pay the flat shipping fee below. When off, internal courier cost is used instead."
+            description="When on, customers pay the flat shipping fee. Used mainly with courier partners."
             checked={extConfig.flatShippingFeeEnabled}
             disabled={disabled}
             onChange={(v) => setExtConfig((c) => ({ ...c, flatShippingFeeEnabled: v }))}

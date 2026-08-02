@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Lock, CreditCard, Truck } from "lucide-react";
@@ -22,6 +22,8 @@ import {
   checkoutPaymentMethodsClient,
   isPaystackPublicKeyReady,
 } from "@/lib/payments/paystack-public";
+import { DELIVERY_MODE_LABELS, type DeliveryFulfillmentMode } from "@/lib/delivery/types";
+import type { OrderDeliverySizeSummary } from "@/lib/delivery/size";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -32,6 +34,9 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [courierId, setCourierId] = useState("aramex");
+  const [fulfillmentMode, setFulfillmentMode] = useState<DeliveryFulfillmentMode | null>(null);
+  const [showCourierPicker, setShowCourierPicker] = useState(false);
+  const [deliverySize, setDeliverySize] = useState<OrderDeliverySizeSummary | null>(null);
   const paymentOptions = checkoutPaymentMethodsClient();
   const [paymentMethod, setPaymentMethod] = useState(
     () => paymentOptions.find((m) => m.id === "demo")?.id ?? "card",
@@ -64,8 +69,53 @@ export default function CheckoutPage() {
     if (settings?.defaultCourierId) setCourierId(settings.defaultCourierId);
   }, [settings?.defaultCourierId]);
 
+  const productIds = useMemo(
+    () => items.map((i) => i.productId).filter((id): id is string => Boolean(id)),
+    [items],
+  );
+
+  useEffect(() => {
+    if (productIds.length === 0) {
+      setFulfillmentMode(null);
+      setShowCourierPicker(false);
+      setDeliverySize(null);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/checkout/fulfillment-preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productIds }),
+    })
+      .then((r) => r.json())
+      .then(
+        (data: {
+          mode?: DeliveryFulfillmentMode;
+          showCourierPicker?: boolean;
+          deliverySize?: OrderDeliverySizeSummary;
+        }) => {
+          if (cancelled) return;
+          setFulfillmentMode(data.mode ?? null);
+          setShowCourierPicker(Boolean(data.showCourierPicker));
+          setDeliverySize(data.deliverySize ?? null);
+        },
+      )
+      .catch(() => {
+        if (cancelled) return;
+        setFulfillmentMode(null);
+        setShowCourierPicker(false);
+        setDeliverySize(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productIds]);
+
   const couriers = settings ? defaultCouriersFromSettings(settings) : COURIERS.map((c) => ({ id: c.id, name: c.name, etaLabel: c.etaLabel }));
   const currency = settings?.currency ?? "ZAR";
+  const fulfillmentLabel = fulfillmentMode
+    ? DELIVERY_MODE_LABELS[fulfillmentMode]
+    : "We'll arrange delivery";
 
   const pricing = settings
     ? computeStorefrontTotals(subtotal, settings, courierId, discountAmount)
@@ -168,24 +218,55 @@ export default function CheckoutPage() {
             <Card variant="elevated" className="bg-white p-6">
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <Truck className="h-5 w-5" />
-                Courier
+                Delivery
               </h2>
-              <p className="mt-1 text-sm text-neutral-500">
-                {settings?.embedShippingInPrice
-                  ? "Delivery is included in your item prices. Select your preferred courier below."
-                  : "Choose your delivery partner."}
-              </p>
-              <div className="mt-4 space-y-2">
-                {couriers.map((c) => (
-                  <label key={c.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 ${courierId === c.id ? "border-brand bg-brand/5" : "border-neutral-200"}`}>
-                    <input type="radio" name="courier" value={c.id} checked={courierId === c.id} onChange={() => setCourierId(c.id)} />
-                    <div>
-                      <p className="font-semibold text-neutral-900">{c.name}</p>
-                      <p className="text-xs text-neutral-500">{c.etaLabel}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
+              {showCourierPicker ? (
+                <>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    {settings?.embedShippingInPrice
+                      ? "Delivery is included in your item prices. Select your preferred courier below."
+                      : "Choose your delivery partner."}
+                  </p>
+                  <div className="mt-4 space-y-2">
+                    {couriers.map((c) => (
+                      <label
+                        key={c.id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 ${courierId === c.id ? "border-brand bg-brand/5" : "border-neutral-200"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="courier"
+                          value={c.id}
+                          checked={courierId === c.id}
+                          onChange={() => setCourierId(c.id)}
+                        />
+                        <div>
+                          <p className="font-semibold text-neutral-900">{c.name}</p>
+                          <p className="text-xs text-neutral-500">{c.etaLabel}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+                  <p className="font-semibold text-neutral-900">{fulfillmentLabel}</p>
+                  <p className="mt-1 text-neutral-500">
+                    {fulfillmentMode === "seller_self"
+                      ? "Your items are from one store — the shop will deliver to you."
+                      : fulfillmentMode === "platform_driver"
+                        ? "Items from multiple stores — Almost Anything will collect and deliver to you."
+                        : settings?.embedShippingInPrice
+                          ? "Delivery is included in your item prices."
+                          : "We'll confirm delivery details after you place the order."}
+                  </p>
+                </div>
+              )}
+              {deliverySize?.showCustomerNote && deliverySize.customerNote ? (
+                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                  {deliverySize.customerNote}
+                </p>
+              ) : null}
             </Card>
 
             <Card variant="elevated" className="bg-white p-6">
@@ -241,7 +322,14 @@ export default function CheckoutPage() {
                 </div>
               ) : null}
               <div className="flex justify-between">
-                <dt className="text-neutral-500">Delivery {selectedCourier ? `(${selectedCourier.name})` : ""}</dt>
+                <dt className="text-neutral-500">
+                  Delivery{" "}
+                  {showCourierPicker && selectedCourier
+                    ? `(${selectedCourier.name})`
+                    : fulfillmentMode
+                      ? `(${fulfillmentLabel})`
+                      : ""}
+                </dt>
                 <dd className={shippingCalc.displayFree ? "font-semibold text-emerald-600" : ""}>
                   {shipping === 0 ? "Free" : formatCurrency(shipping, currency)}
                 </dd>

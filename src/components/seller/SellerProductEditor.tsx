@@ -36,6 +36,11 @@ import type {
   SellerCatalogShipping,
   SellerDeliverySettings,
 } from "@/types/seller-catalog";
+import {
+  DEFAULT_DELIVERY_SIZE,
+  parseDeliverySizeFromMetadata,
+  type DeliverySize,
+} from "@/lib/delivery/size";
 
 type EditorMode = "create" | "edit";
 
@@ -88,6 +93,9 @@ export function SellerProductEditor({
   );
   const [deliveryDaysMax, setDeliveryDaysMax] = useState(
     String(Number(product?.delivery_days_max) || SA_WAREHOUSE_DELIVERY_DAYS.max),
+  );
+  const [deliverySize, setDeliverySize] = useState<DeliverySize>(() =>
+    product ? parseDeliverySizeFromMetadata(product.metadata) : DEFAULT_DELIVERY_SIZE,
   );
   const [delivery, setDelivery] = useState<SellerDeliverySettings>(() =>
     product
@@ -146,6 +154,7 @@ export function SellerProductEditor({
       description: description || undefined,
       deliveryDaysMin: Number(deliveryDaysMin),
       deliveryDaysMax: Number(deliveryDaysMax),
+      deliverySize,
       delivery,
       saveIntent,
       stockOrigin,
@@ -188,6 +197,7 @@ export function SellerProductEditor({
     setDescription("");
     setImages([]);
     setDelivery({ customerPaysDelivery: true, deliveryFeeZar: null });
+    setDeliverySize(DEFAULT_DELIVERY_SIZE);
     setStockOrigin(defaultStockOrigin);
     setSupplier({ tracked: false });
     setVariants(emptyVariantsConfig());
@@ -263,6 +273,7 @@ export function SellerProductEditor({
         quantity={quantity}
         deliveryDaysMin={deliveryDaysMin}
         deliveryDaysMax={deliveryDaysMax}
+        deliverySize={deliverySize}
         delivery={delivery}
         shipping={shipping}
         onCostChange={setCostPrice}
@@ -271,6 +282,7 @@ export function SellerProductEditor({
         onDeliveryDaysChange={(key, value) =>
           key === "min" ? setDeliveryDaysMin(value) : setDeliveryDaysMax(value)
         }
+        onDeliverySizeChange={setDeliverySize}
         onDeliveryChange={(patch) => setDelivery((prev) => ({ ...prev, ...patch }))}
       />
 

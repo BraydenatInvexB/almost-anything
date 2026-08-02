@@ -1,7 +1,7 @@
 "use client";
 
 import { ProductFormField } from "@/components/admin/ProductFormField";
-import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
+import { DeliverySizeField } from "@/components/product/DeliverySizeField";
 import {
   buildPricingSnapshot,
   type SellerDeliverySettings,
@@ -9,6 +9,7 @@ import {
 } from "@/lib/seller/product-pricing";
 import { describePlatformShipping } from "@/lib/shipping/platform-shipping";
 import { formatCurrency } from "@/lib/utils/cn";
+import type { DeliverySize } from "@/lib/delivery/size";
 
 export function SellerPricingFields({
   costPrice,
@@ -16,12 +17,14 @@ export function SellerPricingFields({
   quantity,
   deliveryDaysMin,
   deliveryDaysMax,
+  deliverySize,
   delivery,
   shipping,
   onCostChange,
   onMarkupChange,
   onQuantityChange,
   onDeliveryDaysChange,
+  onDeliverySizeChange,
   onDeliveryChange,
 }: {
   costPrice: string;
@@ -29,12 +32,14 @@ export function SellerPricingFields({
   quantity: string;
   deliveryDaysMin: string;
   deliveryDaysMax: string;
+  deliverySize: DeliverySize;
   delivery: SellerDeliverySettings;
   shipping: SellerShippingContext;
   onCostChange: (value: string) => void;
   onMarkupChange: (value: string) => void;
   onQuantityChange: (value: string) => void;
   onDeliveryDaysChange: (key: "min" | "max", value: string) => void;
+  onDeliverySizeChange: (value: DeliverySize) => void;
   onDeliveryChange: (patch: Partial<SellerDeliverySettings>) => void;
 }) {
   const cost = Number(costPrice) || 0;
@@ -62,6 +67,11 @@ export function SellerPricingFields({
               <input className="input" type="number" min="1" value={deliveryDaysMax} onChange={(e) => onDeliveryDaysChange("max", e.target.value)} />
             </div>
           </ProductFormField>
+          <DeliverySizeField
+            className="sm:col-span-3"
+            value={deliverySize}
+            onChange={onDeliverySizeChange}
+          />
         </div>
       </section>
 

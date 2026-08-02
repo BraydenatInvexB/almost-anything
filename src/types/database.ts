@@ -12,6 +12,7 @@ export type {
 
 import type { DatabaseAdminTables } from "@/types/database-schema-admin";
 import type { DatabaseCommerceTables } from "@/types/database-schema-commerce";
+import type { DatabaseDeliveryTables } from "@/types/database-schema-delivery";
 import type { DatabaseProductsTables } from "@/types/database-schema-products";
 
 import type { DatabaseSellerTables } from "@/types/database-schema-sellers";
@@ -36,6 +37,8 @@ export type Database = {
       seller_payouts: DatabaseSellerTables["seller_payouts"];
       seller_stock_imports: DatabaseSellerTables["seller_stock_imports"];
       seller_messages: DatabaseSellerTables["seller_messages"];
+      drivers: DatabaseDeliveryTables["drivers"];
+      delivery_jobs: DatabaseDeliveryTables["delivery_jobs"];
       staff_members: DatabaseAdminTables["staff_members"];
       platform_settings: DatabaseAdminTables["platform_settings"];
       support_tickets: DatabaseAdminTables["support_tickets"];

@@ -31,6 +31,12 @@ import {
   specialPricingMetadata,
 } from "@/lib/product/product-special-pricing";
 import { resolveProductIsDeal } from "@/lib/product/deal-flags";
+import {
+  DEFAULT_DELIVERY_SIZE,
+  deliverySizeMetadata,
+  parseDeliverySizeFromMetadata,
+  type DeliverySize,
+} from "@/lib/delivery/size";
 
 interface ProductInput {
   id?: string;
@@ -93,6 +99,9 @@ export function ProductForm({
     quantity: product ? String(product.quantity) : "10",
     delivery_days_min: product ? String(product.delivery_days_min) : String(SA_WAREHOUSE_DELIVERY_DAYS.min),
     delivery_days_max: product ? String(product.delivery_days_max) : String(SA_WAREHOUSE_DELIVERY_DAYS.max),
+    delivery_size: product
+      ? parseDeliverySizeFromMetadata(product.metadata)
+      : DEFAULT_DELIVERY_SIZE,
     is_featured: product?.is_featured ?? false,
     is_deal: product?.is_deal ?? false,
   });
@@ -204,6 +213,7 @@ export function ProductForm({
           gallery,
           suppliersUpdatedAt: manualSuppliers.length ? new Date().toISOString() : undefined,
           ...specialPricingMetadata(special.special_enabled ? compareAt : null),
+          ...deliverySizeMetadata(form.delivery_size as DeliverySize),
         },
       };
 

@@ -16,6 +16,13 @@ import {
 import { generateOrderNumber, normalizeOrderNumber } from "@/lib/orders/order-number";
 import { resolveOrderPromo } from "@/lib/promo/validate-checkout-promo";
 import { activateSellerSubscriptionOnFirstSale } from "@/services/seller/subscription";
+import { getPublicStorefrontConfig } from "@/services/storefront-settings-service";
+import {
+  createDeliveryJobForOrder,
+  resolveProductDeliverySizes,
+  resolveProductSellerIds,
+} from "@/lib/delivery/create-job";
+import { mergeDeliveryRouting } from "@/lib/delivery/types";
 
 export async function createOrder(
   payload: CheckoutPayload,
@@ -87,6 +94,14 @@ export async function createOrder(
       if (orderRow) {
         order.id = orderRow.id;
 
+        const productIds = payload.items
+          .map((item) => item.productId)
+          .filter((id): id is string => Boolean(id));
+        const [sellerIdsByProduct, deliverySizesByProduct] = await Promise.all([
+          resolveProductSellerIds(supabase, productIds),
+          resolveProductDeliverySizes(supabase, productIds),
+        ]);
+
         await supabase.from("order_items").insert(
           payload.items.map((item) => ({
             order_id: orderRow.id,
@@ -96,6 +111,9 @@ export async function createOrder(
             unit_price: item.price,
             quantity: item.quantity,
             image_url: item.imageUrl ?? null,
+            seller_id: item.productId
+              ? (sellerIdsByProduct.get(item.productId) ?? null)
+              : null,
             metadata: {
               quoteOptionId: item.quoteOptionId,
               quoteRequestId: item.quoteRequestId,
@@ -106,14 +124,44 @@ export async function createOrder(
               variantLabel: item.variantLabel,
               selectedOptions: item.selectedOptions,
               sku: item.slug ? `AA-${item.slug.slice(0, 12).toUpperCase()}` : undefined,
+              deliverySize: item.productId
+                ? deliverySizesByProduct.get(item.productId)
+                : undefined,
             },
           })),
         );
 
-        const productIds = payload.items
-          .map((item) => item.productId)
-          .filter((id): id is string => Boolean(id));
         await activateSellerSubscriptionOnFirstSale(productIds);
+
+        const ext = await getPublicStorefrontConfig();
+        const delivery = await createDeliveryJobForOrder(supabase, {
+          orderId: orderRow.id,
+          orderNumber,
+          payload,
+          sellerIdsByProduct,
+          deliverySizesByProduct,
+          policy: mergeDeliveryRouting(ext.deliveryRouting),
+        });
+
+        await supabase
+          .from("orders")
+          .update({
+            metadata: {
+              source: "checkout",
+              courierId: payload.courierId ?? null,
+              courierName: payload.courierName ?? null,
+              shippingInternalCost: payload.shippingInternalCost ?? null,
+              stockOrigin,
+              promoCode: promoCode ?? null,
+              promoDiscount: promoDiscount || null,
+              fulfillmentMode: delivery.mode,
+              deliveryJobId: delivery.jobId,
+              uniqueSellerCount: new Set(
+                [...sellerIdsByProduct.values()].filter(Boolean),
+              ).size,
+            },
+          })
+          .eq("id", orderRow.id);
 
         if (payload.paymentMethod === "demo") {
           await supabase

@@ -68,6 +68,7 @@ const productWriteSchema = z
     description: z.string().optional(),
     deliveryDaysMin: z.number().int().min(1).optional(),
     deliveryDaysMax: z.number().int().min(1).optional(),
+    deliverySize: z.enum(["small", "medium", "large", "bulky"]).optional(),
     delivery: deliverySchema.optional(),
     saveIntent: z.enum(["draft", "list"]).default("list"),
     stockOrigin: z.enum(["sa_warehouse", "overseas"]).optional(),

@@ -19,6 +19,11 @@ import {
 import { parseStockOrigin } from "@/lib/product/stock-origin";
 import type { StockOrigin } from "@/lib/admin/operations-inventory-types";
 import type { Json } from "@/types/database";
+import {
+  deliverySizeMetadata,
+  parseDeliverySize,
+  type DeliverySize,
+} from "@/lib/delivery/size";
 
 export type SellerSpecialPricingInput = {
   enabled: boolean;
@@ -93,6 +98,7 @@ export function buildSellerProductMetadata(input: {
   imageUrls: string[];
   stockOrigin: StockOrigin;
   delivery: SellerDeliverySettings;
+  deliverySize?: DeliverySize;
   supplier?: SellerSupplierInfo | null;
   variants?: ProductVariantsConfig | null;
   enrichment?: ProductEnrichment | null;
@@ -103,6 +109,7 @@ export function buildSellerProductMetadata(input: {
   const enrichment = input.enrichment ?? { highlights: [], specifications: {} };
   const variants =
     input.variants && input.variants.options.length > 0 ? input.variants : null;
+  const deliverySize = parseDeliverySize(input.deliverySize);
 
   const storefrontMeta = buildProductMetadata({
     variants,
@@ -119,6 +126,7 @@ export function buildSellerProductMetadata(input: {
     sellerListing: true,
     stock_origin: stockOrigin,
     ...sellerDeliveryMetadata(input.delivery),
+    ...deliverySizeMetadata(deliverySize),
     ...specialPricingMetadata(deal.compareAt),
   };
 

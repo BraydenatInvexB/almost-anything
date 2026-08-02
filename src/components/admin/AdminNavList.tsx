@@ -21,6 +21,7 @@ import {
   Building2,
   Activity,
   Store,
+  Car,
   type LucideIcon,
 } from "lucide-react";
 import { ADMIN_NAV } from "@/config/rbac";
@@ -46,6 +47,7 @@ export const ADMIN_NAV_ICONS: Record<string, LucideIcon> = {
   Activity,
   Search,
   Store,
+  Car,
 };
 
 export const ADMIN_NAV_GROUP_ORDER = ["Overview", "Commerce", "People", "Finance", "Growth", "System"] as const;
