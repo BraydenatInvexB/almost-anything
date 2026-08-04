@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/Card";
 import { getSellerBySlug } from "@/services/seller-service";
 import { sellerDb } from "@/lib/seller/db";
 
+export const dynamic = "force-dynamic";
+
 export default async function BusinessProfilePage({
   params,
 }: {

@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { listApprovedSellers } from "@/services/seller-service";
 
+export const dynamic = "force-dynamic";
+
 export default async function BusinessesPage() {
   const sellers = await listApprovedSellers();
 
