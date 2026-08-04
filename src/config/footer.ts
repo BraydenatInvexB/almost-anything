@@ -57,7 +57,6 @@ export const FOOTER_PAYMENTS = [
   "Visa",
   "Mastercard",
   "Amex",
-  "PayPal",
   "Apple Pay",
   "Google Pay",
 ] as const;
