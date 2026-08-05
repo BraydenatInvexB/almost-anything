@@ -13,6 +13,7 @@ import {
   parseDeliverySize,
   type DeliverySize,
 } from "@/lib/delivery/size";
+import type { Json } from "@/types/database";
 
 export interface DeliveryJobRow {
   id: string;
@@ -40,6 +41,9 @@ export interface DeliveryJobRow {
   mayNeedTwoPeople: boolean;
   createdAt: string;
   deliveredAt: string | null;
+  proofRecipientName: string | null;
+  proofSignedAt: string | null;
+  proofSignaturePath: string | null;
 }
 
 function mapJob(row: Record<string, unknown>): DeliveryJobRow {
@@ -81,6 +85,9 @@ function mapJob(row: Record<string, unknown>): DeliveryJobRow {
         : sizeInfo.mayNeedTwoPeople,
     createdAt: String(row.created_at),
     deliveredAt: row.delivered_at ? String(row.delivered_at) : null,
+    proofRecipientName: typeof meta.proofRecipientName === "string" ? meta.proofRecipientName : null,
+    proofSignedAt: typeof meta.proofSignedAt === "string" ? meta.proofSignedAt : null,
+    proofSignaturePath: typeof meta.proofSignaturePath === "string" ? meta.proofSignaturePath : null,
   };
 }
 
@@ -171,13 +178,32 @@ export async function claimDeliveryJob(
     return { error: "This delivery is outside your province" };
   }
 
-  return updateDeliveryJobStatus(jobId, "assigned", { driverId: driver.id });
+  try {
+    const supabase = createServiceClient();
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("delivery_jobs")
+      .update({ status: "assigned", driver_id: driver.id, assigned_at: now, updated_at: now })
+      .eq("id", jobId)
+      .eq("status", "ready_for_driver")
+      .is("driver_id", null)
+      .select("id")
+      .maybeSingle();
+    if (error) return { error: error.message };
+    if (!data) return { error: "This delivery has already been claimed." };
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not claim delivery" };
+  }
 }
 
 export async function updateDeliveryJobStatus(
   jobId: string,
   status: DeliveryJobStatus,
-  extra?: { driverId?: string | null },
+  extra?: {
+    driverId?: string | null;
+    proofOfDelivery?: { recipientName: string; signatureDataUrl: string };
+  },
 ): Promise<{ ok: true } | { error: string }> {
   if (!isSupabaseConfigured()) return { error: "Supabase not configured" };
   try {
@@ -188,27 +214,66 @@ export async function updateDeliveryJobStatus(
       driver_id?: string | null;
       assigned_at?: string;
       delivered_at?: string;
+      metadata?: Json;
     } = {
       status,
       updated_at: new Date().toISOString(),
     };
     if (extra?.driverId !== undefined) {
       patch.driver_id = extra.driverId;
-      if (extra.driverId) patch.assigned_at = new Date().toISOString();
+      if (extra.driverId && status === "assigned") patch.assigned_at = new Date().toISOString();
     }
-    if (status === "delivered") patch.delivered_at = new Date().toISOString();
+    if (status === "delivered") {
+      const signedAt = new Date().toISOString();
+      patch.delivered_at = signedAt;
+      if (extra?.proofOfDelivery) {
+        const bucket = "delivery-proofs";
+        const encoded = extra.proofOfDelivery.signatureDataUrl.split(",")[1];
+        if (!encoded) return { error: "Customer signature is invalid." };
+        const signature = Buffer.from(encoded, "base64");
+        if (signature.length > 180_000) return { error: "Customer signature is too large." };
+        const { error: bucketError } = await supabase.storage.getBucket(bucket);
+        if (bucketError) {
+          const { error: createBucketError } = await supabase.storage.createBucket(bucket, {
+            public: false,
+            fileSizeLimit: 200_000,
+            allowedMimeTypes: ["image/png"],
+          });
+          if (createBucketError && !createBucketError.message.toLowerCase().includes("already exists")) {
+            return { error: "Proof-of-delivery storage is unavailable." };
+          }
+        }
+        const signaturePath = `${jobId}/${Date.now()}.png`;
+        const { error: uploadError } = await supabase.storage.from(bucket).upload(signaturePath, signature, {
+          contentType: "image/png",
+          upsert: false,
+        });
+        if (uploadError) return { error: "Could not save the customer signature." };
+        const { data: current } = await supabase.from("delivery_jobs").select("metadata").eq("id", jobId).maybeSingle();
+        const metadata = (current?.metadata as Record<string, unknown> | null) ?? {};
+        patch.metadata = {
+          ...metadata,
+          proofRecipientName: extra.proofOfDelivery.recipientName,
+          proofSignaturePath: signaturePath,
+          proofSignedAt: signedAt,
+        } as Json;
+      }
+    }
 
     const { error } = await supabase.from("delivery_jobs").update(patch).eq("id", jobId);
     if (error) return { error: error.message };
 
-    if (status === "delivered") {
+    if (status === "out_for_delivery" || status === "delivered") {
       const { data: job } = await supabase
         .from("delivery_jobs")
         .select("order_id")
         .eq("id", jobId)
         .maybeSingle();
       if (job?.order_id) {
-        await supabase.from("orders").update({ status: "delivered" }).eq("id", job.order_id);
+        await supabase
+          .from("orders")
+          .update({ status: status === "delivered" ? "delivered" : "shipped" })
+          .eq("id", job.order_id);
       }
     }
 

@@ -176,3 +176,18 @@ See `.env.example` for all required variables.
 ## License
 
 Private — Almost Anything © 2026
+# Almost Anything
+
+## PayFast and Ozow setup
+
+The storefront owns the payment review, provider selection, processing, cancellation, failure, and success screens. Customers only leave Almost Anything for the secure authorization step hosted by PayFast or Ozow.
+
+1. Copy the payment variables from `.env.example` into the deployment environment.
+2. Set `NEXT_PUBLIC_SITE_URL` to the public HTTPS site origin. Provider webhooks cannot reach localhost.
+3. Start with `PAYMENTS_TEST_MODE=true` and install sandbox or test credentials for both providers.
+4. In PayFast, use the merchant ID, merchant key, and passphrase from the merchant dashboard. The app submits the notification URL automatically at `/api/payments/payfast/notify`.
+5. In Ozow, use the site code, private key, and API key. The app submits the notification URL automatically at `/api/payments/ozow/notify`.
+6. Run a successful, cancelled, and failed test payment through each provider before switching to live mode.
+7. Install live credentials, set `PAYMENTS_TEST_MODE=false`, redeploy, and repeat a low-value live transaction through each provider.
+
+Never expose merchant keys, passphrases, private keys, or API keys in browser-side variables or commit them to source control.

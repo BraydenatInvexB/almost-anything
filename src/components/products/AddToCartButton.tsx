@@ -67,11 +67,9 @@ export function AddToCartButton({
         onClick={handleClick}
         disabled={disabled}
         className={cn(
-          "inline-flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-black px-4 py-2 text-sm font-extrabold uppercase text-white shadow-[3px_3px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_#000]",
-          disabled && "cursor-not-allowed opacity-40 hover:translate-x-0 hover:translate-y-0",
-          showSuccess
-            ? "bg-brand hover:bg-brand"
-            : "bg-black hover:bg-brand",
+          "inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md active:scale-[0.98]",
+          disabled && "cursor-not-allowed opacity-40",
+          showSuccess ? "bg-brand hover:bg-[#c80511]" : "bg-neutral-900 hover:bg-brand",
           justAdded && "animate-action-success",
           className,
         )}
@@ -104,11 +102,11 @@ export function AddToCartButton({
             : `Add ${item.name} to cart`
       }
       className={cn(
-        "inline-flex h-8 shrink-0 items-center gap-1 rounded-md border-2 border-black px-2.5 text-[10px] font-extrabold uppercase tracking-wide shadow-[2px_2px_0_0_#000] transition-all hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_0_#000]",
-        disabled && "cursor-not-allowed opacity-40 hover:translate-x-0 hover:translate-y-0",
+        "inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-[11px] font-semibold tracking-tight shadow-sm transition-all",
+        disabled && "cursor-not-allowed opacity-40",
         showSuccess
-          ? "bg-brand text-white"
-          : "bg-white text-black hover:bg-brand hover:text-white",
+          ? "bg-brand text-white hover:bg-[#c80511]"
+          : "border border-neutral-200 bg-white text-neutral-800 hover:border-brand hover:text-brand",
         justAdded && "animate-action-success",
         className,
       )}

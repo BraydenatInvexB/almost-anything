@@ -71,7 +71,7 @@ export function SupportContactForm() {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0_0_#000]">
+    <form onSubmit={submit} className="rounded-xl border border-neutral-200 bg-white p-6 shadow-[var(--shadow-soft)]">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/10">
           <LifeBuoy className="h-5 w-5 text-brand" />

@@ -5,9 +5,9 @@ export const SITE_CONFIG = {
   name: "Almost Anything",
   shortName: "AA",
   tagline: "The store that has almost everything.",
-  logo: "/assets/red transparent no slogan.png",
-  logoFull: "/assets/red transparent.png",
-  favicon: "/assets/icon-transparent-aa.png?v=3",
+  logo: "/assets/almost-anything-logo-compact-transparent.png",
+  logoFull: "/assets/almost-anything-logo-full-transparent.png",
+  favicon: "/assets/almost-anything-mark-transparent.png",
   description:
     "Almost Anything is an online store with almost everything: furniture, tech, home, and more, at great prices, delivered fast. Browse thousands of quality products at fair prices.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
@@ -47,4 +47,3 @@ export const TEAM_MEMBERS: TeamMember[] = [
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
   },
 ];
-

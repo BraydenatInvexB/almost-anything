@@ -70,7 +70,7 @@ export default function FavoritesPage() {
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-8 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight text-black">
+            <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">
               Wishlists
             </h1>
             <p className="mt-1 text-sm text-neutral-600">
@@ -100,13 +100,13 @@ export default function FavoritesPage() {
                           <input
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
-                            className="h-9 min-w-0 flex-1 rounded-lg border-2 border-black px-2 text-sm font-semibold outline-none"
+                            className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-200 px-2 text-sm font-semibold outline-none"
                             autoFocus
                           />
                           <button
                             type="button"
                             onClick={() => saveRename(list.id)}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-brand text-white"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-brand text-white"
                             aria-label="Save name"
                           >
                             <Check className="h-4 w-4" />
@@ -114,7 +114,7 @@ export default function FavoritesPage() {
                           <button
                             type="button"
                             onClick={() => setEditingId(null)}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-white"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white"
                             aria-label="Cancel"
                           >
                             <X className="h-4 w-4" />
@@ -145,7 +145,7 @@ export default function FavoritesPage() {
                           <button
                             type="button"
                             onClick={() => startRename(list.id, list.name)}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white text-neutral-600 hover:bg-neutral-50"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
                             aria-label={`Rename ${list.name}`}
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -154,7 +154,7 @@ export default function FavoritesPage() {
                             <button
                               type="button"
                               onClick={() => handleDeleteList(list.id)}
-                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white text-red-600 hover:bg-red-50"
+                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-red-600 hover:bg-red-50"
                               aria-label={`Delete ${list.name}`}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -172,12 +172,12 @@ export default function FavoritesPage() {
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
                   placeholder="New list name"
-                  className="h-10 min-w-0 flex-1 rounded-lg border-2 border-black px-3 text-sm font-medium outline-none placeholder:text-neutral-400"
+                  className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-200 px-3 text-sm font-medium outline-none placeholder:text-neutral-400"
                 />
                 <button
                   type="submit"
                   disabled={!newListName.trim()}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-black text-white hover:bg-brand disabled:opacity-40"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand text-white hover:bg-[#c80511] disabled:opacity-40"
                   aria-label="Create list"
                 >
                   <Plus className="h-4 w-4" />

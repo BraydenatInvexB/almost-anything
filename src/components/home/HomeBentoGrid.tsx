@@ -1,5 +1,4 @@
 import { getProducts, getHotProducts, getStealsProducts, getFreshDropProducts } from "@/services/product-service";
-import { getPublicStorefrontConfig } from "@/services/storefront-settings-service";
 import { BoldHome } from "@/components/home/BoldHome";
 import { ProductGrid } from "@/components/home/ProductGrid";
 
@@ -28,10 +27,10 @@ export async function HomeBentoGrid({ category, query }: HomeBentoGridProps) {
     }
 
     return (
-      <div className="mt-4">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-2 rounded-2xl border-[3px] border-black bg-white px-5 py-4 shadow-[5px_5px_0_0_#000]">
-          <h2 className="text-2xl font-black uppercase tracking-tight text-black sm:text-3xl">{title}</h2>
-          <span className="rounded-full border-2 border-black bg-brand px-3 py-1 text-xs font-extrabold uppercase text-white">
+      <div className="mt-2">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-2 rounded-2xl border border-neutral-100 bg-[#f9f9f9] px-5 py-4">
+          <h2 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">{title}</h2>
+          <span className="rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white">
             {products.length} items
           </span>
         </div>
@@ -42,19 +41,11 @@ export async function HomeBentoGrid({ category, query }: HomeBentoGridProps) {
     );
   }
 
-  const [hot, steals, fresh, storefrontConfig] = await Promise.all([
+  const [hot, steals, fresh] = await Promise.all([
     getHotProducts(),
     getStealsProducts(),
     getFreshDropProducts(),
-    getPublicStorefrontConfig(),
   ]);
 
-  return (
-    <BoldHome
-      hot={hot}
-      steals={steals}
-      fresh={fresh}
-      heroShowcase={storefrontConfig.heroShowcase}
-    />
-  );
+  return <BoldHome hot={hot} steals={steals} fresh={fresh} />;
 }

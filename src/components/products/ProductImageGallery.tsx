@@ -29,14 +29,14 @@ export function ProductImageGallery({ images, alt, className }: ProductImageGall
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
-      <div className="relative aspect-square overflow-hidden bg-white">
+      <div className="relative aspect-[4/3] overflow-hidden bg-white sm:aspect-[5/4]">
         <Image
           key={active}
           src={active}
           alt={alt}
           fill
           sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-contain bg-white p-4"
+          className="bg-white object-contain p-6 sm:p-8 lg:p-10"
           priority={activeIndex === 0}
           unoptimized={active.startsWith("http") && !active.includes("unsplash")}
         />

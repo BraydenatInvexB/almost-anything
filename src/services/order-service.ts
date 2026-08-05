@@ -35,8 +35,9 @@ export async function createOrder(
     payload.customerShippingCharge ?? calculated.shipping;
   const subtotal = calculated.subtotal;
   const discountedSubtotal = Math.max(0, subtotal - promoDiscount);
-  const tax = Math.round(discountedSubtotal * 0.15 * 100) / 100;
-  const total = Math.round((discountedSubtotal + shipping + tax) * 100) / 100;
+  const vatInclusiveAmount = discountedSubtotal + shipping;
+  const tax = Math.round((vatInclusiveAmount * 0.15 / 1.15) * 100) / 100;
+  const total = Math.round(vatInclusiveAmount * 100) / 100;
   const orderNumber = generateOrderNumber();
   const orderItems = mapCartToOrderItems(payload.items);
   const stockOrigin = inferStockOrigin(payload.items);

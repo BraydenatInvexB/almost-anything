@@ -4,21 +4,12 @@ import { SITE_CONFIG } from "@/config/site";
 import { cn } from "@/lib/utils/cn";
 
 interface SiteLogoProps {
-  /** Compact mark + wordmark for headers; full includes tagline. */
   variant?: "compact" | "full";
-  /** Large for homepage hero header; default for sticky inner pages. */
   size?: "default" | "large";
   className?: string;
   imageClassName?: string;
   priority?: boolean;
 }
-
-const COMPACT_SIZES = {
-  default: "h-14 w-auto sm:h-[4.25rem] lg:h-20",
-  large: "h-[4.5rem] w-auto sm:h-24 lg:h-28",
-} as const;
-
-const FULL_SIZES = "h-20 w-auto sm:h-24 lg:h-28";
 
 export function SiteLogo({
   variant = "compact",
@@ -27,19 +18,23 @@ export function SiteLogo({
   imageClassName,
   priority = false,
 }: SiteLogoProps) {
-  const src = variant === "full" ? SITE_CONFIG.logoFull : SITE_CONFIG.logo;
+  const full = variant === "full";
 
   return (
-    <Link href="/" className={cn("inline-flex shrink-0 items-center", className)}>
+    <Link href="/" aria-label={SITE_CONFIG.name} className={cn("inline-flex shrink-0", className)}>
       <Image
-        src={src}
+        src={full ? SITE_CONFIG.logoFull : SITE_CONFIG.logo}
         alt={SITE_CONFIG.name}
-        width={variant === "full" ? 560 : 480}
-        height={variant === "full" ? 180 : 120}
+        width={full ? 1080 : 980}
+        height={full ? 650 : 500}
         priority={priority}
         className={cn(
           "object-contain object-left",
-          variant === "full" ? FULL_SIZES : COMPACT_SIZES[size],
+          full
+            ? "h-auto w-48 sm:w-56"
+            : size === "large"
+              ? "h-16 w-auto sm:h-20"
+              : "h-10 w-auto sm:h-12 lg:h-14",
           imageClassName,
         )}
       />

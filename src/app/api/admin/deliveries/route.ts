@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
 import { staffCan } from "@/config/rbac";
-import { updateDeliveryJobStatus } from "@/services/delivery/jobs";
+import { getDeliveryJob, updateDeliveryJobStatus } from "@/services/delivery/jobs";
+import { listDrivers } from "@/services/delivery/drivers";
 
 const patchSchema = z.object({
   id: z.string().uuid(),
@@ -28,6 +29,17 @@ export async function PATCH(request: Request) {
   const parsed = patchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  if (parsed.data.driverId) {
+    const driver = (await listDrivers()).find((entry) => entry.id === parsed.data.driverId);
+    if (!driver || driver.status !== "active") {
+      return NextResponse.json({ error: "Choose an active driver." }, { status: 400 });
+    }
+    const job = await getDeliveryJob(parsed.data.id);
+    if (!job || (job.province && job.province !== driver.province)) {
+      return NextResponse.json({ error: "Choose a driver who covers this province." }, { status: 400 });
+    }
   }
 
   const result = await updateDeliveryJobStatus(parsed.data.id, parsed.data.status, {

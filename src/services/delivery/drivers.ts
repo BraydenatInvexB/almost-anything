@@ -16,6 +16,7 @@ function mapDriver(row: {
   province: string;
   status: string;
   vehicle_notes: string | null;
+  verification_status?: string | null;
 }): DriverProfile {
   return {
     id: row.id,
@@ -26,6 +27,7 @@ function mapDriver(row: {
     province: row.province,
     status: row.status as DriverStatus,
     vehicleNotes: row.vehicle_notes,
+    verificationStatus: (row.verification_status ?? "incomplete") as DriverProfile["verificationStatus"],
   };
 }
 
@@ -121,6 +123,13 @@ export async function updateDriverStatus(
 ): Promise<{ ok: true } | { error: string }> {
   if (!isSupabaseConfigured()) return { error: "Supabase not configured" };
   try {
+    if (status === "active") {
+      const { getDriverCompliance } = await import("@/services/delivery/compliance");
+      const compliance = await getDriverCompliance(id);
+      if (!compliance.readyForApproval) {
+        return { error: "Approve the driver licence and bank proof before activating this driver." };
+      }
+    }
     const supabase = createServiceClient();
     const { error } = await supabase
       .from("drivers")

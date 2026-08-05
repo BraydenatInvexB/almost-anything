@@ -7,7 +7,6 @@ import {
   type SellerDeliverySettings,
   type SellerShippingContext,
 } from "@/lib/seller/product-pricing";
-import { describePlatformShipping } from "@/lib/shipping/platform-shipping";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { DeliverySize } from "@/lib/delivery/size";
 
@@ -50,7 +49,7 @@ export function SellerPricingFields({
     <div className="space-y-4">
       <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-neutral-950">Pricing & inventory</h2>
-        <p className="mt-0.5 text-xs text-neutral-500">Set your cost, markup, and stock — retail price is calculated automatically.</p>
+        <p className="mt-0.5 text-xs text-neutral-500">Set your cost, markup, and stock. Customer-facing retail prices are VAT inclusive where VAT applies.</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <ProductFormField label="Cost price (ZAR)" hint="What you pay or stock at">
             <input className="input" type="number" min="0" step="0.01" value={costPrice} onChange={(e) => onCostChange(e.target.value)} />
@@ -77,37 +76,32 @@ export function SellerPricingFields({
 
       <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-neutral-950">Customer delivery</h2>
-        <p className="mt-0.5 text-xs text-neutral-500">{describePlatformShipping(shipping)}</p>
-        <div className="mt-4 space-y-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={delivery.customerPaysDelivery}
-              onChange={(e) => onDeliveryChange({ customerPaysDelivery: e.target.checked })}
-            />
-            Customer pays delivery fee at checkout
-          </label>
-          {delivery.customerPaysDelivery ? (
-            <ProductFormField label="Delivery fee override (ZAR)" hint="Leave blank to use platform default">
-              <input
-                className="input"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder={String(shipping.flatShippingFee)}
-                value={delivery.deliveryFeeZar ?? ""}
-                onChange={(e) =>
-                  onDeliveryChange({
-                    deliveryFeeZar: e.target.value ? Number(e.target.value) : null,
-                  })
-                }
-              />
-            </ProductFormField>
-          ) : null}
+        <p className="mt-0.5 text-xs text-neutral-500">Choose the delivery fee the customer will pay at checkout.</p>
+        <div className="mt-4">
+          <ProductFormField label="Delivery option">
+            <select
+              className="input"
+              value={delivery.deliveryFeeZar === 200 ? "200" : "100"}
+              onChange={(e) => {
+                const fee = Number(e.target.value);
+                onDeliveryChange({
+                  customerPaysDelivery: true,
+                  deliveryFeeZar: fee,
+                });
+                onDeliverySizeChange(fee === 200 ? "large" : "small");
+              }}
+            >
+              <option value="100">Standard delivery R100</option>
+              <option value="200">Big delivery R200</option>
+            </select>
+          </ProductFormField>
         </div>
       </section>
 
       <PricingPreview snapshot={snapshot} quantity={Number(quantity) || 0} />
+      <p className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs leading-5 text-neutral-600">
+        VAT registered sellers must account for VAT at the applicable rate and keep valid tax invoices. Sellers who are not VAT registered must not charge VAT as a separate amount.
+      </p>
     </div>
   );
 }

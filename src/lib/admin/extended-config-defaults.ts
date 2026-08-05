@@ -5,7 +5,7 @@ import { DEFAULT_DELIVERY_ROUTING, mergeDeliveryRouting } from "@/lib/delivery/t
 import { DEFAULT_DELIVERY_FEES, mergeDeliveryFees } from "@/lib/delivery/fees";
 
 export const DEFAULT_EXTENDED_CONFIG: ExtendedPlatformConfig = {
-  embedShippingInPrice: true,
+  embedShippingInPrice: false,
   freeShippingEnabled: false,
   flatShippingFeeEnabled: true,
   defaultCourierId: "aramex",
@@ -16,6 +16,7 @@ export const DEFAULT_EXTENDED_CONFIG: ExtendedPlatformConfig = {
   deliveryRouting: { ...DEFAULT_DELIVERY_ROUTING },
   deliveryFees: { ...DEFAULT_DELIVERY_FEES },
   liveSourcingEnabled: false,
+  driverPortalEnabled: true,
 };
 
 export function mergeExtendedConfig(
@@ -48,6 +49,9 @@ export function mergeExtendedConfig(
     deliveryFees: mergeDeliveryFees(feesPartial),
     liveSourcingEnabled: Boolean(
       partial.liveSourcingEnabled ?? DEFAULT_EXTENDED_CONFIG.liveSourcingEnabled,
+    ),
+    driverPortalEnabled: Boolean(
+      partial.driverPortalEnabled ?? DEFAULT_EXTENDED_CONFIG.driverPortalEnabled,
     ),
   };
 }

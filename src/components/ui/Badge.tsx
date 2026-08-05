@@ -7,9 +7,9 @@ interface BadgeProps {
 }
 
 const variantStyles = {
-  default: "bg-white text-black",
-  exclusive: "bg-[#C7A8FF] text-black uppercase tracking-wider text-[10px]",
-  rating: "bg-white text-black",
+  default: "bg-neutral-100 text-neutral-700",
+  exclusive: "bg-brand-soft text-brand uppercase tracking-wider text-[10px]",
+  rating: "bg-neutral-100 text-neutral-800",
   deal: "bg-brand text-white",
 };
 
@@ -21,7 +21,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border-2 border-black px-3 py-1 text-xs font-extrabold",
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
         variantStyles[variant],
         className,
       )}

@@ -1,5 +1,4 @@
 import type { LucideIcon } from "lucide-react";
-import { Car, Store } from "lucide-react";
 
 export interface ConsoleLoginTheme {
   accent: string;
@@ -10,16 +9,16 @@ export interface ConsoleLoginTheme {
 
 export const CONSOLE_LOGIN_THEMES = {
   seller: {
-    accent: "#FFD23F",
-    icon: Store,
+    accent: "#e30613",
+    logoVariant: "full",
   },
   admin: {
     accent: "#e30613",
     logoVariant: "full",
   },
   driver: {
-    accent: "#1a7a4c",
-    icon: Car,
+    accent: "#e30613",
+    logoVariant: "full",
   },
 } as const satisfies Record<string, ConsoleLoginTheme>;
 

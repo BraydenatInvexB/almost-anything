@@ -1,4 +1,3 @@
-import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { HomeBentoGrid } from "@/components/home/HomeBentoGrid";
 
@@ -10,17 +9,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      {/* Full-bleed light dashboard surface */}
-      <main className="flex-1 bg-white p-4 sm:p-6 lg:p-8">
-        {/* Embedded header */}
-        <SiteHeader
-          variant="home"
-          activeCategory={params.category}
-          searchQuery={params.q}
-        />
-
-        {/* Bento grid (rendered inline — no streaming Suspense boundary) */}
+    <div className="flex min-h-dvh flex-col bg-white">
+      <main className="mx-auto w-full max-w-[1680px] flex-1 px-3 py-3 sm:px-6 sm:py-6">
         <HomeBentoGrid category={params.category} query={params.q} />
       </main>
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ProductGrid } from "@/components/home/ProductGrid";
@@ -190,46 +190,64 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             />
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
-              <ProductGrid products={products} />
+              <ProductGrid products={products} showEmpty={false} />
             </div>
           )}
 
           {(page > 1 || hasMore) && products.length > 0 && (
             <nav
-              className="mt-12 flex items-center justify-center gap-3"
+              className="mt-12 flex items-center justify-center"
               aria-label="Pagination"
             >
-              {page > 1 ? (
-                <Link
-                  href={`/products${buildQuery({
-                    category: params.category,
-                    q: params.q,
-                    sort: params.sort,
-                    deals: params.deals,
-                    section: params.section,
-                    page: String(page - 1),
-                  })}`}
-                >
-                  <Button variant="secondary">Previous</Button>
-                </Link>
-              ) : null}
-              <span className="min-w-[5rem] text-center text-sm font-medium text-neutral-500">
-                Page {page}
-              </span>
-              {hasMore ? (
-                <Link
-                  href={`/products${buildQuery({
-                    category: params.category,
-                    q: params.q,
-                    sort: params.sort,
-                    deals: params.deals,
-                    section: params.section,
-                    page: String(page + 1),
-                  })}`}
-                >
-                  <Button>Next</Button>
-                </Link>
-              ) : null}
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 p-1.5 shadow-sm">
+                {page > 1 ? (
+                  <Link
+                    href={`/products${buildQuery({
+                      category: params.category,
+                      q: params.q,
+                      sort: params.sort,
+                      deals: params.deals,
+                      section: params.section,
+                      page: String(page - 1),
+                    })}`}
+                    className="inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-neutral-600 transition-colors hover:bg-white hover:text-neutral-950 hover:shadow-sm"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden />
+                    Previous
+                  </Link>
+                ) : (
+                  <span className="inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-neutral-300" aria-disabled="true">
+                    <ChevronLeft className="h-4 w-4" aria-hidden />
+                    Previous
+                  </span>
+                )}
+
+                <span className="flex h-10 min-w-10 items-center justify-center rounded-full bg-white px-3 text-sm font-bold tabular-nums text-neutral-950 shadow-sm ring-1 ring-neutral-200" aria-current="page">
+                  {page}
+                </span>
+
+                {hasMore ? (
+                  <Link
+                    href={`/products${buildQuery({
+                      category: params.category,
+                      q: params.q,
+                      sort: params.sort,
+                      deals: params.deals,
+                      section: params.section,
+                      page: String(page + 1),
+                    })}`}
+                    className="inline-flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#c80511]"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                ) : (
+                  <span className="inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-neutral-300" aria-disabled="true">
+                    Next
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </span>
+                )}
+              </div>
             </nav>
           )}
 
@@ -277,10 +295,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   );
 
   return (
-    <div className="flex min-h-full flex-col bg-neutral-50">
+    <div className="flex min-h-full flex-col bg-white">
       <SiteHeader activeCategory={params.category} searchQuery={params.q} variant="page" />
 
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6 lg:py-8">
+      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 sm:px-6 lg:py-8">
         <nav
           className="mb-5 flex items-center gap-1.5 text-xs text-neutral-400"
           aria-label="Breadcrumb"

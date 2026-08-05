@@ -17,28 +17,30 @@ export function ProductDetailDescription({ enrichment, description }: Props) {
   if (!about && !highlights.length && !specs.length) return null;
 
   return (
-    <div className="mt-8 space-y-6 border-t border-neutral-100 pt-8">
+    <div className="grid gap-8 lg:grid-cols-2">
       {about ? (
-        <div>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-900">
+        <div className={highlights.length || specs.length ? "" : "lg:col-span-2"}>
+          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-400">
             About this product
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-neutral-600">{about}</p>
+          <p className="mt-4 max-w-3xl text-[15px] leading-7 text-neutral-600">{about}</p>
         </div>
       ) : null}
 
       {highlights.length > 0 ? (
         <div>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-900">
+          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-400">
             Key features
           </h2>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-4 space-y-3">
             {highlights.map((item, index) => (
               <li
                 key={`${index}-${item.slice(0, 40)}`}
-                className="flex items-start gap-2 text-sm text-neutral-700"
+                className="flex items-start gap-3 text-sm leading-6 text-neutral-700"
               >
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" strokeWidth={2.5} />
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50">
+                  <Check className="h-3 w-3 text-emerald-700" strokeWidth={2.5} />
+                </span>
                 <span>{item}</span>
               </li>
             ))}
@@ -47,8 +49,8 @@ export function ProductDetailDescription({ enrichment, description }: Props) {
       ) : null}
 
       {specs.length > 0 ? (
-        <div>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-900">
+        <div className="lg:col-span-2">
+          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-neutral-400">
             Specifications
           </h2>
           <dl className="mt-3 divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-neutral-50/50">

@@ -5,6 +5,7 @@ import { ProductImageField } from "@/components/admin/ProductImageField";
 import { ProductFormField } from "@/components/admin/ProductFormField";
 import { ProductEnrichmentEditor } from "@/components/admin/ProductEnrichmentEditor";
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor";
+import { ProductStorefrontPreview } from "@/components/products/ProductStorefrontPreview";
 import { ProductFormSpecialSection } from "@/components/admin/ProductFormSpecialSection";
 import { BtnPrimary, BtnSecondary } from "@/components/admin/ui";
 import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
@@ -72,6 +73,7 @@ export function SellerProductEditor({
   const [images, setImages] = useState<string[]>(() =>
     product ? catalogProductImageUrls(product) : [],
   );
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [name, setName] = useState(product?.name ?? "");
   const [costPrice, setCostPrice] = useState(
     product ? String(Number(product.base_price) || "") : "",
@@ -97,11 +99,13 @@ export function SellerProductEditor({
   const [deliverySize, setDeliverySize] = useState<DeliverySize>(() =>
     product ? parseDeliverySizeFromMetadata(product.metadata) : DEFAULT_DELIVERY_SIZE,
   );
-  const [delivery, setDelivery] = useState<SellerDeliverySettings>(() =>
-    product
-      ? parseSellerDelivery(product.metadata)
-      : { customerPaysDelivery: true, deliveryFeeZar: null },
-  );
+  const [delivery, setDelivery] = useState<SellerDeliverySettings>(() => {
+    const saved = product ? parseSellerDelivery(product.metadata) : null;
+    return {
+      customerPaysDelivery: true,
+      deliveryFeeZar: saved?.deliveryFeeZar === 200 ? 200 : 100,
+    };
+  });
   const [stockOrigin, setStockOrigin] = useState<StockOrigin>(() =>
     product ? catalogProductStockOrigin(product, defaultStockOrigin) : defaultStockOrigin,
   );
@@ -196,7 +200,7 @@ export function SellerProductEditor({
     setQuantity("");
     setDescription("");
     setImages([]);
-    setDelivery({ customerPaysDelivery: true, deliveryFeeZar: null });
+    setDelivery({ customerPaysDelivery: true, deliveryFeeZar: 100 });
     setDeliverySize(DEFAULT_DELIVERY_SIZE);
     setStockOrigin(defaultStockOrigin);
     setSupplier({ tracked: false });
@@ -295,6 +299,19 @@ export function SellerProductEditor({
       <ProductVariantsEditor value={variants} onChange={setVariants} />
       <SellerSupplierFields value={supplier} onChange={setSupplier} />
 
+      <ProductStorefrontPreview
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        name={name}
+        category={STORE_CATEGORIES.find((item) => item.slug === category)?.label ?? category}
+        description={description}
+        price={special.special_enabled && special.sale_price ? Number(special.sale_price) : retailFromCost(Number(costPrice) || 0, Number(markupPercent) || 0)}
+        images={images}
+        enrichment={enrichment}
+        variants={variants}
+        stockLabel={Number(quantity) > 0 ? "In stock" : "Out of stock"}
+      />
+
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
         {sellerApproved ? (
           <p>
@@ -311,6 +328,9 @@ export function SellerProductEditor({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        <BtnSecondary type="button" onClick={() => setPreviewOpen(true)}>
+          Preview storefront
+        </BtnSecondary>
         <BtnSecondary
           type="button"
           disabled={loading !== null || !canSaveDraft}

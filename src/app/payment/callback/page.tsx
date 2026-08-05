@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
-import { verifyPaystackReference } from "@/hooks/usePaystackPayment";
 import { useCart } from "@/context/CartProvider";
 
 function PaymentCallbackContent() {
@@ -15,31 +14,33 @@ function PaymentCallbackContent() {
   const [message, setMessage] = useState("Confirming your payment…");
 
   useEffect(() => {
-    const reference =
-      searchParams.get("reference") ??
-      searchParams.get("trxref");
+    const reference = searchParams.get("reference");
 
     if (!reference) {
       router.replace("/payment/failed?reason=missing_reference");
       return;
     }
+    const paymentReference = reference;
 
-    verifyPaystackReference(reference)
-      .then(({ ok, data }) => {
-        if (ok && data.redirectUrl) {
+    let cancelled = false;
+    async function confirmPayment() {
+      for (let attempt = 0; attempt < 12 && !cancelled; attempt += 1) {
+        const response = await fetch(`/api/payments/status?reference=${encodeURIComponent(paymentReference)}`, { cache: "no-store" });
+        const data = await response.json();
+        if (response.ok && data.paid && data.redirectUrl) {
           clearCart();
           router.replace(data.redirectUrl as string);
           return;
         }
-        router.replace(
-          (data.redirectUrl as string | undefined) ??
-            `/payment/failed?reference=${encodeURIComponent(reference)}`,
-        );
-      })
-      .catch(() => {
-        setMessage("Verification failed. Redirecting…");
-        router.replace(`/payment/failed?reference=${encodeURIComponent(reference)}`);
-      });
+        setMessage("Payment received. Waiting for secure confirmation…");
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+      }
+      if (!cancelled) router.replace(`/payment/failed?reference=${encodeURIComponent(paymentReference)}&reason=pending_confirmation`);
+    }
+    void confirmPayment().catch(() => {
+      if (!cancelled) router.replace(`/payment/failed?reference=${encodeURIComponent(paymentReference)}`);
+    });
+    return () => { cancelled = true; };
   }, [router, searchParams, clearCart]);
 
   return (

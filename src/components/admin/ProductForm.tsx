@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BtnPrimary } from "@/components/admin/ui";
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor";
 import { ProductEnrichmentEditor } from "@/components/admin/ProductEnrichmentEditor";
+import { ProductStorefrontPreview } from "@/components/products/ProductStorefrontPreview";
 import { ProductSupplierEditor } from "@/components/admin/ProductSupplierEditor";
 import {
   bootstrapManualSuppliers,
@@ -37,6 +38,7 @@ import {
   parseDeliverySizeFromMetadata,
   type DeliverySize,
 } from "@/lib/delivery/size";
+import { getCategory } from "@/config/categories";
 
 interface ProductInput {
   id?: string;
@@ -86,6 +88,7 @@ export function ProductForm({
   const router = useRouter();
   const isEdit = Boolean(product?.id);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: product?.name ?? "",
@@ -297,8 +300,24 @@ export function ProductForm({
       <ProductEnrichmentEditor value={enrichment} onChange={setEnrichment} />
       <ProductVariantsEditor value={variants} onChange={setVariants} />
 
+      <ProductStorefrontPreview
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        name={form.name}
+        category={getCategory(form.category)?.label ?? form.category}
+        description={form.description}
+        price={special.special_enabled && special.sale_price ? Number(special.sale_price) : Number(form.base_price || 0) * (1 + Number(form.markup_percent || 0) / 100)}
+        images={imageUrls}
+        enrichment={enrichment}
+        variants={variants}
+        stockLabel={form.stock_status === "out_of_stock" ? "Out of stock" : "In stock"}
+      />
+
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
+        <button type="button" onClick={() => setPreviewOpen(true)} className="h-9 rounded-lg border border-brand/30 bg-[#fff0f1] px-4 text-sm font-semibold text-brand hover:bg-white">
+          Preview storefront
+        </button>
         <button type="button" onClick={() => router.back()} className="h-9 rounded-lg border border-neutral-200 px-4 text-sm font-semibold">
           Cancel
         </button>

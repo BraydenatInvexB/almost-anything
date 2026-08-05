@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireApprovedSellerApi } from "@/services/seller/access-guard";
 import { sellerDb } from "@/lib/seller/db";
 import { sellerCan } from "@/config/seller-rbac";
+import { getSellerPayoutSummary } from "@/services/seller/payouts";
 
 const schema = z.object({ amount: z.number().positive() });
 
@@ -17,6 +18,14 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+  }
+
+  const summary = await getSellerPayoutSummary(seller.id);
+  if (parsed.data.amount > summary.availableAmount) {
+    return NextResponse.json(
+      { error: `You can request up to R ${summary.availableAmount.toFixed(2)}.` },
+      { status: 400 },
+    );
   }
 
   const { data, error } = await sellerDb()

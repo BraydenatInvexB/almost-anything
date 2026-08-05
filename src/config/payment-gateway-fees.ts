@@ -1,37 +1,47 @@
-/** Paystack card processing fees — the only payment gateway charges on the platform. */
-export const PAYSTACK_LOCAL_CARD_FEE = { percent: 2.9, flatZar: 1 } as const;
-export const PAYSTACK_INTERNATIONAL_CARD_FEE = { percent: 3.9, flatZar: 1 } as const;
-
-export type PaymentGatewayFeeTier = {
-  id: "local" | "international";
+export interface PaymentGatewayFee {
   label: string;
-  percent: number;
-  flatZar: number;
-};
+  rate: string;
+}
 
-export const PAYMENT_GATEWAY_FEE_TIERS: PaymentGatewayFeeTier[] = [
+export interface PaymentGatewayPricing {
+  id: "payfast" | "ozow";
+  name: string;
+  summary: string;
+  fees: PaymentGatewayFee[];
+  note: string;
+  pricingUrl: string;
+}
+
+export const PAYMENT_GATEWAYS: PaymentGatewayPricing[] = [
   {
-    id: "local",
-    label: "Local cards (Visa, Mastercard, Amex)",
-    percent: PAYSTACK_LOCAL_CARD_FEE.percent,
-    flatZar: PAYSTACK_LOCAL_CARD_FEE.flatZar,
+    id: "payfast",
+    name: "PayFast",
+    summary: "Published Aggregation rates",
+    fees: [
+      { label: "Credit and cheque cards", rate: "3.2% + R2.00" },
+      { label: "Instant EFT and Capitec Pay", rate: "2.0% (minimum R2.00)" },
+      { label: "Standard payout", rate: "R8.70" },
+      { label: "Immediate payout", rate: "0.8% (minimum R14.00)" },
+    ],
+    note: "PayFast publishes these fees excluding VAT. Custom pricing may apply to qualifying transaction volumes.",
+    pricingUrl: "https://payfast.io/fees/",
   },
   {
-    id: "international",
-    label: "International cards",
-    percent: PAYSTACK_INTERNATIONAL_CARD_FEE.percent,
-    flatZar: PAYSTACK_INTERNATIONAL_CARD_FEE.flatZar,
+    id: "ozow",
+    name: "Ozow",
+    summary: "Published Standard package rates",
+    fees: [
+      { label: "Pay by Bank and supported bank payments", rate: "1.5% (minimum R1.00)" },
+      { label: "Local cards up to R249,999.99", rate: "2.85% (minimum R1.00)" },
+      { label: "Local cards from R250,000 to R499,999.99", rate: "2.75% (minimum R1.00)" },
+      { label: "Local cards from R500,000 to R1,000,000", rate: "2.65% (minimum R1.00)" },
+      { label: "International cards", rate: "3.5% (minimum R1.00)" },
+      { label: "Instant or bulk payout", rate: "R3.00" },
+    ],
+    note: "Enterprise pricing is tailored for merchants processing more than R1.5 million per month.",
+    pricingUrl: "https://ozow.com/pricing",
   },
 ];
 
-export function formatGatewayFeeTier(tier: Pick<PaymentGatewayFeeTier, "percent" | "flatZar">): string {
-  return `${tier.percent}% + R${tier.flatZar.toFixed(2)} per transaction`;
-}
-
-export function estimateGatewayFee(amountZar: number, international = false): number {
-  const tier = international ? PAYSTACK_INTERNATIONAL_CARD_FEE : PAYSTACK_LOCAL_CARD_FEE;
-  return Math.round((amountZar * (tier.percent / 100) + tier.flatZar) * 100) / 100;
-}
-
 export const PAYMENT_GATEWAY_FEES_LEGAL =
-  "Card payments are processed by Paystack. The only payment processing fees are 2.9% + R1.00 per transaction for local cards (Visa, Mastercard, Amex) and 3.9% + R1.00 per transaction for international cards. These fees are deducted by the payment gateway before settlement.";
+  "Payments are processed securely through PayFast or Ozow. Processing fees depend on the payment method, monthly processing volume, VAT treatment and any custom merchant agreement. Applicable charges are accounted for before seller funds become available for withdrawal.";

@@ -53,9 +53,9 @@ export function FavoriteButton({ product, className }: FavoriteButtonProps) {
         ref={buttonRef}
         type="button"
         className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_0_#000] transition-colors hover:bg-neutral-50",
-          favorited && "bg-brand/10",
-          open && "ring-2 ring-brand ring-offset-1",
+          "flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white/95 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:border-neutral-300",
+          favorited && "border-brand/30 bg-brand-soft",
+          open && "ring-2 ring-brand/30 ring-offset-1",
           className,
         )}
         onClick={handleClick}
@@ -66,7 +66,7 @@ export function FavoriteButton({ product, className }: FavoriteButtonProps) {
         <Heart
           className={cn(
             "h-4 w-4 transition-colors duration-200",
-            favorited ? "fill-brand text-brand" : "text-black",
+            favorited ? "fill-brand text-brand" : "text-neutral-600",
             animating && "animate-heart-save",
           )}
         />

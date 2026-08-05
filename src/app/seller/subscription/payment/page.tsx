@@ -4,8 +4,9 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { PaymentPageShell } from "@/components/payments/PaymentPageShell";
 import { PaymentSummaryCard } from "@/components/payments/PaymentSummaryCard";
-import { PaystackRedirectPanel } from "@/components/payments/PaystackRedirectPanel";
-import { usePaystackPayment } from "@/hooks/usePaystackPayment";
+import { PaymentRedirectPanel } from "@/components/payments/PaymentRedirectPanel";
+import type { PaymentGateway } from "@/components/payments/PaymentGatewaySelector";
+import { usePaymentGateway } from "@/hooks/usePaymentGateway";
 import { SELLER_PLANS } from "@/config/seller-plans";
 import { formatCurrency } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/Button";
@@ -18,7 +19,7 @@ interface SellerPaymentSummary {
 }
 
 function SellerSubscriptionPaymentContent() {
-  const { startPayment, loading, error } = usePaystackPayment();
+  const { startPayment, loading, error } = usePaymentGateway();
   const [seller, setSeller] = useState<SellerPaymentSummary | null>(null);
   const [loadError, setLoadError] = useState("");
 
@@ -41,9 +42,9 @@ function SellerSubscriptionPaymentContent() {
 
   const planConfig = seller ? SELLER_PLANS.find((p) => p.id === seller.plan) : null;
 
-  async function handlePay() {
+  async function handlePay(provider: PaymentGateway) {
     if (!seller) return;
-    await startPayment({ purpose: "seller_subscription", sellerId: seller.id });
+    await startPayment({ provider, purpose: "seller_subscription", sellerId: seller.id });
   }
 
   if (loadError) {
@@ -66,7 +67,7 @@ function SellerSubscriptionPaymentContent() {
       backHref="/seller/subscription"
       backLabel="Back to subscription"
       title="Pay your subscription"
-      description="Settle your seller plan for the current billing period via Paystack."
+      description="Choose PayFast or Ozow to settle your seller plan securely."
     >
       {planConfig && seller ? (
         <>
@@ -81,12 +82,12 @@ function SellerSubscriptionPaymentContent() {
           />
 
           <div className="mt-6">
-            <PaystackRedirectPanel
+            <PaymentRedirectPanel
               loading={loading}
               error={error}
               onPay={handlePay}
-              payLabel={`Pay ${formatCurrency(planConfig.priceMonthly)} with Paystack`}
-              secureNote="Subscription payments are processed securely by Paystack."
+              payLabel={`Pay ${formatCurrency(planConfig.priceMonthly)}`}
+              secureNote="Your plan activates after the selected payment provider confirms the transaction."
             />
           </div>
         </>

@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   CUSTOMER_LOGIN_PATH,
   DRIVER_LOGIN_DEFAULT_REDIRECT,
-  DRIVER_LOGIN_PATH,
 } from "@/config/console-auth";
 import { CONSOLE_LOGIN_THEMES } from "@/config/console-login-themes";
 import { sanitizeConsoleRedirect } from "@/lib/auth/console-redirect";

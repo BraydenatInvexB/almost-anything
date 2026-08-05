@@ -6,12 +6,11 @@ import { PaymentPageShell } from "@/components/payments/PaymentPageShell";
 import { CheckoutPaymentPanel } from "@/components/checkout/CheckoutPaymentPanel";
 import { useCart } from "@/context/CartProvider";
 import type { Order } from "@/types/cart";
-import type { CheckoutPaymentMethod } from "@/config/paystack";
 
 function CheckoutPaymentContent() {
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("orderNumber");
-  const paymentMethod = (searchParams.get("method") ?? "card") as CheckoutPaymentMethod;
+  const paymentMethod = searchParams.get("method") ?? "card";
   const { clearCart } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -51,7 +50,7 @@ function CheckoutPaymentContent() {
       backHref="/checkout"
       backLabel="Back to checkout"
       title="Complete your payment"
-      description="Review your order total, then pay securely with Paystack."
+      description="Review your order total, then choose PayFast or Ozow to pay securely."
     >
       {loadError ? <p className="text-sm text-red-500">{loadError}</p> : null}
       {order ? (

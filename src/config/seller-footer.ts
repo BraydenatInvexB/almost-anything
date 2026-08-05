@@ -13,4 +13,6 @@ export const FOOTER_SELLER_LINKS: readonly FooterSellerLink[] = [
   { label: "Seller sign in", href: "/seller/login" },
   { label: "Browse businesses", href: "/businesses" },
   { label: "Pricing & plans", href: "/sell#pricing" },
+  { label: "Become a driver", href: "/driver/register" },
+  { label: "Driver sign in", href: "/driver/login" },
 ];

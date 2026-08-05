@@ -257,18 +257,22 @@ function Toggle({
         <p className="text-xs text-neutral-400">{description}</p>
       </div>
       <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50",
-          checked ? "bg-neutral-900" : "bg-neutral-300",
+          "relative inline-flex h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-50",
+          checked ? "border-brand bg-brand" : "border-neutral-300 bg-neutral-200",
         )}
-        aria-pressed={checked}
       >
         <span
+          aria-hidden="true"
           className={cn(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform",
-            checked ? "translate-x-[22px]" : "translate-x-0.5",
+            "absolute left-1 top-1 h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-200",
+            checked ? "translate-x-5" : "translate-x-0",
           )}
         />
       </button>

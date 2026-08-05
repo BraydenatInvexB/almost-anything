@@ -1,183 +1,101 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Search, Tag, Truck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { ProductCardData } from "@/types";
-import { STORE_CATEGORIES } from "@/config/categories";
-import type { HeroShowcaseConfig } from "@/lib/admin/operations-types";
 import { STOREFRONT_SECTION_BY_ID } from "@/config/storefront-sections";
-import { BoldHero } from "@/components/home/BoldHero";
 import { HomeProductRail } from "@/components/home/HomeProductRail";
-
-/** Bold category tile palette — brand red on key lanes only, pastels elsewhere. */
-const CATEGORY_TILE_COLORS = [
-  "#FF6B6B", // Electronics — lighter red
-  "#5BC8FF", // Computers
-  "#FFD23F", // Phones — warm yellow (was red)
-  "#C7A8FF", // Audio
-  "#B8E986", // Home & living — fresh lime (was red)
-  "#7DE2A8", // Kitchen
-  "#FF9F68", // Furniture — soft coral (was red)
-  "#9BE7FF", // Fashion
-];
+import { HomeShopSidebar } from "@/components/home/HomeShopSidebar";
+import { HomeMarketplaceHeader } from "@/components/home/HomeMarketplaceHeader";
+import { HomeBentoHero } from "@/components/home/HomeBentoHero";
 
 interface BoldHomeProps {
   hot: ProductCardData[];
   steals: ProductCardData[];
   fresh: ProductCardData[];
-  heroShowcase: HeroShowcaseConfig;
 }
 
-export function BoldHome({ hot, steals, fresh, heroShowcase }: BoldHomeProps) {
-  const cats = STORE_CATEGORIES.slice(0, 8);
+export function BoldHome({ hot, steals, fresh }: BoldHomeProps) {
   const hotSection = STOREFRONT_SECTION_BY_ID.hot;
   const stealsSection = STOREFRONT_SECTION_BY_ID.steals;
   const freshSection = STOREFRONT_SECTION_BY_ID.fresh;
 
   return (
-    <div className="mt-4 flex flex-col gap-8 sm:gap-10">
-      <BoldHero showcase={heroShowcase} />
+    <div className="overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_24px_70px_rgba(80,20,28,0.10)]">
+      <div className="home-marketplace-grid">
+      <HomeShopSidebar />
+      <div className="min-w-0 bg-white">
+        <HomeMarketplaceHeader />
+        <div className="flex min-w-0 flex-col gap-10 p-4 sm:p-6 lg:p-8">
+        <HomeBentoHero />
 
-      <BrandMarquee />
-
-      {/* Categories */}
-      <SectionHead kicker="Pick a lane" title="Shop by category" href="/products" cta="See everything" />
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {cats.map((c, i) => (
-          <Link
-            key={c.slug}
-            href={`/products?category=${c.slug}`}
-            className="group flex min-h-[140px] flex-col justify-between rounded-[22px] border-[3px] border-black p-5 shadow-[5px_5px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[7px_7px_0_0_#000]"
-            style={{ backgroundColor: CATEGORY_TILE_COLORS[i % CATEGORY_TILE_COLORS.length] }}
-          >
-            <span className="flex h-9 w-9 items-center justify-center self-end rounded-full border-2 border-black bg-white transition-transform group-hover:rotate-45">
-              <ArrowUpRight className="h-4 w-4 text-black" />
-            </span>
-            <span className="text-xl font-black uppercase leading-tight tracking-tight text-black sm:text-2xl">
-              {c.label}
-            </span>
-          </Link>
-        ))}
-      </div>
-
-      {/* Hot right now */}
-      {hot.length ? (
-        <>
+        {steals.length ? (
+        <section className="flex flex-col gap-5">
           <SectionHead
-            kicker={hotSection.kicker}
+            title="Trending deals"
+            subtitle="Grab them before they're gone."
+            href={stealsSection.shopHref}
+            cta="View all deals"
+          />
+          <HomeProductRail products={steals} />
+        </section>
+        ) : null}
+
+        {hot.length ? (
+        <section className="flex flex-col gap-5">
+          <SectionHead
             title={hotSection.title}
             href={hotSection.shopHref}
             cta={hotSection.shopCta}
           />
           <HomeProductRail products={hot} />
-        </>
-      ) : null}
+        </section>
+        ) : null}
 
-      {/* Today's steals */}
-      {steals.length ? (
-        <>
+        {fresh.length ? (
+        <section className="flex flex-col gap-5">
           <SectionHead
-            kicker={stealsSection.kicker}
-            title={stealsSection.title}
-            href={stealsSection.shopHref}
-            cta={stealsSection.shopCta}
-          />
-          <HomeProductRail products={steals} />
-        </>
-      ) : null}
-
-      {/* Fresh drops */}
-      {fresh.length ? (
-        <>
-          <SectionHead
-            kicker={freshSection.kicker}
             title={freshSection.title}
             href={freshSection.shopHref}
             cta={freshSection.shopCta}
           />
           <HomeProductRail products={fresh} />
-        </>
-      ) : null}
-
-      {/* How it works — after product discovery */}
-      <HowItWorksBold />
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────── */
-
-function BrandMarquee() {
-  const words = ["Almost anything", "Delivered to your door", "One simple price", "If you can name it"];
-  const strip = [...words, ...words, ...words];
-  return (
-    <div className="overflow-hidden rounded-2xl border-[3px] border-black bg-black py-3">
-      <div className="animate-marquee flex w-max items-center gap-6 whitespace-nowrap">
-        {strip.map((w, i) => (
-          <span key={i} className="flex items-center gap-6 text-lg font-black uppercase tracking-tight text-brand sm:text-2xl">
-            {w}
-            <span className="text-white">✦</span>
-          </span>
-        ))}
+        </section>
+        ) : null}
+        </div>
+      </div>
       </div>
     </div>
   );
 }
 
 function SectionHead({
-  kicker,
   title,
+  subtitle,
   href,
   cta,
 }: {
-  kicker: string;
   title: string;
+  subtitle?: string;
   href: string;
   cta: string;
 }) {
   return (
     <div className="flex items-end justify-between gap-4">
       <div>
-        <span className="text-xs font-extrabold uppercase tracking-widest text-neutral-500">
-          {kicker}
-        </span>
-        <h2 className="text-3xl font-black uppercase tracking-tight text-black sm:text-4xl">
+        <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
           {title}
+          <ArrowRight className="h-5 w-5 text-brand" strokeWidth={2.5} />
         </h2>
+        {subtitle ? (
+          <p className="mt-1 text-sm text-neutral-500">{subtitle}</p>
+        ) : null}
       </div>
       <Link
         href={href}
-        className="hidden shrink-0 items-center gap-1.5 rounded-full border-[3px] border-black bg-white px-4 py-2 text-xs font-extrabold uppercase shadow-[3px_3px_0_0_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white hover:shadow-[5px_5px_0_0_#000] sm:inline-flex"
+        className="hidden shrink-0 items-center gap-1.5 rounded-full border border-brand/25 bg-white px-4 py-2 text-xs font-semibold text-brand transition-colors hover:bg-brand-soft sm:inline-flex"
       >
         {cta}
         <ArrowRight className="h-3.5 w-3.5" />
       </Link>
-    </div>
-  );
-}
-
-function HowItWorksBold() {
-  const steps = [
-    { n: "01", icon: Search, title: "Search anything", body: "From everyday bits to the hard to find. If you can name it, it's here.", bg: "#5BC8FF" },
-    { n: "02", icon: Tag, title: "One honest price", body: "No comparing tabs. One clear price with delivery sorted.", bg: "#FFD23F" },
-    { n: "03", icon: Truck, title: "We bring it", body: "Pay securely and relax. Track it all the way to your door.", bg: "#e30613" },
-  ];
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      {steps.map((s) => (
-        <div
-          key={s.n}
-          className="rounded-[22px] border-[3px] border-black p-6 shadow-[5px_5px_0_0_#000]"
-          style={{ backgroundColor: s.bg }}
-        >
-          <div className="flex items-center justify-between">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-black bg-white">
-              <s.icon className="h-5 w-5 text-black" />
-            </span>
-            <span className="text-4xl font-black text-black/80">{s.n}</span>
-          </div>
-          <h3 className="mt-4 text-xl font-black uppercase text-black">{s.title}</h3>
-          <p className="mt-1.5 text-sm font-medium text-black/80">{s.body}</p>
-        </div>
-      ))}
     </div>
   );
 }

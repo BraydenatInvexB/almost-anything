@@ -12,7 +12,6 @@ import { createOrder } from "@/services/order-service";
 import { saveCustomerAddressFromCheckout } from "@/services/customer-address-service";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/admin";
-import { isPaystackConfigured, paystackConfigIssue } from "@/config/paystack";
 import { checkoutPaymentPageUrl } from "@/lib/payments/payment-urls";
 
 async function persistSavedAddress(
@@ -60,10 +59,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const usePaystack =
-    isPaystackConfigured() &&
-    (parsed.data.paymentMethod === "card" || parsed.data.paymentMethod === "eft");
-
   try {
     if (parsed.data.paymentMethod === "demo") {
       if (process.env.NODE_ENV !== "development") {
@@ -82,16 +77,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (!usePaystack) {
-      const issue = paystackConfigIssue();
-      return secureErrorResponse(
-        issue ??
-          "Online payments are temporarily unavailable. Use demo checkout in development or add Paystack keys.",
-        "PAYMENTS_UNAVAILABLE",
-        503,
-      );
-    }
-
     const order = await createOrder(parsed.data, userId);
     await persistSavedAddress(userId, parsed.data.saveAddress, parsed.data.shippingAddress);
 
@@ -102,7 +87,7 @@ export async function POST(request: NextRequest) {
       subtotal: order.subtotal,
       shipping: order.shipping,
       tax: order.tax,
-      mode: "paystack",
+      mode: "hosted_payment",
       redirectUrl: checkoutPaymentPageUrl(order.orderNumber),
       paymentMethod: parsed.data.paymentMethod,
     });

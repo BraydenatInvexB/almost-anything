@@ -19,7 +19,7 @@ export const DEFAULT_PRICING_SETTINGS: StorefrontPricingSettings = {
   freeShippingThreshold: 1000,
   flatShippingFee: 100,
   taxRate: 0.15,
-  embedShippingInPrice: true,
+  embedShippingInPrice: false,
   freeShippingEnabled: false,
   flatShippingFeeEnabled: true,
   defaultCourierId: "aramex",
@@ -51,8 +51,13 @@ export function computeStorefrontTotals(
     config: settings.config,
   });
   const shipping = shippingCalc.customerCharge;
-  const tax = Math.round(discountedSubtotal * settings.taxRate * 100) / 100;
-  const total = Math.round((discountedSubtotal + shipping + tax) * 100) / 100;
+  // South African consumer prices are VAT inclusive. Extract the VAT portion
+  // for disclosure instead of adding VAT on top of the advertised price.
+  const vatInclusiveAmount = discountedSubtotal + shipping;
+  const tax = settings.taxRate > 0
+    ? Math.round((vatInclusiveAmount * settings.taxRate / (1 + settings.taxRate)) * 100) / 100
+    : 0;
+  const total = Math.round(vatInclusiveAmount * 100) / 100;
   return {
     shipping,
     tax,

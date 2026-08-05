@@ -69,6 +69,7 @@ const extendedConfigSchema = z.object({
     })
     .optional(),
   liveSourcingEnabled: z.boolean().optional(),
+  driverPortalEnabled: z.boolean().optional(),
 });
 
 const schema = z.object({

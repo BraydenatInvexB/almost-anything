@@ -23,8 +23,8 @@ function OrderProgress({ status }: { status: Order["status"] }) {
           return (
             <div key={label} className="flex flex-1 flex-col items-center gap-2">
               <span
-                className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-black text-[10px] font-extrabold ${
-                  done ? "bg-brand text-white shadow-[2px_2px_0_0_#000]" : "bg-white text-neutral-400"
+                className={`flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 text-[10px] font-extrabold ${
+                  done ? "bg-brand text-white shadow-sm" : "bg-white text-neutral-400"
                 } ${active ? "ring-2 ring-brand/30 ring-offset-2" : ""}`}
               >
                 {index + 1}
@@ -49,10 +49,10 @@ function OrderLinePreview({ items }: { items: Order["items"] }) {
   const [first, ...rest] = items;
 
   return (
-    <div className="mt-6 rounded-2xl border-2 border-black bg-neutral-50 p-4 text-left">
+    <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-left">
       <p className="text-xs font-extrabold uppercase tracking-wide text-neutral-500">In your order</p>
       <div className="mt-3 flex items-center gap-3">
-        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 border-black bg-white">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-white">
           {first.imageUrl ? (
             <Image src={first.imageUrl} alt={first.name} fill className="object-cover" sizes="56px" />
           ) : (
@@ -86,11 +86,11 @@ export function OrderSuccessView({ orderNumber, order, loading, isGuest }: Order
 
   return (
     <>
-      <div className="overflow-hidden rounded-[28px] border-[3px] border-black bg-white shadow-[8px_8px_0_0_#000]">
+      <div className="overflow-hidden rounded-[28px] border border-neutral-200 bg-white shadow-[var(--shadow-card)]">
         <div className="h-2 border-b-[3px] border-black bg-brand" />
 
         <div className="p-8 text-center sm:p-10">
-          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border-[3px] border-black bg-[#E8F9EE] shadow-[4px_4px_0_0_#000]">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-neutral-200 bg-[#E8F9EE] shadow-[var(--shadow-soft)]">
             <CheckCircle2 className="h-8 w-8 text-emerald-600" strokeWidth={2.5} />
           </span>
 
@@ -103,7 +103,7 @@ export function OrderSuccessView({ orderNumber, order, loading, isGuest }: Order
           </p>
 
           {orderNumber ? (
-            <div className="mx-auto mt-6 inline-flex flex-col items-center rounded-2xl border-2 border-black bg-neutral-50 px-8 py-4 shadow-[3px_3px_0_0_#000]">
+            <div className="mx-auto mt-6 inline-flex flex-col items-center rounded-2xl border border-neutral-200 bg-neutral-50 px-8 py-4 shadow-sm">
               <span className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-500">
                 Order number
               </span>
@@ -120,11 +120,11 @@ export function OrderSuccessView({ orderNumber, order, loading, isGuest }: Order
           {order && statusMeta ? (
             <>
               <div className="mt-8 grid gap-3 text-left sm:grid-cols-2">
-                <div className="rounded-xl border-2 border-black bg-white p-4 shadow-[2px_2px_0_0_#000]">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
                   <p className="text-xs font-extrabold uppercase tracking-wide text-neutral-500">Total paid</p>
                   <p className="mt-1 text-lg font-bold text-neutral-900">{formatCurrency(order.total)}</p>
                 </div>
-                <div className="rounded-xl border-2 border-black bg-white p-4 shadow-[2px_2px_0_0_#000]">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
                   <p className="text-xs font-extrabold uppercase tracking-wide text-neutral-500">Status</p>
                   <span
                     className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${statusMeta.badge}`}
@@ -132,7 +132,7 @@ export function OrderSuccessView({ orderNumber, order, loading, isGuest }: Order
                     {statusMeta.label}
                   </span>
                 </div>
-                <div className="rounded-xl border-2 border-black bg-white p-4 shadow-[2px_2px_0_0_#000] sm:col-span-2">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:col-span-2">
                   <p className="text-xs font-extrabold uppercase tracking-wide text-neutral-500">Delivery</p>
                   <div className="mt-1 flex items-start gap-1.5 text-sm font-semibold text-neutral-900">
                     <Truck className="mt-0.5 h-4 w-4 shrink-0" />

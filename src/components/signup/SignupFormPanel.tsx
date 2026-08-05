@@ -96,7 +96,7 @@ export function SignupFormPanel() {
       <form onSubmit={handleSubmit} className="mt-5 space-y-5">
         <div>
           <div className="mb-3 flex items-center gap-3">
-            <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-neutral-900 ring-offset-2">
+            <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-brand ring-offset-2">
               <Image
                 src={avatar}
                 alt="Selected avatar"
@@ -124,8 +124,8 @@ export function SignupFormPanel() {
                   className={cn(
                     "relative aspect-square overflow-hidden rounded-full transition-all",
                     selected
-                      ? "ring-2 ring-neutral-900 ring-offset-2"
-                      : "ring-1 ring-neutral-200 hover:ring-neutral-400 hover:brightness-105",
+                      ? "ring-2 ring-brand ring-offset-2"
+                      : "ring-1 ring-neutral-200 hover:ring-brand/40 hover:brightness-105",
                   )}
                 >
                   <Image
@@ -136,8 +136,8 @@ export function SignupFormPanel() {
                     className="object-cover"
                   />
                   {selected && (
-                    <span className="absolute inset-0 flex items-center justify-center bg-neutral-900/25">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900">
+                    <span className="absolute inset-0 flex items-center justify-center bg-brand/20">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand">
                         <Check className="h-3 w-3 text-white" />
                       </span>
                     </span>

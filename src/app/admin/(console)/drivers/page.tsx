@@ -1,5 +1,6 @@
 import { listDrivers } from "@/services/delivery/drivers";
 import { AdminDriversActions } from "@/components/admin/AdminDriversActions";
+import Link from "next/link";
 
 export default async function AdminDriversPage() {
   const drivers = await listDrivers();
@@ -46,8 +47,12 @@ export default async function AdminDriversPage() {
                     {driver.province} · {driver.status}
                     {driver.vehicleNotes ? ` · ${driver.vehicleNotes}` : ""}
                   </p>
+                  <p className="mt-1 text-xs font-medium capitalize text-neutral-500">Verification: {driver.verificationStatus}</p>
                 </div>
-                <AdminDriversActions driverId={driver.id} status={driver.status} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link href={`/admin/drivers/${driver.id}`} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold hover:bg-neutral-50">Review application</Link>
+                  <AdminDriversActions driverId={driver.id} status={driver.status} />
+                </div>
               </li>
             ))}
           </ul>

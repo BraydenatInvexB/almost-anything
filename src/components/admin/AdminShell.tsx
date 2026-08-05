@@ -58,7 +58,7 @@ export function AdminShell({
   }, [pathname]);
 
   return (
-    <div className="flex min-h-dvh bg-[#f4f6f9] text-neutral-900">
+    <div className="flex min-h-dvh bg-[#f9f9f9] text-neutral-900">
       <AdminShellSidebar
         groups={groups}
         pathname={pathname}

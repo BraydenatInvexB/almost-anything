@@ -94,7 +94,7 @@ export async function createSellerProduct(
   const listingStatus = resolveListingStatusForSave(seller, saveIntent);
   const slug = slugify(input.name);
   const imageUrl = input.imageUrls[0] ?? null;
-  const delivery = input.delivery ?? { customerPaysDelivery: true, deliveryFeeZar: null };
+  const delivery = input.delivery ?? { customerPaysDelivery: true, deliveryFeeZar: 100 };
   const stockOrigin = parseStockOrigin(input.stockOrigin ?? seller.defaultStockOrigin);
   const metadata = buildSellerProductMetadata({
     imageUrls: input.imageUrls,
@@ -168,7 +168,7 @@ export async function updateSellerProduct(
     special: input.special,
   });
   const listingStatus = resolveListingStatusForSave(seller, saveIntent);
-  const delivery = input.delivery ?? { customerPaysDelivery: true, deliveryFeeZar: null };
+  const delivery = input.delivery ?? { customerPaysDelivery: true, deliveryFeeZar: 100 };
   const stockOrigin = parseStockOrigin(input.stockOrigin ?? seller.defaultStockOrigin);
   const existingMeta =
     existing.metadata && typeof existing.metadata === "object"

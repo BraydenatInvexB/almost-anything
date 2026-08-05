@@ -40,13 +40,17 @@ export async function POST(request: Request) {
       resolveProductSellerIds(supabase, parsed.data.productIds),
       resolveProductDeliverySizes(supabase, parsed.data.productIds),
     ]);
-    const sellers = new Set<string>();
+    const fulfillmentSources = new Set<string>();
     for (const id of parsed.data.productIds) {
       const sellerId = sellerMap.get(id);
-      if (sellerId) sellers.add(sellerId);
+      if (sellerId) {
+        fulfillmentSources.add(`seller:${sellerId}`);
+      } else {
+        fulfillmentSources.add("platform:almost-anything");
+      }
       sizes.push(sizeMap.get(id) ?? DEFAULT_DELIVERY_SIZE);
     }
-    uniqueSellerCount = sellers.size;
+    uniqueSellerCount = fulfillmentSources.size;
   }
 
   const mode = resolveDeliveryMode(uniqueSellerCount || 1, policy);

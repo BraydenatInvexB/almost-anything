@@ -48,6 +48,29 @@ function SellerOrderRow({ order }: { order: SellerOrderSummary }) {
   return (
     <li className="grid gap-4 p-4 lg:grid-cols-[1fr_minmax(220px,280px)] lg:items-start">
       <div className="min-w-0">
+        {order.delivery ? (
+          <div
+            className={`mb-4 rounded-xl border px-4 py-3 ${
+              order.isSellerDelivery
+                ? "border-amber-200 bg-amber-50 text-amber-950"
+                : "border-emerald-200 bg-emerald-50 text-emerald-950"
+            }`}
+          >
+            <p className="text-sm font-bold">
+              {order.isSellerDelivery
+                ? "Action required: you fulfil and deliver this order"
+                : order.delivery.mode === "platform_driver"
+                  ? "Almost Anything is coordinating this delivery"
+                  : "An approved courier partner is coordinating this delivery"}
+            </p>
+            <p className="mt-1 text-xs opacity-75">
+              {order.isSellerDelivery
+                ? "Prepare the items, update the delivery status, and mark the order delivered after handover."
+                : "Prepare your items for collection. Delivery controls are managed by the Almost Anything operations team."}
+            </p>
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-semibold text-neutral-900">{order.orderNumber}</p>
           <span className="inline-flex rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-semibold capitalize text-neutral-700">

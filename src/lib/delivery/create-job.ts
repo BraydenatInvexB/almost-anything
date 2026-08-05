@@ -70,18 +70,25 @@ export async function createDeliveryJobForOrder(
   },
 ): Promise<{ mode: DeliveryFulfillmentMode; jobId: string | null }> {
   const sellerIds = new Set<string>();
+  const fulfillmentSources = new Set<string>();
   const itemSizes: DeliverySize[] = [];
 
   for (const item of input.payload.items) {
     if (!item.productId) continue;
     const sellerId = input.sellerIdsByProduct.get(item.productId);
-    if (sellerId) sellerIds.add(sellerId);
+    if (sellerId) {
+      sellerIds.add(sellerId);
+      fulfillmentSources.add(`seller:${sellerId}`);
+    } else {
+      fulfillmentSources.add("platform:almost-anything");
+    }
     const size = input.deliverySizesByProduct?.get(item.productId);
     if (size) itemSizes.push(size);
   }
 
   const sizeSummary = summarizeOrderDeliverySize(itemSizes);
-  const mode = resolveDeliveryMode(sellerIds.size, input.policy);
+  const uniqueSourceCount = fulfillmentSources.size || 1;
+  const mode = resolveDeliveryMode(uniqueSourceCount, input.policy);
   const addr = input.payload.shippingAddress;
   const province = normalizeProvince(addr.state);
   const itemSummary = input.payload.items
@@ -90,7 +97,8 @@ export async function createDeliveryJobForOrder(
     .join(", ");
   const itemCount = input.payload.items.reduce((n, i) => n + i.quantity, 0);
 
-  const singleSellerId = sellerIds.size === 1 ? [...sellerIds][0]! : null;
+  const singleSellerId =
+    uniqueSourceCount === 1 && sellerIds.size === 1 ? [...sellerIds][0]! : null;
 
   const row = {
     order_id: input.orderId,
@@ -112,6 +120,7 @@ export async function createDeliveryJobForOrder(
     item_count: itemCount,
     metadata: {
       uniqueSellerCount: sellerIds.size,
+      uniqueFulfillmentSourceCount: uniqueSourceCount,
       sellerIds: [...sellerIds],
       courierId: input.payload.courierId ?? null,
       courierName: input.payload.courierName ?? null,

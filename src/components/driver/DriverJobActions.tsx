@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import type { DeliveryJobStatus } from "@/lib/delivery/types";
 
 export function DriverJobActions({
@@ -73,14 +74,12 @@ export function DriverJobActions({
           </button>
         ) : null}
         {status === "assigned" || status === "collecting" || status === "out_for_delivery" ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void run({ action: "status", id: jobId, status: "delivered" })}
-            className="rounded-lg border border-black bg-black px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+          <Link
+            href={`/driver/jobs/${jobId}`}
+            className="rounded-lg border border-black bg-black px-3 py-1.5 text-xs font-semibold text-white"
           >
-            Mark delivered
-          </button>
+            Open delivery
+          </Link>
         ) : null}
       </div>
       {error ? <p className="text-xs text-red-600">{error}</p> : null}

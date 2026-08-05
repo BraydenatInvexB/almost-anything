@@ -54,7 +54,7 @@ export function SellerNeedsAttentionButton({
         type="button"
         disabled={disabled}
         onClick={openDialog}
-        className="border-neutral-900 bg-white text-[11px] font-bold uppercase tracking-wide shadow-[3px_3px_0_0_#111]"
+        className="border-neutral-900 bg-white text-[11px] font-bold uppercase tracking-wide shadow-sm"
       >
         <AlertCircle className="h-3.5 w-3.5" />
         Needs attention

@@ -7,9 +7,9 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles = {
-  default: "border-[3px] border-black bg-white shadow-[5px_5px_0_0_#000]",
-  elevated: "border-[3px] border-black bg-white shadow-[5px_5px_0_0_#000]",
-  glass: "border-[3px] border-black bg-white shadow-[5px_5px_0_0_#000]",
+  default: "border border-neutral-200/80 bg-white shadow-[var(--shadow-soft)]",
+  elevated: "border border-neutral-100 bg-white shadow-[var(--shadow-card)]",
+  glass: "border border-white/60 bg-white/80 shadow-[var(--shadow-soft)] backdrop-blur-sm",
 };
 
 const paddingStyles = {
@@ -34,7 +34,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "overflow-hidden rounded-[24px]",
+          "overflow-hidden rounded-2xl",
           variantStyles[variant],
           paddingStyles[padding],
           className,

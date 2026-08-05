@@ -68,4 +68,6 @@ export interface ExtendedPlatformConfig {
   };
   /** When true, live search can source missing products into the catalog. Default false. */
   liveSourcingEnabled?: boolean;
+  /** Controls all public driver recruitment and sign-in entry points. */
+  driverPortalEnabled?: boolean;
 }

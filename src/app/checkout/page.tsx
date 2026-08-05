@@ -18,11 +18,7 @@ import { useStorefrontSettings, defaultCouriersFromSettings } from "@/hooks/useS
 import { computeStorefrontTotals } from "@/lib/pricing/storefront-totals";
 import { PromoCodeInput } from "@/components/checkout/PromoCodeInput";
 import { ShippingAddressSection } from "@/components/checkout/ShippingAddressSection";
-import {
-  checkoutPaymentMethodsClient,
-  isPaystackPublicKeyReady,
-} from "@/lib/payments/paystack-public";
-import { DELIVERY_MODE_LABELS, type DeliveryFulfillmentMode } from "@/lib/delivery/types";
+import type { DeliveryFulfillmentMode } from "@/lib/delivery/types";
 import type { OrderDeliverySizeSummary } from "@/lib/delivery/size";
 
 export default function CheckoutPage() {
@@ -37,9 +33,14 @@ export default function CheckoutPage() {
   const [fulfillmentMode, setFulfillmentMode] = useState<DeliveryFulfillmentMode | null>(null);
   const [showCourierPicker, setShowCourierPicker] = useState(false);
   const [deliverySize, setDeliverySize] = useState<OrderDeliverySizeSummary | null>(null);
-  const paymentOptions = checkoutPaymentMethodsClient();
+  const paymentOptions = [
+    { id: "card" as const, label: "Pay securely online" },
+    ...(process.env.NODE_ENV === "development"
+      ? [{ id: "demo" as const, label: "Demo checkout (development only)" }]
+      : []),
+  ];
   const [paymentMethod, setPaymentMethod] = useState(
-    () => paymentOptions.find((m) => m.id === "demo")?.id ?? "card",
+    () => "card" as "card" | "demo",
   );
   const [saveAddress, setSaveAddress] = useState(true);
 
@@ -113,10 +114,6 @@ export default function CheckoutPage() {
 
   const couriers = settings ? defaultCouriersFromSettings(settings) : COURIERS.map((c) => ({ id: c.id, name: c.name, etaLabel: c.etaLabel }));
   const currency = settings?.currency ?? "ZAR";
-  const fulfillmentLabel = fulfillmentMode
-    ? DELIVERY_MODE_LABELS[fulfillmentMode]
-    : "We'll arrange delivery";
-
   const pricing = settings
     ? computeStorefrontTotals(subtotal, settings, courierId, discountAmount, deliverySize?.size)
     : {
@@ -130,6 +127,12 @@ export default function CheckoutPage() {
       };
   const { shipping, tax, total, shippingCalc, promoDiscount, discountedSubtotal } = pricing;
   const selectedCourier = couriers.find((c) => c.id === courierId);
+  const deliveryProvider =
+    fulfillmentMode === "seller_self"
+      ? "the store you purchased from"
+      : fulfillmentMode === "platform_driver"
+        ? "Almost Anything"
+        : selectedCourier?.name ?? "an approved delivery partner";
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
@@ -162,7 +165,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      if (data.mode === "paystack" && data.redirectUrl) {
+      if (data.mode === "hosted_payment" && data.redirectUrl) {
         const url = new URL(data.redirectUrl, window.location.origin);
         url.searchParams.set("method", paymentMethod);
         router.push(`${url.pathname}${url.search}`);
@@ -224,9 +227,7 @@ export default function CheckoutPage() {
               {showCourierPicker ? (
                 <>
                   <p className="mt-1 text-sm text-neutral-500">
-                    {settings?.embedShippingInPrice
-                      ? "Delivery is included in your item prices. Select your preferred courier below."
-                      : "Choose your delivery partner."}
+                    Choose your delivery partner. The delivery charge is shown separately in your total.
                   </p>
                   <div className="mt-4 space-y-2">
                     {couriers.map((c) => (
@@ -251,15 +252,16 @@ export default function CheckoutPage() {
                 </>
               ) : (
                 <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-                  <p className="font-semibold text-neutral-900">{fulfillmentLabel}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Delivery handled by
+                  </p>
+                  <p className="mt-1 font-semibold text-neutral-900">{deliveryProvider}</p>
                   <p className="mt-1 text-neutral-500">
                     {fulfillmentMode === "seller_self"
-                      ? "Your items are from one store — the shop will deliver to you."
+                      ? "This is a single-store order. The store is responsible for fulfilment and delivery updates."
                       : fulfillmentMode === "platform_driver"
-                        ? "Items from multiple stores — Almost Anything will collect and deliver to you."
-                        : settings?.embedShippingInPrice
-                          ? "Delivery is included in your item prices."
-                          : "We'll confirm delivery details after you place the order."}
+                        ? "This order contains items from multiple stores. We will coordinate collection and delivery."
+                        : "Your R100 standard or R200 large-item delivery charge is shown separately in the order summary."}
                   </p>
                 </div>
               )}
@@ -285,9 +287,7 @@ export default function CheckoutPage() {
               </div>
               <div className="mt-4 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
                 <Lock className="mb-2 h-4 w-4" />
-                {isPaystackPublicKeyReady()
-                  ? "Secure checkout powered by Paystack. Card and Instant EFT are supported."
-                  : "Paystack keys are not configured. Use demo checkout in development, or add your test keys to .env.local."}
+                Payment is completed securely through PayFast or Ozow. Your full card and banking details are never stored by Almost Anything.
               </div>
             </Card>
           </div>
@@ -336,11 +336,8 @@ export default function CheckoutPage() {
                   {shipping === 0 ? "Free" : formatCurrency(shipping, currency)}
                 </dd>
               </div>
-              {settings?.embedShippingInPrice && (
-                <p className="text-xs text-neutral-400">Delivery cost is included in product prices.</p>
-              )}
               <div className="flex justify-between">
-                <dt className="text-neutral-500">VAT</dt>
+                <dt className="text-neutral-500">VAT included (15%)</dt>
                 <dd>{formatCurrency(tax, currency)}</dd>
               </div>
               <div className="flex justify-between pt-2 text-base font-semibold">

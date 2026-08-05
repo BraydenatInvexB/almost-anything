@@ -22,11 +22,11 @@ export default function TermsPage() {
         },
         {
           heading: "Payments",
-          text: `All prices are in South African Rand (ZAR) unless stated otherwise. Payment is collected at checkout through our payment partner, Paystack. We begin processing your order once payment is confirmed. ${PAYMENT_GATEWAY_FEES_LEGAL}`,
+          text: `All prices are in South African Rand (ZAR) unless stated otherwise. Payment is collected at checkout through PayFast or Ozow. We begin processing your order once payment is confirmed. ${PAYMENT_GATEWAY_FEES_LEGAL}`,
         },
         {
           heading: "Marketplace sellers",
-          text: "Third-party sellers on our marketplace receive payouts after orders are fulfilled. Seller payouts are subject to the same Paystack card processing fees listed above. No additional platform payment fees apply beyond those gateway charges unless separately agreed in writing.",
+          text: "Third-party sellers receive payouts after eligible orders are fulfilled. Payment processing charges are accounted for before funds become available for withdrawal. Any additional charges must be agreed separately in writing.",
         },
         {
           heading: "Contact",

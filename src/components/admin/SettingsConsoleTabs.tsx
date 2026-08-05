@@ -1,7 +1,6 @@
 "use client";
 
 import { Panel } from "@/components/admin/ui";
-import { HeroShowcaseEditor } from "@/components/admin/HeroShowcaseEditor";
 import {
   SettingsConsoleField as Field,
   SettingsConsoleToggle as Toggle,
@@ -52,27 +51,6 @@ export function SettingsConsoleTabPanels({
           <Field label="Currency code">
             <input disabled={disabled} value={form.currency} onChange={(e) => update("currency", e.target.value)} className="input disabled:opacity-60" />
           </Field>
-        </div>
-      </Panel>
-    );
-  }
-
-  if (tab === "homepage") {
-    return (
-      <Panel
-        title="Homepage hero showcase"
-        description="Edit the rotating product cards, images, prices, and badges on the homepage hero."
-      >
-        <div className="p-5">
-          <HeroShowcaseEditor
-            value={extConfig.heroShowcase}
-            onChange={(heroShowcase) => {
-              setExtConfig((c) => ({ ...c, heroShowcase }));
-              setState("idle");
-            }}
-            disabled={disabled}
-            currency={form.currency}
-          />
         </div>
       </Panel>
     );
@@ -285,6 +263,13 @@ export function SettingsConsoleTabPanels({
           checked={form.maintenance_mode}
           disabled={disabled}
           onChange={(v) => update("maintenance_mode", v)}
+        />
+        <Toggle
+          label="Driver portal"
+          description="Shows Become a driver and Driver sign in on the storefront. Turning this off also closes the public driver login and application pages without deleting driver records."
+          checked={extConfig.driverPortalEnabled ?? true}
+          disabled={disabled}
+          onChange={(v) => setExtConfig((c) => ({ ...c, driverPortalEnabled: v }))}
         />
       </Panel>
     );

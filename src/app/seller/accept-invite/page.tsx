@@ -158,9 +158,9 @@ function AcceptInviteForm() {
   }
 
   return (
-    <div className="rounded-2xl border-[3px] border-black bg-white p-8 shadow-[6px_6px_0_0_#000]">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-[var(--shadow-card)]">
       <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-black bg-brand text-white">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-200 bg-brand text-white">
           <Users className="h-5 w-5" />
         </span>
         <div>

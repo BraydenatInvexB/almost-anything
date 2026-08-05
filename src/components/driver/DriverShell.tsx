@@ -3,14 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import { Menu, X, WalletCards, Truck } from "lucide-react";
 import { SITE_CONFIG } from "@/config/site";
 import { DRIVER_LOGIN_PATH } from "@/config/console-auth";
 import { ConsoleSignOutButton } from "@/components/layout/ConsoleSignOutButton";
 import type { DriverProfile } from "@/lib/delivery/types";
 
 const NAV = [
-  { href: "/driver", label: "Deliveries" },
+  { href: "/driver", label: "Deliveries", icon: Truck },
+  { href: "/driver/payouts", label: "Earnings & payouts", icon: WalletCards },
 ] as const;
 
 export function DriverShell({
@@ -41,22 +42,24 @@ export function DriverShell({
         <p className="mt-1 text-[11px] font-medium capitalize text-neutral-500">{driver.status}</p>
       </div>
       <nav className="flex-1">
-        {NAV.map((item) => (
+        {NAV.map((item) => {
+          const Icon = item.icon;
+          return (
           <Link
             key={item.href}
             href={item.href}
-            className="block rounded-lg bg-neutral-900 px-3 py-2.5 text-sm font-semibold text-white"
+            className="mb-1 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-100"
           >
-            {item.label}
+            <Icon className="h-4 w-4" />{item.label}
           </Link>
-        ))}
+        )})}
       </nav>
       <ConsoleSignOutButton redirectTo={DRIVER_LOGIN_PATH} />
     </>
   );
 
   return (
-    <div className="flex min-h-dvh bg-[#f4f6f9] text-neutral-900">
+    <div className="flex min-h-dvh bg-[#f9f9f9] text-neutral-900">
       <aside className="sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 flex-col border-r border-neutral-200/80 bg-white px-4 py-5 lg:flex">
         {sidebar}
       </aside>

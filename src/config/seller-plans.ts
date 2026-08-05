@@ -16,7 +16,7 @@ export const SELLER_PLANS: SellerPlanConfig[] = [
     priceMonthly: 499,
     currency: "ZAR",
     itemLimit: 30,
-    description: "Up to 30 active listings — ideal for small shops getting started online.",
+    description: "Up to 30 active listings for small shops getting started online.",
   },
   {
     id: "growth_50",
@@ -24,7 +24,7 @@ export const SELLER_PLANS: SellerPlanConfig[] = [
     priceMonthly: 549,
     currency: "ZAR",
     itemLimit: 50,
-    description: "Up to 50 active listings — for growing businesses with a wider catalog.",
+    description: "Up to 50 active listings for growing businesses with a wider catalogue.",
   },
   {
     id: "unlimited",
@@ -32,7 +32,7 @@ export const SELLER_PLANS: SellerPlanConfig[] = [
     priceMonthly: 599,
     currency: "ZAR",
     itemLimit: null,
-    description: "Unlimited listings — no caps on how many products you can sell.",
+    description: "Unlimited listings with no cap on how many products you can sell.",
   },
 ];
 

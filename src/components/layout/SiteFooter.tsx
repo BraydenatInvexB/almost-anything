@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { SITE_CONFIG } from "@/config/site";
 import { SiteLogo } from "@/components/layout/SiteLogo";
@@ -10,6 +11,7 @@ import {
 } from "@/config/footer";
 import { FOOTER_SELLER_LINKS, FOOTER_SELLER_TITLE } from "@/config/seller-footer";
 import { FooterNewsletter } from "@/components/layout/FooterNewsletter";
+import { DriverFooterLinks } from "@/components/layout/DriverFooterLinks";
 
 const FOOTER_TITLE_CLASS =
   "min-h-11 text-sm font-semibold leading-snug tracking-wide text-brand";
@@ -121,9 +123,10 @@ function SocialIcon({ label }: { label: string }) {
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
+  const sellerLinks = FOOTER_SELLER_LINKS.filter((link) => !link.href.startsWith("/driver"));
   const categoryLinks: FooterLinkItem[] = [
     ...FOOTER_CATEGORIES.slice(0, 5).map((cat) => ({ label: cat.label, href: cat.href })),
-    { label: "All categories", href: "/categories", highlight: true },
+    { label: "All products", href: "/products", highlight: true },
   ];
 
   return (
@@ -169,7 +172,8 @@ export function SiteFooter() {
               ))}
 
               <FooterColumn title={FOOTER_SELLER_TITLE}>
-                <FooterLinkList links={FOOTER_SELLER_LINKS} />
+                <FooterLinkList links={sellerLinks} />
+                <DriverFooterLinks />
               </FooterColumn>
 
               <FooterColumn title="Categories">
@@ -198,12 +202,23 @@ export function SiteFooter() {
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {FOOTER_PAYMENTS.map((p) => (
+              {FOOTER_PAYMENTS.map((payment) => (
                 <span
-                  key={p}
-                  className="rounded border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500"
+                  key={payment.label}
+                  title={payment.label}
+                  className="flex h-12 w-24 shrink-0 items-center justify-center overflow-visible rounded-lg border border-neutral-200 bg-white px-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
                 >
-                  {p}
+                  <Image
+                    src={payment.logo}
+                    alt={`${payment.label} accepted`}
+                    width={80}
+                    height={32}
+                    className={
+                      payment.label === "American Express"
+                        ? "h-11 w-11 object-contain"
+                        : "h-auto max-h-7 w-auto max-w-[4.5rem] object-contain"
+                    }
+                  />
                 </span>
               ))}
             </div>

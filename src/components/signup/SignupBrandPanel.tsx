@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { ShieldCheck, Truck, Tag } from "lucide-react";
 import { AVATARS } from "@/config/avatars";
+import { SiteLogo } from "@/components/layout/SiteLogo";
 
 const PERKS = [
   { icon: Truck, label: "Fast, tracked delivery on every order" },
@@ -10,25 +11,22 @@ const PERKS = [
 
 export function SignupBrandPanel() {
   return (
-    <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-neutral-200 bg-linear-to-br from-neutral-50 to-[#eef3df] p-10 lg:flex">
+    <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-neutral-100 bg-[#f9f9f9] p-10 lg:flex">
       <div
         className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full"
-        style={{ background: "radial-gradient(circle, var(--brand) 0%, transparent 70%)", opacity: 0.18 }}
+        style={{ background: "radial-gradient(circle, var(--brand) 0%, transparent 70%)", opacity: 0.2 }}
       />
       <div
-        className="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full"
-        style={{ background: "radial-gradient(circle, #cbd5e1 0%, transparent 70%)", opacity: 0.4 }}
+        className="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-neutral-200/50"
       />
 
       <div className="relative">
-        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-700">
-          <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-          Almost Anything
-        </span>
-        <h2 className="mt-8 text-3xl font-extrabold leading-tight text-neutral-900">
-          The store that has
+        <SiteLogo variant="compact" />
+        <h2 className="mt-8 text-3xl font-extrabold leading-tight tracking-tight text-neutral-900">
+          Find almost{" "}
+          <span className="text-brand">anything</span>
           <br />
-          almost everything.
+          here.
         </h2>
         <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-500">
           Create your free account to shop thousands of products, save favorites,

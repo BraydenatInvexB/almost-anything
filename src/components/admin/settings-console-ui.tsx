@@ -1,5 +1,4 @@
 import {
-  Home,
   Percent,
   Store,
   Truck,
@@ -8,11 +7,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
-export type SettingsTab = "general" | "homepage" | "pricing" | "shipping" | "couriers" | "automation";
+export type SettingsTab = "general" | "pricing" | "shipping" | "couriers" | "automation";
 
 export const SETTINGS_TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "general", label: "General", icon: <Store className="h-4 w-4" /> },
-  { id: "homepage", label: "Homepage hero", icon: <Home className="h-4 w-4" /> },
   { id: "pricing", label: "Pricing & markup", icon: <Percent className="h-4 w-4" /> },
   { id: "shipping", label: "Shipping & tax", icon: <Truck className="h-4 w-4" /> },
   { id: "couriers", label: "Courier partners", icon: <Globe className="h-4 w-4" /> },
@@ -58,15 +56,23 @@ export function SettingsConsoleToggle({
       </div>
       <button
         type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50",
-          checked ? "bg-brand" : "bg-neutral-300",
+          "relative inline-flex h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-50",
+          checked ? "border-brand bg-brand" : "border-neutral-300 bg-neutral-200",
         )}
-        aria-pressed={checked}
       >
-        <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform", checked ? "translate-x-[22px]" : "translate-x-0.5")} />
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute left-1 top-1 h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-200",
+            checked ? "translate-x-5" : "translate-x-0",
+          )}
+        />
       </button>
     </div>
   );

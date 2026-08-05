@@ -153,7 +153,7 @@ export function ProductActions({
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-6">
       {variants?.options.length ? (
         <div className="mb-5 space-y-4">
           {variants.options.map((opt) => (

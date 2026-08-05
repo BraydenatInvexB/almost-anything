@@ -1,3 +1,4 @@
+import { Banknote, Package } from "lucide-react";
 import { getCurrentDriver } from "@/services/delivery/drivers";
 import { listJobsForDriver, type DeliveryJobRow } from "@/services/delivery/jobs";
 import { DriverJobActions } from "@/components/driver/DriverJobActions";
@@ -19,6 +20,11 @@ export default async function DriverDashboardPage() {
           Claim open multi-store jobs in your province, collect from the shops, and deliver to the
           customer.
         </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-5"><Package className="h-5 w-5 text-brand" /><p className="mt-4 text-sm text-neutral-500">Standard delivery</p><p className="mt-1 text-3xl font-bold">R100</p></div>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-5"><Banknote className="h-5 w-5 text-brand" /><p className="mt-4 text-sm text-neutral-500">Large-item delivery</p><p className="mt-1 text-3xl font-bold">R200</p></div>
       </div>
 
       {pendingApproval ? (
@@ -83,6 +89,9 @@ function JobList({
               {[job.addressLine1, job.city, job.province, job.postalCode].filter(Boolean).join(", ")}
             </p>
             <p className="mt-1 truncate text-xs text-neutral-500">{job.itemSummary}</p>
+            <p className="mt-2 text-sm font-bold text-neutral-900">
+              Earn {job.deliverySize === "small" ? "R100" : "R200"}
+            </p>
             <p className="mt-2 inline-flex rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-semibold">
               {job.statusLabel}
             </p>

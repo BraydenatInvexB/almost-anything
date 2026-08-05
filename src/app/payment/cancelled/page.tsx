@@ -6,7 +6,7 @@ export default function PaymentCancelledPage() {
     <PaymentStatusCard
       icon={<ArrowLeft className="h-8 w-8 text-neutral-600" />}
       title="Payment cancelled"
-      description="You cancelled the Paystack payment. No charge was made — you can resume whenever you're ready."
+      description="You cancelled the payment. No charge was made, and you can resume whenever you're ready."
       primaryHref="/checkout"
       primaryLabel="Back to checkout"
       secondaryHref="/"

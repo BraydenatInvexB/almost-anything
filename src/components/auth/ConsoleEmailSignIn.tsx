@@ -56,25 +56,28 @@ export function ConsoleEmailSignIn({
             variant={theme.logoVariant}
             size="default"
             priority
-            className="justify-center"
-            imageClassName="h-16 w-auto sm:h-20"
+            className="w-full justify-center"
+            imageClassName="h-16 w-auto object-center sm:h-20"
           />
         ) : HeaderIcon ? (
           <span
-            className="flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-black shadow-[4px_4px_0_0_#000]"
-            style={{ backgroundColor: theme.accent }}
+            className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm"
+            style={{
+              backgroundColor: theme.accent,
+              color: theme.accent === "#FFD23F" ? "#0a0a0a" : "#ffffff",
+            }}
           >
-            <HeaderIcon className="h-6 w-6 text-black" />
+            <HeaderIcon className="h-6 w-6" />
           </span>
         ) : null}
-        <h1 className="mt-4 text-2xl font-black uppercase tracking-tight text-neutral-900 sm:text-3xl">
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
           {title}
         </h1>
         <p className="mt-2 max-w-sm text-sm leading-relaxed text-neutral-500">{subtitle}</p>
       </div>
 
       {!isConfigured && notConfiguredHint ? (
-        <div className="mt-6 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           {notConfiguredHint}
         </div>
       ) : null}
@@ -98,26 +101,26 @@ export function ConsoleEmailSignIn({
         />
 
         {error ? (
-          <div className="rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         ) : null}
 
-        <Button type="submit" className="mt-1 w-full rounded-xl" isLoading={loading} disabled={!isConfigured}>
+        <Button type="submit" className="mt-1 w-full" isLoading={loading} disabled={!isConfigured}>
           {submitLabel}
         </Button>
       </form>
 
       {footerLinks.length ? (
-        <div className="mt-7 flex flex-col gap-2.5 border-t-2 border-neutral-100 pt-6">
+        <div className="mt-7 flex flex-col gap-2.5 border-t border-neutral-100 pt-6">
           {footerLinks.map((link) => (
             <Link
               key={`${link.href}-${link.label}`}
               href={link.href}
-              className="flex items-center justify-between rounded-xl border-2 border-black bg-neutral-50 px-4 py-3 text-sm transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-white hover:shadow-[3px_3px_0_0_#000]"
+              className="flex items-center justify-between rounded-xl border border-neutral-200 bg-[#f9f9f9] px-4 py-3 text-sm transition-colors hover:border-neutral-300 hover:bg-white"
             >
               <span className="text-neutral-500">{link.prefix ?? "Go to"}</span>
-              <span className="font-extrabold uppercase tracking-wide text-neutral-900">{link.label}</span>
+              <span className="font-semibold text-neutral-900">{link.label}</span>
             </Link>
           ))}
         </div>

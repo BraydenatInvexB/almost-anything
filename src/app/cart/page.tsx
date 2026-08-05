@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import { useStorefrontSettings } from "@/hooks/useStorefrontSettings";
 import { computeStorefrontTotals } from "@/lib/pricing/storefront-totals";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
@@ -13,15 +14,36 @@ import { useCart } from "@/context/CartProvider";
 import { usePromo } from "@/context/PromoProvider";
 import { formatCurrency } from "@/lib/utils/cn";
 import { PromoCodeInput } from "@/components/checkout/PromoCodeInput";
+import type { DeliverySize } from "@/lib/delivery/size";
 
 export default function CartPage() {
   const { items, itemCount, subtotal, updateQuantity, removeItem, clearCart } =
     useCart();
   const { discountAmount } = usePromo();
   const { settings } = useStorefrontSettings();
+  const [deliverySize, setDeliverySize] = useState<DeliverySize | null>(null);
+  const productIds = useMemo(
+    () => items.map((item) => item.productId).filter((id): id is string => Boolean(id)),
+    [items],
+  );
+
+  useEffect(() => {
+    if (!productIds.length) {
+      setDeliverySize(null);
+      return;
+    }
+    fetch("/api/checkout/fulfillment-preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productIds }),
+    })
+      .then((response) => response.json())
+      .then((data) => setDeliverySize((data.deliverySize?.size as DeliverySize | undefined) ?? null))
+      .catch(() => setDeliverySize(null));
+  }, [productIds]);
 
   const pricing = settings
-    ? computeStorefrontTotals(subtotal, settings, undefined, discountAmount)
+    ? computeStorefrontTotals(subtotal, settings, undefined, discountAmount, deliverySize)
     : {
         shipping: 0,
         tax: 0,
@@ -184,15 +206,15 @@ export default function CartPage() {
                   </div>
                 ) : null}
                 <div className="flex justify-between">
-                  <dt className="text-neutral-500">Shipping</dt>
+                  <dt className="text-neutral-500">Delivery</dt>
                   <dd>
                     {shippingCalc.displayFree || shipping === 0
-                      ? "Included"
+                      ? "Free"
                       : formatCurrency(shipping, currency)}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-neutral-500">VAT ({Math.round((settings?.taxRate ?? 0.15) * 100)}%)</dt>
+                  <dt className="text-neutral-500">VAT included ({Math.round((settings?.taxRate ?? 0.15) * 100)}%)</dt>
                   <dd>{formatCurrency(tax, currency)}</dd>
                 </div>
                 <div className="flex justify-between border-t border-neutral-100 pt-3 text-base font-semibold">
@@ -204,8 +226,6 @@ export default function CartPage() {
                 <p className="mt-3 text-xs text-neutral-400">
                   Free shipping on orders over {formatCurrency(settings.freeShippingThreshold, currency)}
                 </p>
-              ) : settings?.embedShippingInPrice ? (
-                <p className="mt-3 text-xs text-neutral-400">Delivery is included in product prices.</p>
               ) : null}
               <Link href="/checkout" className="mt-6 block">
                 <Button className="w-full rounded-full">

@@ -11,6 +11,7 @@ export interface DriverProfile {
   province: string;
   status: DriverStatus;
   vehicleNotes: string | null;
+  verificationStatus: "incomplete" | "pending" | "approved" | "rejected";
 }
 
 export type DeliveryFulfillmentMode = "seller_self" | "platform_driver" | "courier_partner";

@@ -21,9 +21,9 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
   const warehouseBadge = warehouseBadgeFromLabel(product.warehouseLabel);
 
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-all duration-200 hover:border-neutral-900 hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-[1.4rem] border border-neutral-200 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-[0_12px_30px_rgba(0,0,0,0.07)]">
       {/* Fixed-ratio media — must not collapse when image uses position:absolute */}
-      <div className="relative w-full shrink-0 overflow-hidden bg-white [aspect-ratio:1/1]">
+      <div className="relative w-full shrink-0 overflow-hidden bg-[#f6f6f3] [aspect-ratio:1/1]">
         <Link
           href={`/products/${product.slug}`}
           className="absolute inset-0 z-0 block"

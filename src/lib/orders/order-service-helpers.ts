@@ -56,9 +56,10 @@ export function mapDbOrder(o: DbOrderRow): Order {
 
 export function calculateTotals(items: CartItem[]) {
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const shipping = subtotal > 1000 ? 0 : 99;
-  const tax = Math.round(subtotal * 0.15 * 100) / 100;
-  const total = Math.round((subtotal + shipping + tax) * 100) / 100;
+  const shipping = 100;
+  const vatInclusiveAmount = subtotal + shipping;
+  const tax = Math.round((vatInclusiveAmount * 0.15 / 1.15) * 100) / 100;
+  const total = Math.round(vatInclusiveAmount * 100) / 100;
   return { subtotal, shipping, tax, total };
 }
 

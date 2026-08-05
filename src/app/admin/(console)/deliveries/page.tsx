@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listDeliveryJobs } from "@/services/delivery/jobs";
 import { AdminDeliveriesActions } from "@/components/admin/AdminDeliveriesActions";
+import { listDrivers } from "@/services/delivery/drivers";
 import type { DeliveryFulfillmentMode, DeliveryJobStatus } from "@/lib/delivery/types";
 
 const FILTERS = [
@@ -17,10 +18,14 @@ export default async function AdminDeliveriesPage({
   searchParams: Promise<{ mode?: string; status?: string }>;
 }) {
   const params = await searchParams;
-  const jobs = await listDeliveryJobs({
-    mode: params.mode as DeliveryFulfillmentMode | undefined,
-    status: params.status as DeliveryJobStatus | undefined,
-  });
+  const [jobs, drivers] = await Promise.all([
+    listDeliveryJobs({
+      mode: params.mode as DeliveryFulfillmentMode | undefined,
+      status: params.status as DeliveryJobStatus | undefined,
+    }),
+    listDrivers(),
+  ]);
+  const activeDrivers = drivers.filter((driver) => driver.status === "active");
 
   const waitingStores = jobs.filter((j) => j.status === "awaiting_seller").length;
   const needDriver = jobs.filter((j) => j.status === "ready_for_driver").length;
@@ -115,8 +120,24 @@ export default async function AdminDeliveriesPage({
                       {job.mayNeedTwoPeople ? " (2 people recommended)" : ""}
                     </p>
                   ) : null}
+                  {job.driverId ? (
+                    <p className="mt-2 text-xs font-medium text-neutral-700">
+                      Driver: {drivers.find((driver) => driver.id === job.driverId)?.fullName ?? "Assigned driver"}
+                    </p>
+                  ) : null}
                 </div>
-                <AdminDeliveriesActions jobId={job.id} status={job.status} />
+                <AdminDeliveriesActions
+                  jobId={job.id}
+                  status={job.status}
+                  assignable={job.mode === "platform_driver"}
+                  assignedDriverId={job.driverId}
+                  drivers={activeDrivers
+                    .filter((driver) => !job.province || driver.province === job.province)
+                    .map((driver) => ({ id: driver.id, name: driver.fullName, province: driver.province }))}
+                />
+                {job.status === "delivered" && job.proofRecipientName ? (
+                  <p className="text-xs text-emerald-700">Signed by {job.proofRecipientName}</p>
+                ) : null}
               </li>
             ))}
           </ul>

@@ -51,8 +51,8 @@ function LoginForm() {
   }
 
   return (
-    <Card variant="elevated" className="bg-white p-8">
-      <h1 className="text-2xl font-bold text-neutral-900">Sign In</h1>
+    <Card variant="elevated" className="bg-white p-8 sm:p-9">
+      <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Sign In</h1>
       <p className="mt-2 text-sm text-neutral-500">
         Access your orders, favorites, and order history.
       </p>

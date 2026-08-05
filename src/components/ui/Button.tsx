@@ -9,20 +9,20 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles = {
   primary:
-    "border-2 border-black bg-black text-white shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white hover:shadow-[5px_5px_0_0_#000]",
+    "bg-brand text-white shadow-sm hover:bg-[#c80511] hover:shadow-md active:scale-[0.98]",
   secondary:
-    "border-2 border-black bg-white text-black shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white hover:shadow-[5px_5px_0_0_#000]",
-  ghost: "border-2 border-transparent bg-transparent text-black hover:bg-black/5",
+    "border border-neutral-200 bg-white text-neutral-900 shadow-sm hover:border-neutral-300 hover:bg-neutral-50",
+  ghost: "bg-transparent text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900",
   outline:
-    "border-2 border-black bg-white text-black shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:bg-brand hover:text-white hover:shadow-[5px_5px_0_0_#000]",
+    "border border-neutral-200 bg-white text-neutral-900 hover:border-brand hover:text-brand",
   danger:
-    "border-2 border-black bg-brand text-white shadow-[3px_3px_0_0_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_#000]",
+    "bg-brand text-white shadow-sm hover:bg-[#c80511] hover:shadow-md active:scale-[0.98]",
 };
 
 const sizeStyles = {
   sm: "h-9 px-4 text-xs",
-  md: "h-11 px-6 text-sm",
-  lg: "h-12 px-8 text-base",
+  md: "h-11 px-5 text-sm",
+  lg: "h-12 px-7 text-base",
   icon: "h-11 w-11 p-0",
 };
 
@@ -44,8 +44,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || isLoading}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-full font-extrabold uppercase tracking-wide transition-all duration-150",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
+          "inline-flex items-center justify-center gap-2 rounded-full font-semibold tracking-tight transition-all duration-150",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2",
           "disabled:pointer-events-none disabled:opacity-50",
           variantStyles[variant],
           sizeStyles[size],

@@ -127,7 +127,7 @@ export function WishlistPicker({ product, open, onClose, anchorRef }: WishlistPi
       role="dialog"
       aria-label="Save to wishlist"
       className={cn(
-        "fixed z-[300] w-[288px] rounded-xl border-2 border-black bg-white shadow-[4px_4px_0_0_#000]",
+        "fixed z-[300] w-[288px] rounded-xl border border-neutral-200 bg-white shadow-[var(--shadow-soft)]",
         position.openAbove ? "-translate-y-full" : "",
       )}
       style={{ top: position.top, left: position.left }}
@@ -196,7 +196,7 @@ export function WishlistPicker({ product, open, onClose, anchorRef }: WishlistPi
         <button
           type="submit"
           disabled={!newListName.trim()}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-black text-white transition-colors hover:bg-brand disabled:opacity-40"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand text-white transition-colors hover:bg-[#c80511] disabled:opacity-40"
           aria-label="Create list"
         >
           <Plus className="h-4 w-4" />
