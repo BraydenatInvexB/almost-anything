@@ -9,7 +9,7 @@ import { SELLER_PLANS } from "@/config/seller-plans";
 const FEATURES = [
   { icon: Store, title: "Your own seller dashboard", text: "Manage products, inventory, orders, and promos in one place." },
   { icon: Upload, title: "Import stock lists", text: "Upload CSV stock sheets to add or update products in bulk." },
-  { icon: Truck, title: "Ship to customers", text: "Fulfill orders yourself and add courier tracking for buyers." },
+  { icon: Truck, title: "Prepare customer orders", text: "Pack confirmed orders for collection by Almost Anything Delivery." },
   { icon: Users, title: "Invite your team", text: "Add employees to help with inventory, orders, and support." },
   { icon: CreditCard, title: "Your plan starts after your first sale", text: "You will not be charged before your first completed sale." },
 ];

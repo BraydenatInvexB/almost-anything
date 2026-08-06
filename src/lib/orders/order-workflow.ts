@@ -20,7 +20,7 @@ export const OPERATIONS_STAGES: OperationsStage[] = [
   {
     id: "shipping",
     label: "Out for delivery",
-    description: "Parcels handed to couriers — monitor tracking and mark delivered when complete.",
+    description: "Parcels assigned to Almost Anything delivery — monitor progress and confirm completion.",
     statuses: ["shipped"],
   },
   {
@@ -34,7 +34,7 @@ export const OPERATIONS_STAGES: OperationsStage[] = [
 export const ORDER_NEXT_ACTION: Record<string, string> = {
   paid: "Confirm supplier purchase and start inbound to your warehouse.",
   sourcing: "Track inbound stock and mark received when it hits your hub.",
-  purchased: "Pack the order, add courier tracking, and mark shipped.",
+  purchased: "Pack the order and mark it ready for Almost Anything collection.",
   shipped: "Confirm delivery with the customer and mark delivered.",
   delivered: "No action — order complete.",
   pending: "Waiting for customer payment.",

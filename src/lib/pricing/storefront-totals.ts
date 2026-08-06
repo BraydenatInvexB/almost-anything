@@ -22,7 +22,7 @@ export const DEFAULT_PRICING_SETTINGS: StorefrontPricingSettings = {
   embedShippingInPrice: false,
   freeShippingEnabled: false,
   flatShippingFeeEnabled: true,
-  defaultCourierId: "aramex",
+  defaultCourierId: "almost_anything",
   currency: "ZAR",
 };
 

@@ -8,8 +8,8 @@ export const DEFAULT_EXTENDED_CONFIG: ExtendedPlatformConfig = {
   embedShippingInPrice: false,
   freeShippingEnabled: false,
   flatShippingFeeEnabled: true,
-  defaultCourierId: "aramex",
-  enabledCourierIds: ["courier_guy", "fastway", "aramex"],
+  defaultCourierId: "almost_anything",
+  enabledCourierIds: ["almost_anything"],
   currency: "ZAR",
   couriers: COURIERS.map((c) => ({ ...c })),
   heroShowcase: DEFAULT_HERO_SHOWCASE,
@@ -34,14 +34,9 @@ export function mergeExtendedConfig(
   return {
     ...DEFAULT_EXTENDED_CONFIG,
     ...partial,
-    couriers:
-      Array.isArray(partial.couriers) && partial.couriers.length > 0
-        ? (partial.couriers as ExtendedPlatformConfig["couriers"])
-        : DEFAULT_EXTENDED_CONFIG.couriers,
-    enabledCourierIds:
-      Array.isArray(partial.enabledCourierIds) && partial.enabledCourierIds.length > 0
-        ? (partial.enabledCourierIds as string[])
-        : DEFAULT_EXTENDED_CONFIG.enabledCourierIds,
+    defaultCourierId: DEFAULT_EXTENDED_CONFIG.defaultCourierId,
+    couriers: DEFAULT_EXTENDED_CONFIG.couriers,
+    enabledCourierIds: DEFAULT_EXTENDED_CONFIG.enabledCourierIds,
     heroShowcase: mergeHeroShowcase(
       partial.heroShowcase as Partial<ExtendedPlatformConfig["heroShowcase"]> | undefined,
     ),

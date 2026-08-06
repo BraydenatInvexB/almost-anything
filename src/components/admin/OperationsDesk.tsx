@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { OrdersTable } from "@/components/admin/OrdersTable";
 import { Panel } from "@/components/admin/ui";
-import type { CourierSelectOption } from "@/components/admin/CarrierSelect";
 import {
   OPERATIONS_STAGES,
   filterOrdersForTab,
@@ -17,12 +16,10 @@ import { cn } from "@/lib/utils/cn";
 
 export function OperationsDesk({
   orders,
-  couriers,
   canManage,
   initialTab = "action",
 }: {
   orders: AdminOrderSummary[];
-  couriers: CourierSelectOption[];
   canManage: boolean;
   initialTab?: OperationsTabId;
 }) {
@@ -85,7 +82,7 @@ export function OperationsDesk({
           </Link>
         </div>
       ) : (
-        <OrdersTable orders={filtered} canManage={canManage} couriers={couriers} showNextStep />
+        <OrdersTable orders={filtered} canManage={canManage} showNextStep />
       )}
     </Panel>
   );

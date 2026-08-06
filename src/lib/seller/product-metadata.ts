@@ -24,6 +24,10 @@ import {
   parseDeliverySize,
   type DeliverySize,
 } from "@/lib/delivery/size";
+import {
+  locationInventoryMetadata,
+  type ProductLocationInventory,
+} from "@/lib/product/location-inventory";
 
 export type SellerSpecialPricingInput = {
   enabled: boolean;
@@ -103,6 +107,7 @@ export function buildSellerProductMetadata(input: {
   variants?: ProductVariantsConfig | null;
   enrichment?: ProductEnrichment | null;
   special?: SellerSpecialPricingInput | null;
+  stockLocations: ProductLocationInventory;
 }): Json {
   const stockOrigin = parseStockOrigin(input.stockOrigin);
   const deal = resolveSellerDealFields(input.special);
@@ -127,6 +132,7 @@ export function buildSellerProductMetadata(input: {
     stock_origin: stockOrigin,
     ...sellerDeliveryMetadata(input.delivery),
     ...deliverySizeMetadata(deliverySize),
+    ...locationInventoryMetadata(input.stockLocations),
     ...specialPricingMetadata(deal.compareAt),
   };
 

@@ -37,7 +37,7 @@ export const ORDER_STATUS_HINTS: Record<string, string> = {
   paid: "Confirm supplier purchase and inbound delivery to your warehouse.",
   sourcing: "Stock allocated from international warehouse — arrange inbound to SA hub.",
   purchased: "Items received at warehouse — pack and ship to customer.",
-  shipped: "Courier has the parcel — share tracking with the customer.",
+  shipped: "Almost Anything has the parcel and delivery tracking is active.",
   delivered: "Order complete.",
   cancelled: "Order was cancelled.",
 };

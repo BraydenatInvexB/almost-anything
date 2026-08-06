@@ -6,6 +6,12 @@ import { EmptyState, Table, Td, Th } from "@/components/admin/ui";
 import { getStockLevel } from "@/lib/seller/stock-status";
 import { SellerCatalogToolbar } from "@/components/seller/SellerCatalogToolbar";
 import { SellerStockBadge } from "@/components/seller/SellerPanel";
+import { ProductLocationInventoryField } from "@/components/product/ProductLocationInventoryField";
+import {
+  parseLocationInventory,
+  totalLocationStock,
+  type ProductLocationInventory,
+} from "@/lib/product/location-inventory";
 import type { SellerCatalogProduct } from "@/types/seller-catalog";
 
 export function SellerCatalogStockTab({
@@ -15,7 +21,7 @@ export function SellerCatalogStockTab({
 }: {
   products: SellerCatalogProduct[];
   canManage: boolean;
-  onUpdated: (productId: string, stockQuantity: number) => void;
+  onUpdated: (productId: string, stockQuantity: number, metadata: unknown) => void;
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "low" | "out">("all");
@@ -38,17 +44,18 @@ export function SellerCatalogStockTab({
     return list;
   }, [products, filter, query]);
 
-  async function patchStock(productId: string, stockQuantity: number) {
+  async function patchStock(productId: string, stockLocations: ProductLocationInventory) {
+    const stockQuantity = totalLocationStock(stockLocations);
     setSaving(true);
     try {
       const res = await fetch("/api/seller/products", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: productId, stockQuantity }),
+        body: JSON.stringify({ id: productId, stockLocations }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Update failed");
-      onUpdated(productId, stockQuantity);
+      onUpdated(productId, stockQuantity, data.product?.metadata);
       setAdjusting(null);
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "Could not update stock");
@@ -97,6 +104,7 @@ export function SellerCatalogStockTab({
             <tr>
               <Th>Product</Th>
               <Th>On hand</Th>
+              <Th>Hub availability</Th>
               <Th>Status</Th>
               {canManage ? <Th>Actions</Th> : null}
             </tr>
@@ -105,6 +113,7 @@ export function SellerCatalogStockTab({
             {filtered.map((product) => {
               const qty = Number(product.stock_quantity);
               const level = getStockLevel(qty);
+              const hubs = parseLocationInventory(product.metadata, qty);
               return (
                 <tr key={product.id} className={level !== "healthy" ? "bg-amber-50/30" : undefined}>
                   <Td>
@@ -119,13 +128,20 @@ export function SellerCatalogStockTab({
                   <Td className={level === "out" ? "font-bold text-red-700" : level === "low" ? "font-bold text-amber-700" : "font-semibold"}>
                     {qty.toLocaleString()}
                   </Td>
+                  <Td>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(hubs).filter(([, value]) => value > 0).map(([hub, value]) => (
+                        <span key={hub} className="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold uppercase text-emerald-800">
+                          {hub} {value}
+                        </span>
+                      ))}
+                    </div>
+                  </Td>
                   <Td><SellerStockBadge quantity={qty} /></Td>
                   {canManage ? (
                     <Td>
                       <div className="flex flex-wrap gap-2">
-                        <button type="button" onClick={() => void patchStock(product.id, qty + 1)} className="text-xs font-semibold text-brand">+1</button>
-                        <button type="button" onClick={() => void patchStock(product.id, qty + 10)} className="text-xs font-semibold text-brand">+10</button>
-                        <button type="button" onClick={() => setAdjusting(product)} className="text-xs font-semibold text-neutral-600">Set qty</button>
+                        <button type="button" onClick={() => setAdjusting(product)} className="text-xs font-semibold text-brand">Manage hubs</button>
                       </div>
                     </Td>
                   ) : null}
@@ -144,7 +160,7 @@ export function SellerCatalogStockTab({
           product={adjusting}
           saving={saving}
           onClose={() => setAdjusting(null)}
-          onSave={(qty) => void patchStock(adjusting.id, qty)}
+          onSave={(locations) => void patchStock(adjusting.id, locations)}
         />
       ) : null}
     </div>
@@ -172,29 +188,27 @@ function StockAdjustModal({
   product: SellerCatalogProduct;
   saving: boolean;
   onClose: () => void;
-  onSave: (qty: number) => void;
+  onSave: (locations: ProductLocationInventory) => void;
 }) {
-  const [qty, setQty] = useState(String(product.stock_quantity));
+  const [locations, setLocations] = useState<ProductLocationInventory>(() =>
+    parseLocationInventory(product.metadata, Number(product.stock_quantity)),
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-neutral-900/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-xl border border-neutral-200 bg-white p-5 shadow-xl">
-        <h3 className="text-sm font-semibold text-neutral-950">Set stock quantity</h3>
+      <div className="relative w-full max-w-3xl rounded-xl border border-neutral-200 bg-white p-5 shadow-xl">
+        <h3 className="text-sm font-semibold text-neutral-950">Manage stock locations</h3>
         <p className="mt-1 text-xs text-neutral-500">{product.name}</p>
-        <input
-          className="input mt-4"
-          type="number"
-          min="0"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-        />
+        <div className="mt-4">
+          <ProductLocationInventoryField value={locations} onChange={setLocations} />
+        </div>
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50">Cancel</button>
           <button
             type="button"
             disabled={saving}
-            onClick={() => onSave(Math.max(0, Number(qty)))}
+            onClick={() => onSave(locations)}
             className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save"}

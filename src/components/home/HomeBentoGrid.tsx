@@ -1,6 +1,7 @@
 import { getProducts, getHotProducts, getStealsProducts, getFreshDropProducts } from "@/services/product-service";
 import { BoldHome } from "@/components/home/BoldHome";
 import { ProductGrid } from "@/components/home/ProductGrid";
+import { listActiveStorefrontPromotions } from "@/lib/marketing/storefront-promotions";
 
 interface HomeBentoGridProps {
   category?: string;
@@ -41,11 +42,12 @@ export async function HomeBentoGrid({ category, query }: HomeBentoGridProps) {
     );
   }
 
-  const [hot, steals, fresh] = await Promise.all([
+  const [hot, steals, fresh, promotions] = await Promise.all([
     getHotProducts(),
     getStealsProducts(),
     getFreshDropProducts(),
+    listActiveStorefrontPromotions(),
   ]);
 
-  return <BoldHome hot={hot} steals={steals} fresh={fresh} />;
+  return <BoldHome hot={hot} steals={steals} fresh={fresh} promotions={promotions} />;
 }

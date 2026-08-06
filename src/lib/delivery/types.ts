@@ -14,6 +14,28 @@ export interface DriverProfile {
   verificationStatus: "incomplete" | "pending" | "approved" | "rejected";
 }
 
+export interface DeliveryCollectionItem {
+  name: string;
+  quantity: number;
+}
+
+export interface DeliveryCollectionStop {
+  id: string;
+  sellerId: string | null;
+  kind: "seller" | "platform";
+  shopName: string;
+  contactName: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  province: string | null;
+  postalCode: string | null;
+  country: string | null;
+  items: DeliveryCollectionItem[];
+}
+
 export type DeliveryFulfillmentMode = "seller_self" | "platform_driver" | "courier_partner";
 
 export type DeliveryJobStatus =
@@ -29,32 +51,26 @@ export type DeliveryJobStatus =
 export interface DeliveryRoutingPolicy {
   /**
    * When the cart is from a single store:
-   * - seller_self: shop owner delivers (default)
-   * - platform_driver: Almost Anything drivers
-   * - courier_partner: existing courier partners
+   * Almost Anything handles delivery for every order.
    */
   singleStoreMode: DeliveryFulfillmentMode;
   /**
    * When the cart spans multiple stores:
-   * - platform_driver: Almost Anything collects & delivers (default)
-   * - courier_partner: courier partners
-   * - seller_self: each shop delivers their own lines (advanced)
+   * Almost Anything collects from each store and delivers to the customer.
    */
   multiStoreMode: DeliveryFulfillmentMode;
 }
 
 export const DEFAULT_DELIVERY_ROUTING: DeliveryRoutingPolicy = {
-  singleStoreMode: "seller_self",
+  singleStoreMode: "platform_driver",
   multiStoreMode: "platform_driver",
 };
 
 export function mergeDeliveryRouting(
   partial?: Partial<DeliveryRoutingPolicy> | null,
 ): DeliveryRoutingPolicy {
-  return {
-    singleStoreMode: partial?.singleStoreMode ?? DEFAULT_DELIVERY_ROUTING.singleStoreMode,
-    multiStoreMode: partial?.multiStoreMode ?? DEFAULT_DELIVERY_ROUTING.multiStoreMode,
-  };
+  void partial;
+  return { ...DEFAULT_DELIVERY_ROUTING };
 }
 
 export function resolveDeliveryMode(
@@ -68,7 +84,7 @@ export function resolveDeliveryMode(
 export const DELIVERY_MODE_LABELS: Record<DeliveryFulfillmentMode, string> = {
   seller_self: "Store delivers",
   platform_driver: "Almost Anything drivers",
-  courier_partner: "Courier partners",
+  courier_partner: "Almost Anything delivery",
 };
 
 export const DELIVERY_STATUS_LABELS: Record<DeliveryJobStatus, string> = {

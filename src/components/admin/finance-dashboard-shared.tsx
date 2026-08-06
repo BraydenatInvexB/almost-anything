@@ -8,13 +8,13 @@ export const FINANCE_TABS: { id: FinanceTab; label: string }[] = [
   { id: "expenses", label: "Expenses" },
   { id: "payables", label: "Accounts payable" },
   { id: "refunds", label: "Refunds" },
-  { id: "shipping", label: "Courier costs" },
+  { id: "shipping", label: "Delivery costs" },
   { id: "tax", label: "Tax & VAT" },
 ];
 
 export const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
   procurement: "Procurement",
-  shipping: "Shipping & couriers",
+  shipping: "Shipping & delivery",
   marketing: "Marketing",
   payroll: "Payroll",
   operations: "Operations",

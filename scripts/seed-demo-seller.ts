@@ -108,7 +108,7 @@ async function ensureSeller(userId: string): Promise<string> {
     status: "approved",
     plan: "growth_50",
     subscription_status: "trial",
-    preferred_couriers: ["aramex", "pudo"],
+    preferred_couriers: ["almost_anything"],
     metadata: { demo: true, seededAt: new Date().toISOString() },
   };
 

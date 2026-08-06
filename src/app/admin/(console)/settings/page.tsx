@@ -1,5 +1,5 @@
 import { getCurrentStaff, getSettings, getPlatformExtendedConfig, isAdminLiveMode } from "@/services/admin-service";
-import { can, staffCan } from "@/config/rbac";
+import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { PageHeader } from "@/components/admin/ui";
 import { SettingsConsole } from "@/components/admin/SettingsConsole";
@@ -16,7 +16,7 @@ export default async function AdminSettingsPage() {
     <>
       <PageHeader
         title="Platform Settings"
-        subtitle="Configure store identity, pricing, tax, courier partners, and automation."
+        subtitle="Configure store identity, pricing, tax, Almost Anything delivery, and automation."
         breadcrumbs={[
           { label: "Admin", href: "/admin" },
           { label: "Settings" },

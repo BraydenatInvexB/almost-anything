@@ -33,8 +33,8 @@ export function ProductFormPricingSection({
         <Field label="Markup %">
           <input type="number" className="input" value={form.markup_percent} onChange={(e) => update("markup_percent", e.target.value)} />
         </Field>
-        <Field label="Quantity">
-          <input type="number" className="input" value={form.quantity} onChange={(e) => update("quantity", e.target.value)} />
+        <Field label="Total stock" hint="Calculated from JHB, DBN, and CPT below.">
+          <input type="number" className="input bg-neutral-50" value={form.quantity} readOnly />
         </Field>
         <Field label="Stock status" hint="Sets availability and whether the item ships from SA or internationally.">
           <select
@@ -54,7 +54,7 @@ export function ProductFormPricingSection({
         </Field>
         <Field label="Stock origin" hint="Auto-set from stock status — override if needed.">
           <select className="input" value={form.stock_origin} onChange={(e) => update("stock_origin", e.target.value)}>
-            <option value="sa_warehouse">South Africa warehouse</option>
+            <option value="sa_warehouse">Local fulfilment hubs</option>
             <option value="overseas">Overseas / international supplier</option>
           </select>
         </Field>

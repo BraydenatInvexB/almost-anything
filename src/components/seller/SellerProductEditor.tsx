@@ -7,6 +7,7 @@ import { ProductEnrichmentEditor } from "@/components/admin/ProductEnrichmentEdi
 import { ProductVariantsEditor } from "@/components/admin/ProductVariantsEditor";
 import { ProductStorefrontPreview } from "@/components/products/ProductStorefrontPreview";
 import { ProductFormSpecialSection } from "@/components/admin/ProductFormSpecialSection";
+import { ProductLocationInventoryField } from "@/components/product/ProductLocationInventoryField";
 import { BtnPrimary, BtnSecondary } from "@/components/admin/ui";
 import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
 import { STORE_CATEGORIES } from "@/config/categories";
@@ -42,6 +43,13 @@ import {
   parseDeliverySizeFromMetadata,
   type DeliverySize,
 } from "@/lib/delivery/size";
+import {
+  EMPTY_LOCATION_INVENTORY,
+  locationInventoryLabel,
+  parseLocationInventory,
+  totalLocationStock,
+  type ProductLocationInventory,
+} from "@/lib/product/location-inventory";
 
 type EditorMode = "create" | "edit";
 
@@ -83,8 +91,10 @@ export function SellerProductEditor({
       ? String(Number(product.markup_percent) || shipping.defaultMarkupPercent)
       : String(shipping.defaultMarkupPercent),
   );
-  const [quantity, setQuantity] = useState(
-    product ? String(Number(product.stock_quantity) || 0) : "",
+  const [locationInventory, setLocationInventory] = useState<ProductLocationInventory>(() =>
+    product
+      ? parseLocationInventory(product.metadata, Number(product.stock_quantity) || 0)
+      : { ...EMPTY_LOCATION_INVENTORY },
   );
   const [category, setCategory] = useState(
     product?.category ?? STORE_CATEGORIES[0]?.slug ?? "general",
@@ -152,7 +162,8 @@ export function SellerProductEditor({
       costPrice: cost,
       markupPercent: markup,
       retailPrice: retail,
-      stockQuantity: Number(quantity) || 0,
+      stockQuantity: totalLocationStock(locationInventory),
+      stockLocations: locationInventory,
       category,
       imageUrls: images,
       description: description || undefined,
@@ -197,7 +208,7 @@ export function SellerProductEditor({
     setName("");
     setCostPrice("");
     setMarkupPercent(String(shipping.defaultMarkupPercent));
-    setQuantity("");
+    setLocationInventory({ ...EMPTY_LOCATION_INVENTORY });
     setDescription("");
     setImages([]);
     setDelivery({ customerPaysDelivery: true, deliveryFeeZar: 100 });
@@ -274,7 +285,7 @@ export function SellerProductEditor({
       <SellerPricingFields
         costPrice={costPrice}
         markupPercent={markupPercent}
-        quantity={quantity}
+        quantity={totalLocationStock(locationInventory)}
         deliveryDaysMin={deliveryDaysMin}
         deliveryDaysMax={deliveryDaysMax}
         deliverySize={deliverySize}
@@ -282,12 +293,16 @@ export function SellerProductEditor({
         shipping={shipping}
         onCostChange={setCostPrice}
         onMarkupChange={setMarkupPercent}
-        onQuantityChange={setQuantity}
         onDeliveryDaysChange={(key, value) =>
           key === "min" ? setDeliveryDaysMin(value) : setDeliveryDaysMax(value)
         }
         onDeliverySizeChange={setDeliverySize}
         onDeliveryChange={(patch) => setDelivery((prev) => ({ ...prev, ...patch }))}
+      />
+
+      <ProductLocationInventoryField
+        value={locationInventory}
+        onChange={setLocationInventory}
       />
 
       <ProductFormSpecialSection
@@ -309,7 +324,7 @@ export function SellerProductEditor({
         images={images}
         enrichment={enrichment}
         variants={variants}
-        stockLabel={Number(quantity) > 0 ? "In stock" : "Out of stock"}
+        stockLabel={locationInventoryLabel(locationInventory)}
       />
 
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">

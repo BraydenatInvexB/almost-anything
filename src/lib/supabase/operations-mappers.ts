@@ -96,6 +96,13 @@ export function mapCampaignRow(row: Record<string, unknown>): Campaign {
     audience: String(row.audience),
     startsAt: row.starts_at ? String(row.starts_at) : new Date().toISOString(),
     endsAt: row.ends_at ? String(row.ends_at) : undefined,
+    storefrontEnabled: Boolean(row.storefront_enabled),
+    storefrontLabel: row.storefront_label ? String(row.storefront_label) : undefined,
+    storefrontSlug: row.storefront_slug ? String(row.storefront_slug) : undefined,
+    storefrontProductSlugs: Array.isArray(row.storefront_product_slugs)
+      ? row.storefront_product_slugs.map(String)
+      : [],
+    storefrontOrder: Number(row.storefront_order ?? 0),
     reach: Number(row.reach),
     clicks: Number(row.clicks),
     createdAt: String(row.created_at),

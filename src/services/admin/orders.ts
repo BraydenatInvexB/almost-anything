@@ -21,7 +21,7 @@ export function enrichOrderSummary(o: AdminOrderSummary): AdminOrderSummary {
   };
 }
 
-const COURIERS_DEMO = ["The Courier Guy", "Fastway", "Aramex"];
+const COURIERS_DEMO = ["Almost Anything Delivery"];
 const PAYMENTS_DEMO = ["Credit / debit card", "Instant EFT", "Demo checkout"];
 
 function buildDemoOrders(): AdminOrderSummary[] {

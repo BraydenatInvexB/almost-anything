@@ -11,6 +11,16 @@ export interface Campaign {
   audience: string;
   startsAt: string;
   endsAt?: string;
+  /** When enabled, the campaign appears as a scheduled collection in the storefront tab row. */
+  storefrontEnabled: boolean;
+  /** Short, customer-facing label such as "Father's Day". */
+  storefrontLabel?: string;
+  /** Stable URL key used by /products?event=. */
+  storefrontSlug?: string;
+  /** Product slugs included in the promotional collection. */
+  storefrontProductSlugs: string[];
+  /** Lower values are shown first when more than one promotion is active. */
+  storefrontOrder: number;
   reach: number;
   clicks: number;
   createdAt: string;

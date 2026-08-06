@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCurrentStaff, getAdminOrder, getOrderProcurement, listAdminCouriers } from "@/services/admin-service";
+import { getCurrentStaff, getAdminOrder, getOrderProcurement } from "@/services/admin-service";
 import { listReturnsByOrder } from "@/lib/admin/operations-persistence";
 import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
@@ -28,7 +28,7 @@ export default async function AdminOrderDetailPage({
   if (!staff || !staffCan(staff, "orders.view")) return <AccessDenied feature="orders" />;
 
   const { id } = await params;
-  const [order, couriers] = await Promise.all([getAdminOrder(id), listAdminCouriers()]);
+  const order = await getAdminOrder(id);
   if (!order) notFound();
 
   const canManage = staffCan(staff, "orders.manage");
@@ -83,7 +83,7 @@ export default async function AdminOrderDetailPage({
               </div>
               {order.shippingInternalCost != null && order.shippingInternalCost > 0 && (
                 <div className="flex justify-between py-1 text-xs text-neutral-400">
-                  <span>Internal courier cost</span>
+                  <span>Internal delivery cost</span>
                   <span>{formatCurrency(order.shippingInternalCost, order.currency)}</span>
                 </div>
               )}
@@ -109,15 +109,13 @@ export default async function AdminOrderDetailPage({
             </div>
           </Panel>
 
-          <Panel title="Shipping & tracking" description="Carrier and outbound tracking for the customer.">
+          <Panel title="Delivery & tracking" description="Almost Anything delivery progress and customer tracking.">
             <div className="p-5">
               <OrderDetailActions
                 orderId={order.id}
                 initialStatus={order.status}
-                initialCarrier={order.carrier ?? order.courierName ?? ""}
                 initialTracking={order.trackingNumber}
                 canManage={canManage}
-                couriers={couriers}
               />
             </div>
           </Panel>
@@ -157,7 +155,7 @@ export default async function AdminOrderDetailPage({
                   </span>
                   <p className="mt-1 text-xs text-neutral-500">{fulfillment.description}</p>
                 </DetailItem>
-                <DetailItem label="Courier selected">{order.courierName ?? order.carrier ?? "—"}</DetailItem>
+                <DetailItem label="Delivery provider">Almost Anything Delivery</DetailItem>
                 <DetailItem label="Payment method">{order.paymentMethod}</DetailItem>
                 <DetailItem label="Tracking">{order.trackingNumber ?? "Not assigned"}</DetailItem>
               </DetailGrid>

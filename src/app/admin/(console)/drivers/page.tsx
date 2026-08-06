@@ -1,63 +1,88 @@
-import { listDrivers } from "@/services/delivery/drivers";
-import { AdminDriversActions } from "@/components/admin/AdminDriversActions";
 import Link from "next/link";
+import { CheckCircle2, Clock3, Route, Truck } from "lucide-react";
+import { AccessDenied } from "@/components/admin/AccessDenied";
+import { DriverOperationsDesk } from "@/components/admin/DriverOperationsDesk";
+import { PageHeader, StatCard } from "@/components/admin/ui";
+import { staffCan } from "@/config/rbac";
+import { getCurrentStaff } from "@/services/admin-service";
+import { listDrivers } from "@/services/delivery/drivers";
+import { listDeliveryJobs } from "@/services/delivery/jobs";
+
+const ACTIVE_DELIVERY_STATUSES = new Set(["assigned", "collecting", "out_for_delivery"]);
 
 export default async function AdminDriversPage() {
-  const drivers = await listDrivers();
-  const pending = drivers.filter((d) => d.status === "pending").length;
-  const active = drivers.filter((d) => d.status === "active").length;
+  const staff = await getCurrentStaff();
+  if (!staff || !staffCan(staff, "orders.view")) {
+    return <AccessDenied feature="driver operations" />;
+  }
+
+  const [drivers, jobs] = await Promise.all([
+    listDrivers(),
+    listDeliveryJobs({ mode: "platform_driver", limit: 200 }),
+  ]);
+  const canManage = staffCan(staff, "orders.manage");
+  const activeJobs = jobs.filter((job) => ACTIVE_DELIVERY_STATUSES.has(job.status));
+  const busyDriverIds = new Set(activeJobs.map((job) => job.driverId).filter(Boolean));
+  const readyDrivers = drivers.filter(
+    (driver) => driver.status === "active" && !busyDriverIds.has(driver.id),
+  ).length;
+  const driversOnJobs = drivers.filter(
+    (driver) => driver.status === "active" && busyDriverIds.has(driver.id),
+  ).length;
+  const pendingDrivers = drivers.filter((driver) => driver.status === "pending").length;
+  const waitingJobs = jobs.filter(
+    (job) => job.status === "ready_for_driver" && !job.driverId,
+  ).length;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-neutral-900">Drivers</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          People who sign up at /driver to deliver multi-store orders in their province. Approve them
-          here before they can claim jobs.
-        </p>
+    <>
+      <PageHeader
+        title="Driver operations"
+        subtitle="Approve drivers, check delivery coverage, monitor current workloads and assign orders from one dispatch workspace."
+        breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Driver operations" }]}
+        action={
+          <Link
+            href="/admin/deliveries"
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-800 shadow-sm transition hover:bg-neutral-50"
+          >
+            <Route className="h-4 w-4" />
+            All deliveries
+          </Link>
+        }
+      />
+
+      <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard
+          label="Ready to assign"
+          value={String(readyDrivers)}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          accent="bg-emerald-600"
+          hint="Active drivers without a current job"
+        />
+        <StatCard
+          label="On a delivery"
+          value={String(driversOnJobs)}
+          icon={<Truck className="h-4 w-4" />}
+          accent="bg-neutral-950"
+          hint="Assigned, collecting or on the way"
+        />
+        <StatCard
+          label="Applications"
+          value={String(pendingDrivers)}
+          icon={<Clock3 className="h-4 w-4" />}
+          accent="bg-amber-500"
+          hint="Waiting for review and verification"
+        />
+        <StatCard
+          label="Waiting for driver"
+          value={String(waitingJobs)}
+          icon={<Route className="h-4 w-4" />}
+          accent="bg-brand"
+          hint="Orders ready to be dispatched"
+        />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Pending approval</p>
-          <p className="mt-1 text-3xl font-black">{pending}</p>
-        </div>
-        <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Active drivers</p>
-          <p className="mt-1 text-3xl font-black">{active}</p>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
-        {drivers.length === 0 ? (
-          <div className="p-10 text-center text-sm text-neutral-500">
-            No drivers yet. Share <span className="font-mono">/driver/register</span> to invite signups.
-          </div>
-        ) : (
-          <ul className="divide-y divide-neutral-100">
-            {drivers.map((driver) => (
-              <li key={driver.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-semibold text-neutral-900">{driver.fullName}</p>
-                  <p className="text-sm text-neutral-600">
-                    {driver.email}
-                    {driver.phone ? ` · ${driver.phone}` : ""}
-                  </p>
-                  <p className="mt-1 text-xs text-neutral-500">
-                    {driver.province} · {driver.status}
-                    {driver.vehicleNotes ? ` · ${driver.vehicleNotes}` : ""}
-                  </p>
-                  <p className="mt-1 text-xs font-medium capitalize text-neutral-500">Verification: {driver.verificationStatus}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Link href={`/admin/drivers/${driver.id}`} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold hover:bg-neutral-50">Review application</Link>
-                  <AdminDriversActions driverId={driver.id} status={driver.status} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+      <DriverOperationsDesk drivers={drivers} jobs={jobs} canManage={canManage} />
+    </>
   );
 }

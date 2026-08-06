@@ -176,7 +176,7 @@ export function ReturnDetailActions({
           </label>
           <textarea
             className="input mt-2 min-h-[72px] w-full"
-            placeholder="Inspection notes, courier reference…"
+            placeholder="Inspection notes, collection reference…"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />

@@ -15,6 +15,7 @@ import {
   summarizeOrderDeliverySize,
   type DeliverySize,
 } from "@/lib/delivery/size";
+import { resolveCollectionStopsForOrders } from "@/services/delivery/route-manifest";
 
 type ServiceClient = SupabaseClient<Database>;
 
@@ -99,6 +100,8 @@ export async function createDeliveryJobForOrder(
 
   const singleSellerId =
     uniqueSourceCount === 1 && sellerIds.size === 1 ? [...sellerIds][0]! : null;
+  const collectionStops =
+    (await resolveCollectionStopsForOrders(supabase, [input.orderId])).get(input.orderId) ?? [];
 
   const row = {
     order_id: input.orderId,
@@ -122,14 +125,15 @@ export async function createDeliveryJobForOrder(
       uniqueSellerCount: sellerIds.size,
       uniqueFulfillmentSourceCount: uniqueSourceCount,
       sellerIds: [...sellerIds],
-      courierId: input.payload.courierId ?? null,
-      courierName: input.payload.courierName ?? null,
+      courierId: "almost_anything",
+      courierName: "Almost Anything Delivery",
       deliverySize: sizeSummary.size,
       deliverySizeLabel: sizeSummary.label,
       vehicleHint: sizeSummary.vehicleHint,
       mayNeedTwoPeople: sizeSummary.mayNeedTwoPeople,
       itemSizes,
-    } as Json,
+      collectionStops,
+    } as unknown as Json,
   };
 
   const { data, error } = await supabase

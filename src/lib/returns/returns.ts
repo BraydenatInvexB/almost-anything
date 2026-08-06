@@ -16,7 +16,7 @@ export const RETURN_REASONS: { code: ReturnReasonCode; label: string }[] = [
 ];
 
 export const RETURN_METHODS = [
-  { value: "courier_pickup", label: "Courier pickup (prepaid label)" },
+  { value: "courier_pickup", label: "Almost Anything collection" },
   { value: "drop_off", label: "Drop off at collection point" },
   { value: "mail_in", label: "Mail in (label provided)" },
 ] as const;

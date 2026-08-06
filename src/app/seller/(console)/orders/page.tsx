@@ -61,7 +61,7 @@ function SellerOrderRow({ order }: { order: SellerOrderSummary }) {
                 ? "Action required: you fulfil and deliver this order"
                 : order.delivery.mode === "platform_driver"
                   ? "Almost Anything is coordinating this delivery"
-                  : "An approved courier partner is coordinating this delivery"}
+                  : "Almost Anything is coordinating this delivery"}
             </p>
             <p className="mt-1 text-xs opacity-75">
               {order.isSellerDelivery

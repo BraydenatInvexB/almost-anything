@@ -8,8 +8,8 @@ export function SellerDeliveryPartnersPanel({
   couriers,
   shipping,
   preferredCourierIds = [],
-  title = "Delivery partners",
-  description = "Active couriers configured by the platform for customer orders.",
+  title = "Delivery fulfilment",
+  description = "Almost Anything coordinates delivery for every customer order.",
 }: {
   couriers: SellerPlatformCourier[];
   shipping: SellerShippingContext;
@@ -55,7 +55,7 @@ export function SellerDeliveryPartnersPanel({
           })}
         </ul>
       ) : (
-        <p className="mt-4 text-sm text-neutral-500">No delivery partners are enabled yet.</p>
+        <p className="mt-4 text-sm text-neutral-500">Almost Anything delivery is currently unavailable.</p>
       )}
     </Card>
   );

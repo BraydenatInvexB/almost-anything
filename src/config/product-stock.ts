@@ -1,4 +1,9 @@
 import type { StockOrigin } from "@/lib/admin/operations-types";
+import {
+  locationInventoryLabel,
+  parseLocationInventory,
+  totalLocationStock,
+} from "@/lib/product/location-inventory";
 
 export type ProductStockStatus =
   | "in_stock"
@@ -46,7 +51,12 @@ export function getWarehouseBadgeLabel(status: string, metadata?: unknown): stri
     (status === "available_international" || status === "sourced" ? "overseas" : "sa_warehouse");
 
   if (origin === "sa_warehouse" || status === "in_stock" || status === "low_stock") {
-    return "South Africa warehouse";
+    const inventory = parseLocationInventory(metadata);
+    return totalLocationStock(inventory) > 0
+      ? locationInventoryLabel(inventory)
+      : status === "out_of_stock"
+        ? "Out of stock"
+        : "In stock in JHB";
   }
   return "International warehouse";
 }
@@ -82,15 +92,16 @@ export function getStockAvailabilityMessage(
   status: string,
   deliveryDaysMin: number,
   deliveryDaysMax: number,
+  metadata?: unknown,
 ): string {
   switch (status) {
     case "in_stock":
-      return `In stock, ships in ${deliveryDaysMin} to ${deliveryDaysMax} days`;
+      return `${getWarehouseBadgeLabel(status, metadata)}, ships in ${deliveryDaysMin} to ${deliveryDaysMax} days`;
     case "available_international":
     case "sourced":
       return `In stock (international warehouse) — ships in ${deliveryDaysMin} to ${deliveryDaysMax} days`;
     case "low_stock":
-      return `Limited stock — ships in ${deliveryDaysMin} to ${deliveryDaysMax} days`;
+      return `Limited stock · ${getWarehouseBadgeLabel(status, metadata)} · ships in ${deliveryDaysMin} to ${deliveryDaysMax} days`;
     case "out_of_stock":
       return "Currently out of stock";
     default:

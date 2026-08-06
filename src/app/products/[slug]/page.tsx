@@ -147,7 +147,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
               <p className={`mt-2 flex items-center gap-2 text-sm font-medium ${product.stock_status === "out_of_stock" ? "text-neutral-500" : "text-emerald-700"}`}>
                 <span className={`h-2 w-2 rounded-full ${product.stock_status === "out_of_stock" ? "bg-neutral-400" : "bg-emerald-500"}`} />
-                {getStockAvailabilityMessage(product.stock_status, product.delivery_days_min, product.delivery_days_max)}
+                {getStockAvailabilityMessage(product.stock_status, product.delivery_days_min, product.delivery_days_max, product.metadata)}
               </p>
             </div>
 

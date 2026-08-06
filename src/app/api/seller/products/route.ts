@@ -56,6 +56,12 @@ const enrichmentSchema = z.object({
   summary: z.string().optional(),
 });
 
+const stockLocationsSchema = z.object({
+  jhb: z.number().int().min(0),
+  dbn: z.number().int().min(0),
+  cpt: z.number().int().min(0),
+});
+
 const productWriteSchema = z
   .object({
     name: z.string().min(2),
@@ -63,6 +69,7 @@ const productWriteSchema = z
     markupPercent: z.number().min(0).max(500),
     retailPrice: z.number().min(0).optional(),
     stockQuantity: z.number().int().min(0),
+    stockLocations: stockLocationsSchema,
     category: z.string().min(1),
     imageUrls: z.array(z.string()).default([]),
     description: z.string().optional(),
@@ -103,12 +110,14 @@ const patchSchema = z
   .object({
     id: z.string().uuid(),
     stockQuantity: z.number().int().min(0).optional(),
+    stockLocations: stockLocationsSchema.optional(),
     listingAction: z.enum(["draft", "list"]).optional(),
     product: productWriteSchema.optional(),
   })
   .refine(
     (data) =>
       data.stockQuantity !== undefined ||
+      data.stockLocations !== undefined ||
       data.listingAction !== undefined ||
       data.product !== undefined,
     { message: "No update specified" },
@@ -191,16 +200,23 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ ok: true, product });
     }
 
-    if (parsed.data.stockQuantity !== undefined) {
+    if (parsed.data.stockLocations !== undefined) {
       if (!sellerCan(seller, "inventory.manage")) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
       const product = await updateSellerProductStock(
         seller.id,
         parsed.data.id,
-        parsed.data.stockQuantity,
+        parsed.data.stockLocations,
       );
       return NextResponse.json({ ok: true, product });
+    }
+
+    if (parsed.data.stockQuantity !== undefined) {
+      return NextResponse.json(
+        { error: "Stock must be allocated to JHB, DBN, or CPT." },
+        { status: 400 },
+      );
     }
 
     if (parsed.data.listingAction) {

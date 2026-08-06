@@ -3,6 +3,7 @@ import { listDeliveryJobs } from "@/services/delivery/jobs";
 import { AdminDeliveriesActions } from "@/components/admin/AdminDeliveriesActions";
 import { listDrivers } from "@/services/delivery/drivers";
 import type { DeliveryFulfillmentMode, DeliveryJobStatus } from "@/lib/delivery/types";
+import { DeliveryRouteManifest } from "@/components/delivery/DeliveryRouteManifest";
 
 const FILTERS = [
   { href: "/admin/deliveries", label: "All" },
@@ -96,48 +97,55 @@ export default async function AdminDeliveriesPage({
             {jobs.map((job) => (
               <li
                 key={job.id}
-                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="space-y-4 p-4 sm:p-5"
               >
-                <div className="min-w-0">
-                  <p className="font-semibold text-neutral-900">{job.orderNumber}</p>
-                  <p className="mt-0.5 text-sm text-neutral-600">
-                    {job.customerName}
-                    {job.city ? ` · ${job.city}` : ""}
-                    {job.province ? ` · ${job.province}` : ""}
-                  </p>
-                  <p className="mt-1 truncate text-xs text-neutral-500">{job.itemSummary}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <span className="inline-flex rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-semibold text-neutral-700">
-                      {job.statusLabel}
-                    </span>
-                    <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
-                      {job.modeLabel}
-                    </span>
-                  </div>
-                  {job.deliverySize !== "small" ? (
-                    <p className="mt-2 text-[11px] text-neutral-500">
-                      {job.deliverySizeLabel} — {job.vehicleHint}
-                      {job.mayNeedTwoPeople ? " (2 people recommended)" : ""}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-neutral-900">{job.orderNumber}</p>
+                      <span className="inline-flex rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-semibold text-neutral-700">
+                        {job.statusLabel}
+                      </span>
+                      <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+                        {job.modeLabel}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-neutral-600">
+                      {job.customerName}
+                      {job.customerPhone ? ` · ${job.customerPhone}` : ""}
+                      {job.city ? ` · ${job.city}` : ""}
+                      {job.province ? ` · ${job.province}` : ""}
                     </p>
-                  ) : null}
-                  {job.driverId ? (
+                    <p className="mt-1 truncate text-xs text-neutral-500">{job.itemSummary}</p>
                     <p className="mt-2 text-xs font-medium text-neutral-700">
-                      Driver: {drivers.find((driver) => driver.id === job.driverId)?.fullName ?? "Assigned driver"}
+                      {job.collectionStops.length} store collection{job.collectionStops.length === 1 ? "" : "s"}
+                      {job.driverId
+                        ? ` · Driver: ${drivers.find((driver) => driver.id === job.driverId)?.fullName ?? "Assigned driver"}`
+                        : " · No driver assigned"}
                     </p>
-                  ) : null}
+                    {job.deliverySize !== "small" ? (
+                      <p className="mt-2 text-[11px] text-neutral-500">
+                        {job.deliverySizeLabel} · {job.vehicleHint}
+                        {job.mayNeedTwoPeople ? " · 2 people recommended" : ""}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="shrink-0">
+                    <AdminDeliveriesActions
+                      jobId={job.id}
+                      status={job.status}
+                      assignable={job.mode === "platform_driver"}
+                      assignedDriverId={job.driverId}
+                      drivers={activeDrivers
+                        .filter((driver) => !job.province || driver.province === job.province)
+                        .map((driver) => ({ id: driver.id, name: driver.fullName, province: driver.province }))}
+                    />
+                    {job.status === "delivered" && job.proofRecipientName ? (
+                      <p className="mt-2 text-xs font-medium text-emerald-700">Signed by {job.proofRecipientName}</p>
+                    ) : null}
+                  </div>
                 </div>
-                <AdminDeliveriesActions
-                  jobId={job.id}
-                  status={job.status}
-                  assignable={job.mode === "platform_driver"}
-                  assignedDriverId={job.driverId}
-                  drivers={activeDrivers
-                    .filter((driver) => !job.province || driver.province === job.province)
-                    .map((driver) => ({ id: driver.id, name: driver.fullName, province: driver.province }))}
-                />
-                {job.status === "delivered" && job.proofRecipientName ? (
-                  <p className="text-xs text-emerald-700">Signed by {job.proofRecipientName}</p>
-                ) : null}
+                <DeliveryRouteManifest job={job} collapsible />
               </li>
             ))}
           </ul>

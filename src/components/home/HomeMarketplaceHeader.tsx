@@ -8,27 +8,39 @@ import { useAuth } from "@/context/AuthProvider";
 import { useCart } from "@/context/CartProvider";
 import { useFavorites } from "@/context/FavoritesProvider";
 import { SiteLogo } from "@/components/layout/SiteLogo";
+import type { StorefrontPromotion } from "@/lib/marketing/storefront-promotions";
 
-const TABS = [
+const DEFAULT_TABS = [
   { label: "All", href: "/products" },
   { label: "New", href: "/products?sort=newest" },
   { label: "Deals", href: "/products?deals=true" },
 ] as const;
 
-export function HomeMarketplaceHeader() {
+export function HomeMarketplaceHeader({
+  promotions,
+}: {
+  promotions: StorefrontPromotion[];
+}) {
   const router = useRouter();
   const { itemCount } = useCart();
   const { favoriteCount } = useFavorites();
   const { user } = useAuth();
+  const tabs = [
+    ...DEFAULT_TABS,
+    ...promotions.map((promotion) => ({
+      label: promotion.label,
+      href: `/products?event=${encodeURIComponent(promotion.slug)}`,
+    })),
+  ];
 
   return (
     <header className="border-b border-neutral-100 px-5 py-5 sm:px-7 lg:px-9">
       <div className="flex flex-wrap items-center gap-4">
         <SiteLogo priority className="min-[1100px]:hidden" />
 
-        <nav className="order-4 flex rounded-full bg-neutral-50 p-1 min-[1100px]:order-none">
-          {TABS.map((tab, index) => (
-            <Link key={tab.label} href={tab.href} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${index === 0 ? "bg-white text-neutral-950 shadow-sm" : "text-neutral-500 hover:text-neutral-950"}`}>
+        <nav className="order-4 flex max-w-full overflow-x-auto rounded-full bg-neutral-50 p-1 min-[1100px]:order-none">
+          {tabs.map((tab, index) => (
+            <Link key={tab.href} href={tab.href} className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${index === 0 ? "bg-white text-neutral-950 shadow-sm" : "text-neutral-500 hover:text-neutral-950"}`}>
               {tab.label}
             </Link>
           ))}

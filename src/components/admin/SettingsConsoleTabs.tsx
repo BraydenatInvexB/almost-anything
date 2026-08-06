@@ -5,7 +5,6 @@ import {
   SettingsConsoleField as Field,
   SettingsConsoleToggle as Toggle,
 } from "@/components/admin/settings-console-ui";
-import { SettingsConsoleCouriersTab } from "@/components/admin/SettingsConsoleCouriersTab";
 import type { PlatformSettings } from "@/types/database";
 import type { ExtendedPlatformConfig } from "@/lib/admin/operations-types";
 
@@ -14,14 +13,8 @@ export type SettingsConsoleTabPanelsProps = {
   form: PlatformSettings;
   extConfig: ExtendedPlatformConfig;
   disabled: boolean;
-  canManage: boolean;
-  newCourier: { name: string; baseCost: string; etaLabel: string; regions: string };
   update: <K extends keyof PlatformSettings>(key: K, value: PlatformSettings[K]) => void;
   setExtConfig: React.Dispatch<React.SetStateAction<ExtendedPlatformConfig>>;
-  setState: React.Dispatch<React.SetStateAction<"idle" | "saving" | "saved">>;
-  onNewCourierChange: (value: { name: string; baseCost: string; etaLabel: string; regions: string }) => void;
-  onAddCourier: (e: React.FormEvent) => void;
-  onRemoveCourier: (id: string) => void;
 };
 
 export function SettingsConsoleTabPanels({
@@ -29,14 +22,8 @@ export function SettingsConsoleTabPanels({
   form,
   extConfig,
   disabled,
-  canManage,
-  newCourier,
   update,
   setExtConfig,
-  setState,
-  onNewCourierChange,
-  onAddCourier,
-  onRemoveCourier,
 }: SettingsConsoleTabPanelsProps) {
   if (tab === "general") {
     return (
@@ -152,55 +139,33 @@ export function SettingsConsoleTabPanels({
         </Panel>
         <Panel
           title="Who delivers?"
-          description="Keep it simple: one store → shop delivers. Multiple stores → Almost Anything drivers. Change anytime."
+          description="Almost Anything coordinates collection and delivery for every customer order."
         >
           <div className="grid gap-4 p-5 sm:grid-cols-2">
             <Field
-              label="Customer buys from one store"
-              hint="Usually the shop owner delivers (no courier partners)."
+              label="Single-store orders"
+              hint="Almost Anything collects from the seller and delivers to the customer."
             >
               <select
-                disabled={disabled}
+                disabled
                 className="input disabled:opacity-60"
-                value={extConfig.deliveryRouting?.singleStoreMode ?? "seller_self"}
-                onChange={(e) =>
-                  setExtConfig((c) => ({
-                    ...c,
-                    deliveryRouting: {
-                      ...c.deliveryRouting,
-                      singleStoreMode: e.target.value as ExtendedPlatformConfig["deliveryRouting"]["singleStoreMode"],
-                      multiStoreMode: c.deliveryRouting?.multiStoreMode ?? "platform_driver",
-                    },
-                  }))
-                }
+                value="platform_driver"
+                onChange={() => {}}
               >
-                <option value="seller_self">Store delivers</option>
-                <option value="platform_driver">Almost Anything drivers</option>
-                <option value="courier_partner">Courier partners</option>
+                <option value="platform_driver">Almost Anything Delivery</option>
               </select>
             </Field>
             <Field
-              label="Customer buys from multiple stores"
-              hint="Usually Almost Anything collects from shops and delivers to the customer."
+              label="Multi-store orders"
+              hint="Almost Anything coordinates all collections as one delivery workflow."
             >
               <select
-                disabled={disabled}
+                disabled
                 className="input disabled:opacity-60"
-                value={extConfig.deliveryRouting?.multiStoreMode ?? "platform_driver"}
-                onChange={(e) =>
-                  setExtConfig((c) => ({
-                    ...c,
-                    deliveryRouting: {
-                      ...c.deliveryRouting,
-                      singleStoreMode: c.deliveryRouting?.singleStoreMode ?? "seller_self",
-                      multiStoreMode: e.target.value as ExtendedPlatformConfig["deliveryRouting"]["multiStoreMode"],
-                    },
-                  }))
-                }
+                value="platform_driver"
+                onChange={() => {}}
               >
-                <option value="platform_driver">Almost Anything drivers</option>
-                <option value="courier_partner">Courier partners</option>
-                <option value="seller_self">Each store delivers their own items</option>
+                <option value="platform_driver">Almost Anything Delivery</option>
               </select>
             </Field>
           </div>
@@ -208,7 +173,7 @@ export function SettingsConsoleTabPanels({
         <Panel title="Delivery pricing strategy">
           <Toggle
             label="Embed delivery cost in product prices"
-            description="Customers see FREE delivery at checkout. Courier fees are built into retail prices."
+            description="Customers see FREE delivery at checkout. Almost Anything delivery costs are built into retail prices."
             checked={extConfig.embedShippingInPrice}
             disabled={disabled}
             onChange={(v) => setExtConfig((c) => ({ ...c, embedShippingInPrice: v }))}
@@ -229,21 +194,6 @@ export function SettingsConsoleTabPanels({
           />
         </Panel>
       </>
-    );
-  }
-
-  if (tab === "couriers") {
-    return (
-      <SettingsConsoleCouriersTab
-        extConfig={extConfig}
-        canManage={canManage}
-        disabled={disabled}
-        newCourier={newCourier}
-        onExtConfigChange={(updater) => setExtConfig(updater)}
-        onNewCourierChange={onNewCourierChange}
-        onAddCourier={onAddCourier}
-        onRemoveCourier={onRemoveCourier}
-      />
     );
   }
 

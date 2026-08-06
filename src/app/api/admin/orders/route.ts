@@ -56,7 +56,7 @@ export async function PATCH(request: Request) {
       if (body.carrier || body.trackingNumber) {
         update.metadata = {
           tracking: {
-            carrier: body.carrier ?? null,
+            carrier: "Almost Anything Delivery",
             trackingNumber: body.trackingNumber ?? null,
             updatedAt: new Date().toISOString(),
           },
@@ -83,7 +83,7 @@ export async function PATCH(request: Request) {
 
   await applyCheckoutOrderOperations(body.id, {
     status: body.status,
-    carrier: body.carrier,
+    carrier: "Almost Anything Delivery",
     trackingNumber: body.trackingNumber,
   });
 

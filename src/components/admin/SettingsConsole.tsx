@@ -12,7 +12,6 @@ import {
 import {
   SettingsConsoleTabPanels,
 } from "@/components/admin/SettingsConsoleTabs";
-import { buildCourierFromForm } from "@/components/admin/SettingsConsoleCouriersTab";
 
 export function SettingsConsole({
   settings,
@@ -27,12 +26,6 @@ export function SettingsConsole({
   const [form, setForm] = useState(settings);
   const [extConfig, setExtConfig] = useState(extendedConfig);
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
-  const [newCourier, setNewCourier] = useState({
-    name: "",
-    baseCost: "",
-    etaLabel: "",
-    regions: "ZA",
-  });
 
   const disabled = !canManage;
 
@@ -79,33 +72,6 @@ export function SettingsConsole({
     setTimeout(() => setState("idle"), 2500);
   }
 
-  function addCourier(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newCourier.name.trim()) return;
-    const courier = buildCourierFromForm(newCourier);
-    setExtConfig((c) => ({
-      ...c,
-      couriers: [...c.couriers.filter((x) => x.id !== courier.id), courier],
-      enabledCourierIds: c.enabledCourierIds.includes(courier.id)
-        ? c.enabledCourierIds
-        : [...c.enabledCourierIds, courier.id],
-    }));
-    setNewCourier({ name: "", baseCost: "", etaLabel: "", regions: "ZA" });
-    setState("idle");
-  }
-
-  function removeCourier(id: string) {
-    setExtConfig((c) => {
-      const couriers = c.couriers.filter((x) => x.id !== id);
-      const enabledCourierIds = c.enabledCourierIds.filter((x) => x !== id);
-      const defaultCourierId =
-        c.defaultCourierId === id
-          ? enabledCourierIds[0] ?? couriers[0]?.id ?? ""
-          : c.defaultCourierId;
-      return { ...c, couriers, enabledCourierIds, defaultCourierId };
-    });
-  }
-
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
       <nav className="flex shrink-0 flex-row gap-1 overflow-x-auto rounded-xl border border-neutral-200 bg-white p-1.5 lg:w-56 lg:flex-col lg:overflow-visible">
@@ -133,14 +99,8 @@ export function SettingsConsole({
           form={form}
           extConfig={extConfig}
           disabled={disabled}
-          canManage={canManage}
-          newCourier={newCourier}
           update={update}
           setExtConfig={setExtConfig}
-          setState={setState}
-          onNewCourierChange={setNewCourier}
-          onAddCourier={addCourier}
-          onRemoveCourier={removeCourier}
         />
 
         {canManage && (

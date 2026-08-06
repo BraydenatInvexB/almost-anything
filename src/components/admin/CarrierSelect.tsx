@@ -16,9 +16,6 @@ export function CarrierSelect({
   className?: string;
   disabled?: boolean;
 }) {
-  const known = new Set(couriers.map((c) => c.name));
-  const showLegacy = Boolean(value && !known.has(value));
-
   return (
     <select
       value={value}
@@ -26,12 +23,7 @@ export function CarrierSelect({
       disabled={disabled}
       className={className}
     >
-      <option value="">Select courier</option>
-      {showLegacy && (
-        <option value={value}>
-          {value} (saved)
-        </option>
-      )}
+      <option value="">Select delivery provider</option>
       {couriers.map((c) => (
         <option key={c.id} value={c.name}>
           {c.name}

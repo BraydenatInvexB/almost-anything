@@ -21,14 +21,13 @@ export function SellerPricingFields({
   shipping,
   onCostChange,
   onMarkupChange,
-  onQuantityChange,
   onDeliveryDaysChange,
   onDeliverySizeChange,
   onDeliveryChange,
 }: {
   costPrice: string;
   markupPercent: string;
-  quantity: string;
+  quantity: number;
   deliveryDaysMin: string;
   deliveryDaysMax: string;
   deliverySize: DeliverySize;
@@ -36,7 +35,6 @@ export function SellerPricingFields({
   shipping: SellerShippingContext;
   onCostChange: (value: string) => void;
   onMarkupChange: (value: string) => void;
-  onQuantityChange: (value: string) => void;
   onDeliveryDaysChange: (key: "min" | "max", value: string) => void;
   onDeliverySizeChange: (value: DeliverySize) => void;
   onDeliveryChange: (patch: Partial<SellerDeliverySettings>) => void;
@@ -49,16 +47,13 @@ export function SellerPricingFields({
     <div className="space-y-4">
       <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-neutral-950">Pricing & inventory</h2>
-        <p className="mt-0.5 text-xs text-neutral-500">Set your cost, markup, and stock. Customer-facing retail prices are VAT inclusive where VAT applies.</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <p className="mt-0.5 text-xs text-neutral-500">Set your cost and markup. Stock is allocated by fulfilment hub in the next section.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <ProductFormField label="Cost price (ZAR)" hint="What you pay or stock at">
             <input className="input" type="number" min="0" step="0.01" value={costPrice} onChange={(e) => onCostChange(e.target.value)} />
           </ProductFormField>
           <ProductFormField label="Markup %" hint={`Platform default ${shipping.defaultMarkupPercent}%`}>
             <input className="input" type="number" min="0" step="0.1" value={markupPercent} onChange={(e) => onMarkupChange(e.target.value)} />
-          </ProductFormField>
-          <ProductFormField label="Stock quantity">
-            <input className="input" type="number" min="0" step="1" value={quantity} onChange={(e) => onQuantityChange(e.target.value)} />
           </ProductFormField>
           <ProductFormField label="Delivery estimate (days)" className="sm:col-span-2">
             <div className="flex gap-2">
@@ -98,7 +93,7 @@ export function SellerPricingFields({
         </div>
       </section>
 
-      <PricingPreview snapshot={snapshot} quantity={Number(quantity) || 0} />
+      <PricingPreview snapshot={snapshot} quantity={quantity} />
       <p className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs leading-5 text-neutral-600">
         VAT registered sellers must account for VAT at the applicable rate and keep valid tax invoices. Sellers who are not VAT registered must not charge VAT as a separate amount.
       </p>

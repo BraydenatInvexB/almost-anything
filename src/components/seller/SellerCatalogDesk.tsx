@@ -48,7 +48,11 @@ export function SellerCatalogDesk({
   const [products, setProducts] = useState(initialProducts);
   const [editing, setEditing] = useState<SellerCatalogProduct | null>(null);
 
-  useEffect(() => setProducts(initialProducts), [initialProducts]);
+  useEffect(() => {
+    // Server refreshes replace the source catalog; mirror that new snapshot locally.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setProducts(initialProducts);
+  }, [initialProducts]);
 
   const stats = useMemo(() => {
     const pricing = aggregateCatalogPricing(products);
@@ -157,9 +161,9 @@ export function SellerCatalogDesk({
         <SellerCatalogStockTab
           products={products}
           canManage={canManageStock}
-          onUpdated={(id, qty) =>
+          onUpdated={(id, qty, metadata) =>
             setProducts((prev) =>
-              prev.map((p) => (p.id === id ? { ...p, stock_quantity: qty } : p)),
+              prev.map((p) => (p.id === id ? { ...p, stock_quantity: qty, metadata } : p)),
             )
           }
         />

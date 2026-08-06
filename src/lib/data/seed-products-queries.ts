@@ -87,6 +87,7 @@ function sortProducts(items: Product[], sort?: SortKey): Product[] {
 export interface SeedFilterOptions {
   category?: ProductCategory | string;
   query?: string;
+  slugs?: string[];
   page?: number;
   pageSize?: number;
   sort?: SortKey;
@@ -96,9 +97,13 @@ export interface SeedFilterOptions {
 }
 
 function applyFilters(options: SeedFilterOptions): Product[] {
-  const { category, query, featuredOnly, dealsOnly, section } = options;
+  const { category, query, slugs, featuredOnly, dealsOnly, section } = options;
   let results = SEEDED;
 
+  if (slugs !== undefined) {
+    const selected = new Set(slugs);
+    results = results.filter((product) => selected.has(product.slug));
+  }
   if (category && category !== "all") {
     results = results.filter((p) => p.category === category);
   }

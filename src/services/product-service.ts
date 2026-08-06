@@ -191,6 +191,10 @@ export async function getProducts(
   const { page = 1, pageSize = 12 } = options;
   const isSearch = Boolean(options.query?.trim());
 
+  if (options.slugs !== undefined && options.slugs.length === 0) {
+    return { data: [], page, pageSize, total: 0, hasMore: false };
+  }
+
   if (shouldQuerySupabase() && (isSearch || (await hasSupabaseProducts()))) {
     const result = await querySupabaseProducts(options);
     if (result) return result;

@@ -6,14 +6,16 @@ import { HomeProductRail } from "@/components/home/HomeProductRail";
 import { HomeShopSidebar } from "@/components/home/HomeShopSidebar";
 import { HomeMarketplaceHeader } from "@/components/home/HomeMarketplaceHeader";
 import { HomeBentoHero } from "@/components/home/HomeBentoHero";
+import type { StorefrontPromotion } from "@/lib/marketing/storefront-promotions";
 
 interface BoldHomeProps {
   hot: ProductCardData[];
   steals: ProductCardData[];
   fresh: ProductCardData[];
+  promotions: StorefrontPromotion[];
 }
 
-export function BoldHome({ hot, steals, fresh }: BoldHomeProps) {
+export function BoldHome({ hot, steals, fresh, promotions }: BoldHomeProps) {
   const hotSection = STOREFRONT_SECTION_BY_ID.hot;
   const stealsSection = STOREFRONT_SECTION_BY_ID.steals;
   const freshSection = STOREFRONT_SECTION_BY_ID.fresh;
@@ -23,7 +25,7 @@ export function BoldHome({ hot, steals, fresh }: BoldHomeProps) {
       <div className="home-marketplace-grid">
       <HomeShopSidebar />
       <div className="min-w-0 bg-white">
-        <HomeMarketplaceHeader />
+        <HomeMarketplaceHeader promotions={promotions} />
         <div className="flex min-w-0 flex-col gap-10 p-4 sm:p-6 lg:p-8">
         <HomeBentoHero />
 

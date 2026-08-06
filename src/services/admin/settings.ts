@@ -46,6 +46,5 @@ export async function getPlatformExtendedConfig(): Promise<ExtendedPlatformConfi
 }
 
 export async function listAdminCouriers(): Promise<{ id: string; name: string }[]> {
-  const config = await getPlatformExtendedConfig();
-  return getAllCouriers(config).map((c) => ({ id: c.id, name: c.name }));
+  return getAllCouriers().map((c) => ({ id: c.id, name: c.name }));
 }

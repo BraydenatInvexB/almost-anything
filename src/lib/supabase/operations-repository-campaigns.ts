@@ -23,6 +23,11 @@ export async function createCampaign(
       audience: input.audience,
       starts_at: input.startsAt ?? null,
       ends_at: input.endsAt ?? null,
+      storefront_enabled: input.storefrontEnabled,
+      storefront_label: input.storefrontLabel ?? null,
+      storefront_slug: input.storefrontSlug ?? null,
+      storefront_product_slugs: input.storefrontProductSlugs,
+      storefront_order: input.storefrontOrder,
     })
     .select()
     .single();
@@ -43,6 +48,13 @@ export async function updateCampaign(
   if (patch.audience !== undefined) update.audience = patch.audience;
   if (patch.startsAt !== undefined) update.starts_at = patch.startsAt;
   if (patch.endsAt !== undefined) update.ends_at = patch.endsAt;
+  if (patch.storefrontEnabled !== undefined) update.storefront_enabled = patch.storefrontEnabled;
+  if (patch.storefrontLabel !== undefined) update.storefront_label = patch.storefrontLabel;
+  if (patch.storefrontSlug !== undefined) update.storefront_slug = patch.storefrontSlug;
+  if (patch.storefrontProductSlugs !== undefined) {
+    update.storefront_product_slugs = patch.storefrontProductSlugs;
+  }
+  if (patch.storefrontOrder !== undefined) update.storefront_order = patch.storefrontOrder;
   if (patch.reach !== undefined) update.reach = patch.reach;
   if (patch.clicks !== undefined) update.clicks = patch.clicks;
 

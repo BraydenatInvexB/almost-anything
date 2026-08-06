@@ -21,6 +21,7 @@ import { STORE_CATEGORIES, getCategory } from "@/config/categories";
 import type { SortKey } from "@/lib/data/seed-products";
 import type { StorefrontSectionId } from "@/config/storefront-sections";
 import { STOREFRONT_SECTION_BY_ID } from "@/config/storefront-sections";
+import { getActiveStorefrontPromotion } from "@/lib/marketing/storefront-promotions";
 
 interface ProductsPageProps {
   searchParams: Promise<{
@@ -30,6 +31,7 @@ interface ProductsPageProps {
     sort?: string;
     deals?: string;
     section?: string;
+    event?: string;
     from?: string;
   }>;
 }
@@ -75,6 +77,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const dealsOnly = params.deals === "true";
   const sectionId = params.section as StorefrontSectionId | undefined;
   const sectionMeta = sectionId ? STOREFRONT_SECTION_BY_ID[sectionId] : undefined;
+  const eventRequested = Boolean(params.event);
+  const promotion = params.event
+    ? await getActiveStorefrontPromotion(params.event)
+    : null;
 
   const { data: products, total, hasMore } = await getProducts({
     query: params.q,
@@ -82,6 +88,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     sort: params.sort as SortKey | undefined,
     dealsOnly: dealsOnly && !sectionMeta,
     section: sectionMeta ? sectionId : undefined,
+    slugs: eventRequested ? (promotion?.productSlugs ?? []) : undefined,
     page,
     pageSize,
   });
@@ -92,18 +99,26 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       ? sectionMeta.title
       : dealsOnly
         ? "Today's Deals"
-        : activeCat?.label ?? "All Products";
+        : promotion
+          ? promotion.label
+          : eventRequested
+            ? "Promotion unavailable"
+            : activeCat?.label ?? "All Products";
 
   const subtitleBlurb =
-    activeCat?.blurb ??
-    sectionMeta?.kicker ??
-    "Almost everything you need, all in one place.";
+    promotion
+      ? `A curated selection for ${promotion.label}. Available while the event is live.`
+      : eventRequested
+        ? "This promotional event has ended or is not currently live."
+        : activeCat?.blurb ??
+          sectionMeta?.kicker ??
+          "Almost everything you need, all in one place.";
 
   const filterChips: { label: string; clearHref: string }[] = [];
   if (activeCat) {
     filterChips.push({
       label: activeCat.label,
-      clearHref: `/products${buildQuery({ q: params.q, sort: params.sort, deals: params.deals, section: params.section })}`,
+      clearHref: `/products${buildQuery({ q: params.q, sort: params.sort, deals: params.deals, section: params.section, event: params.event })}`,
     });
   }
   if (dealsOnly && !sectionMeta) {
@@ -118,6 +133,18 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       clearHref: `/products${buildQuery({ category: params.category, q: params.q, sort: params.sort })}`,
     });
   }
+  if (promotion) {
+    filterChips.push({
+      label: promotion.label,
+      clearHref: `/products${buildQuery({
+        category: params.category,
+        q: params.q,
+        sort: params.sort,
+        deals: params.deals,
+        section: params.section,
+      })}`,
+    });
+  }
 
   const fromPhoto = params.from === "photo";
 
@@ -129,7 +156,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       <header className="rounded-2xl border border-neutral-200 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            {activeCat ? (
+            {promotion ? (
+              <span className="mb-2 inline-flex items-center gap-2 rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand">
+                <span className="h-2 w-2 rounded-full bg-brand" />
+                Promotional event
+              </span>
+            ) : activeCat ? (
               <span
                 className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide"
                 style={{
@@ -208,6 +240,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                       sort: params.sort,
                       deals: params.deals,
                       section: params.section,
+                      event: params.event,
                       page: String(page - 1),
                     })}`}
                     className="inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-neutral-600 transition-colors hover:bg-white hover:text-neutral-950 hover:shadow-sm"
@@ -234,6 +267,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                       sort: params.sort,
                       deals: params.deals,
                       section: params.section,
+                      event: params.event,
                       page: String(page + 1),
                     })}`}
                     className="inline-flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#c80511]"
@@ -270,12 +304,20 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           {products.length === 0 && !params.q ? (
             <Card variant="elevated" className="mt-4 border border-dashed border-neutral-300 bg-white py-20 text-center shadow-none">
               <p className="text-lg font-semibold text-neutral-900">
-                {fromPhoto ? "Add a few words to search the catalog" : "No products in this category yet"}
+                {eventRequested
+                  ? promotion
+                    ? "No products are available in this event yet"
+                    : "This promotional event is no longer available"
+                  : fromPhoto
+                    ? "Add a few words to search the catalog"
+                    : "No products in this category yet"}
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
-                {fromPhoto
-                  ? "Your photo is saved. Type what you're looking for above to search the catalog."
-                  : "We are always sourcing new stock. Try another category or browse the full catalog."}
+                {eventRequested
+                  ? "Browse the full catalog to keep shopping."
+                  : fromPhoto
+                    ? "Your photo is saved. Type what you're looking for above to search the catalog."
+                    : "We are always sourcing new stock. Try another category or browse the full catalog."}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <Link href="/products">

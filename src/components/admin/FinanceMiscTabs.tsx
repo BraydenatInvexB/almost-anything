@@ -17,17 +17,17 @@ export function FinanceShippingTab({ data }: { data: FinanceDashboardData }) {
   return (
     <>
       <StatCard
-        label="Total internal courier cost"
+        label="Total internal delivery cost"
         value={formatCurrency(summary.shippingCosts, cur)}
         icon={<Truck className="h-4 w-4" />}
         accent="bg-neutral-800"
         hint="Embedded in product prices where configured — tracked here for margin analysis"
       />
-      <Panel title="Cost by courier" description="Internal logistics cost vs customer charge">
+      <Panel title="Delivery cost" description="Almost Anything delivery cost compared with the customer charge">
         <Table>
           <thead>
             <tr>
-              <Th>Courier</Th>
+              <Th>Provider</Th>
               <Th>Shipments</Th>
               <Th>Customer charge</Th>
               <Th className="text-right">Internal cost</Th>

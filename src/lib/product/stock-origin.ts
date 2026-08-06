@@ -26,9 +26,13 @@ export function stockStatusForOrigin(origin: StockOrigin, quantity: number): Pro
 export function warehouseBadgeFromLabel(label?: string): { text: string; isSa: boolean } | null {
   if (!label) return null;
   const lower = label.toLowerCase();
-  const isSa = lower.includes("south africa") || lower.includes("sa warehouse");
+  const isSa = lower.includes("south africa") || lower.includes("sa warehouse") || lower.includes("in stock in");
   return {
-    text: isSa ? "SA warehouse" : "International warehouse",
+    text: lower.includes("in stock in") || lower.includes("out of stock")
+      ? label
+      : isSa
+        ? "In stock in JHB"
+        : "International warehouse",
     isSa,
   };
 }

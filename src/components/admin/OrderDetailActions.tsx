@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CarrierSelect, type CourierSelectOption } from "@/components/admin/CarrierSelect";
 import { BtnPrimary, BtnSecondary, StatusBadge } from "@/components/admin/ui";
 import { ORDER_STATUS_LABELS, ORDER_STATUSES } from "@/lib/orders/order-operations";
 
@@ -11,21 +10,17 @@ const STATUS_OPTIONS = ORDER_STATUSES.filter((s) => s !== "pending");
 export function OrderDetailActions({
   orderId,
   initialStatus,
-  initialCarrier = "",
   initialTracking = "",
   canManage,
-  couriers,
 }: {
   orderId: string;
   initialStatus: string;
-  initialCarrier?: string;
   initialTracking?: string;
   canManage: boolean;
-  couriers: CourierSelectOption[];
 }) {
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
-  const [carrier, setCarrier] = useState(initialCarrier);
+  const carrier = "Almost Anything Delivery";
   const [trackingNumber, setTrackingNumber] = useState(initialTracking);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -92,12 +87,11 @@ export function OrderDetailActions({
           </select>
         </label>
         <label className="block text-xs font-bold uppercase tracking-wide text-neutral-500">
-          Carrier
-          <CarrierSelect
+          Delivery provider
+          <input
             value={carrier}
-            onChange={setCarrier}
-            couriers={couriers}
-            className="mt-1.5 h-10 w-full rounded-lg border-2 border-neutral-200 bg-white px-3 text-sm outline-none focus:border-brand"
+            readOnly
+            className="mt-1.5 h-10 w-full rounded-lg border-2 border-neutral-200 bg-neutral-100 px-3 text-sm text-neutral-700"
           />
         </label>
         <label className="block text-xs font-bold uppercase tracking-wide text-neutral-500">

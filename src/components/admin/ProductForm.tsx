@@ -16,6 +16,7 @@ import type { SupplierListing } from "@/types/supplier-sourcing";
 import { ProductFormDetailsSection } from "@/components/admin/ProductFormDetailsSection";
 import { ProductFormPricingSection } from "@/components/admin/ProductFormPricingSection";
 import { ProductFormSpecialSection } from "@/components/admin/ProductFormSpecialSection";
+import { ProductLocationInventoryField } from "@/components/product/ProductLocationInventoryField";
 import {
   StorefrontSectionToggles,
   flagsFromProduct,
@@ -39,6 +40,13 @@ import {
   type DeliverySize,
 } from "@/lib/delivery/size";
 import { getCategory } from "@/config/categories";
+import {
+  locationInventoryLabel,
+  locationInventoryMetadata,
+  parseLocationInventory,
+  totalLocationStock,
+  type ProductLocationInventory,
+} from "@/lib/product/location-inventory";
 
 interface ProductInput {
   id?: string;
@@ -109,6 +117,9 @@ export function ProductForm({
     is_deal: product?.is_deal ?? false,
   });
   const [special, setSpecial] = useState(() => initialSpecial(product));
+  const [locationInventory, setLocationInventory] = useState<ProductLocationInventory>(() =>
+    parseLocationInventory(product?.metadata, product?.quantity ?? 0),
+  );
   const [imageUrls, setImageUrls] = useState<string[]>(
     product?.image_urls ??
       parseProductGallery(product?.metadata, product?.image_url),
@@ -187,11 +198,12 @@ export function ProductForm({
 
       const sourceFields = syncSourceFromSuppliers(manualSuppliers);
       const { image_url, gallery } = splitProductGallery(imageUrls);
+      const locationStockTotal = totalLocationStock(locationInventory);
       const payload = {
         ...form,
         base_price: basePrice,
         markup_percent: markupPercent,
-        quantity: Number(form.quantity),
+        quantity: locationStockTotal,
         delivery_days_min: Number(form.delivery_days_min),
         delivery_days_max: Number(form.delivery_days_max),
         image_url,
@@ -211,8 +223,9 @@ export function ProductForm({
             supplierIntel: enrichment.supplierIntel,
             manualSuppliers,
           }),
-          quantity: Number(form.quantity),
+          quantity: locationStockTotal,
           stock_origin: form.stock_origin,
+          ...locationInventoryMetadata(locationInventory),
           gallery,
           suppliersUpdatedAt: manualSuppliers.length ? new Date().toISOString() : undefined,
           ...specialPricingMetadata(special.special_enabled ? compareAt : null),
@@ -284,6 +297,16 @@ export function ProductForm({
       />
 
       <ProductFormPricingSection form={form} update={update} />
+      {form.stock_origin === "sa_warehouse" ? (
+        <ProductLocationInventoryField
+          value={locationInventory}
+          onChange={(next) => {
+            setLocationInventory(next);
+            update("quantity", String(totalLocationStock(next)));
+            update("stock_status", totalLocationStock(next) > 0 ? "in_stock" : "out_of_stock");
+          }}
+        />
+      ) : null}
       <ProductFormSpecialSection form={special} update={updateSpecial} />
 
       <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -310,7 +333,7 @@ export function ProductForm({
         images={imageUrls}
         enrichment={enrichment}
         variants={variants}
-        stockLabel={form.stock_status === "out_of_stock" ? "Out of stock" : "In stock"}
+        stockLabel={form.stock_origin === "sa_warehouse" ? locationInventoryLabel(locationInventory) : "International warehouse"}
       />
 
       {error && <p className="text-sm text-red-600">{error}</p>}

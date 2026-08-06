@@ -79,8 +79,8 @@ export async function createOrder(
           shipping_address: payload.shippingAddress as unknown as Json,
           metadata: {
             source: "checkout",
-            courierId: payload.courierId ?? null,
-            courierName: payload.courierName ?? null,
+            courierId: "almost_anything",
+            courierName: "Almost Anything Delivery",
             shippingInternalCost: payload.shippingInternalCost ?? null,
             stockOrigin,
             promoCode: promoCode ?? null,
@@ -149,8 +149,8 @@ export async function createOrder(
           .update({
             metadata: {
               source: "checkout",
-              courierId: payload.courierId ?? null,
-              courierName: payload.courierName ?? null,
+              courierId: "almost_anything",
+              courierName: "Almost Anything Delivery",
               shippingInternalCost: payload.shippingInternalCost ?? null,
               stockOrigin,
               promoCode: promoCode ?? null,
@@ -194,8 +194,8 @@ export async function createOrder(
       itemCount: payload.items.reduce((n, i) => n + i.quantity, 0),
       createdAt: order.createdAt,
       paymentMethod: paymentLabel(payload.paymentMethod),
-      courierId: payload.courierId ?? "aramex",
-      courierName: payload.courierName ?? "Aramex",
+      courierId: "almost_anything",
+      courierName: "Almost Anything Delivery",
       stockOrigin,
       shippingAddress: {
         fullName: payload.shippingAddress.fullName,

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { COURIERS } from "@/config/couriers";
 import {
   DEFAULT_PRICING_SETTINGS,
   type StorefrontPricingSettings,
@@ -32,15 +31,4 @@ export function useStorefrontSettings() {
   }, []);
 
   return { settings, loading };
-}
-
-export function defaultCouriersFromSettings(settings: StorefrontPricingSettings | null) {
-  if (settings?.config?.couriers?.length) {
-    return settings.config.couriers.map((c) => ({
-      id: c.id,
-      name: c.name,
-      etaLabel: c.etaLabel,
-    }));
-  }
-  return COURIERS.map((c) => ({ id: c.id, name: c.name, etaLabel: c.etaLabel }));
 }

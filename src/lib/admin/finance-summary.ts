@@ -16,9 +16,7 @@ import type {
 } from "@/lib/admin/finance-types";
 
 const COURIER_INTERNAL: Record<string, number> = {
-  "The Courier Guy": 95,
-  Fastway: 75,
-  Aramex: 89,
+  "Almost Anything Delivery": 100,
 };
 
 function dayKey(iso: string) {
@@ -180,8 +178,8 @@ export function buildFinanceSummary(input: {
   }
   for (const o of activeOrders) {
     if (input.checkoutOrders.some((c) => c.orderNumber === o.orderNumber)) continue;
-    const name = o.courierName ?? "Aramex";
-    const internal = COURIER_INTERNAL[name] ?? 85;
+    const name = "Almost Anything Delivery";
+    const internal = COURIER_INTERNAL[name] ?? 100;
     const cur = courierMap.get(name) ?? {
       courier: name,
       shipments: 0,

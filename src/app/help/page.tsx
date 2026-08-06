@@ -7,7 +7,7 @@ import { HelpLiveChat } from "@/components/support/HelpLiveChat";
 
 const TOPICS = [
   { title: "Placing an order", href: "/products", body: "Browse products or request a specific item, add to cart, and check out." },
-  { title: "Shipping & delivery", href: "/help/shipping", body: "Courier options and delivery times. Delivery is included in most product prices." },
+  { title: "Shipping & delivery", href: "/help/shipping", body: "Almost Anything delivery fees, fulfilment, and delivery times." },
   { title: "Track your order", href: "/track", body: "Enter your order number any time to see exactly where your package is." },
   { title: "Returns & refunds", href: "/help/returns#start-return", body: "30 day return policy on most items. Start a return online in minutes." },
 ];

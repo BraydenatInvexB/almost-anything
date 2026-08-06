@@ -13,12 +13,10 @@ import { usePromo } from "@/context/PromoProvider";
 import { useAuth } from "@/context/AuthProvider";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { ShippingAddress } from "@/types/cart";
-import { COURIERS } from "@/config/couriers";
-import { useStorefrontSettings, defaultCouriersFromSettings } from "@/hooks/useStorefrontSettings";
+import { useStorefrontSettings } from "@/hooks/useStorefrontSettings";
 import { computeStorefrontTotals } from "@/lib/pricing/storefront-totals";
 import { PromoCodeInput } from "@/components/checkout/PromoCodeInput";
 import { ShippingAddressSection } from "@/components/checkout/ShippingAddressSection";
-import type { DeliveryFulfillmentMode } from "@/lib/delivery/types";
 import type { OrderDeliverySizeSummary } from "@/lib/delivery/size";
 
 export default function CheckoutPage() {
@@ -29,9 +27,7 @@ export default function CheckoutPage() {
   const { settings } = useStorefrontSettings();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [courierId, setCourierId] = useState("aramex");
-  const [fulfillmentMode, setFulfillmentMode] = useState<DeliveryFulfillmentMode | null>(null);
-  const [showCourierPicker, setShowCourierPicker] = useState(false);
+  const courierId = "almost_anything";
   const [deliverySize, setDeliverySize] = useState<OrderDeliverySizeSummary | null>(null);
   const paymentOptions = [
     { id: "card" as const, label: "Pay securely online" },
@@ -58,6 +54,8 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!user) return;
+    // Populate the checkout form when the asynchronous auth session arrives.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddress((prev) => ({
       ...prev,
       fullName: prev.fullName || (user.user_metadata?.full_name as string) || "",
@@ -66,10 +64,6 @@ export default function CheckoutPage() {
     }));
   }, [user]);
 
-  useEffect(() => {
-    if (settings?.defaultCourierId) setCourierId(settings.defaultCourierId);
-  }, [settings?.defaultCourierId]);
-
   const productIds = useMemo(
     () => items.map((i) => i.productId).filter((id): id is string => Boolean(id)),
     [items],
@@ -77,8 +71,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (productIds.length === 0) {
-      setFulfillmentMode(null);
-      setShowCourierPicker(false);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDeliverySize(null);
       return;
     }
@@ -91,20 +84,14 @@ export default function CheckoutPage() {
       .then((r) => r.json())
       .then(
         (data: {
-          mode?: DeliveryFulfillmentMode;
-          showCourierPicker?: boolean;
           deliverySize?: OrderDeliverySizeSummary;
         }) => {
           if (cancelled) return;
-          setFulfillmentMode(data.mode ?? null);
-          setShowCourierPicker(Boolean(data.showCourierPicker));
           setDeliverySize(data.deliverySize ?? null);
         },
       )
       .catch(() => {
         if (cancelled) return;
-        setFulfillmentMode(null);
-        setShowCourierPicker(false);
         setDeliverySize(null);
       });
     return () => {
@@ -112,7 +99,6 @@ export default function CheckoutPage() {
     };
   }, [productIds]);
 
-  const couriers = settings ? defaultCouriersFromSettings(settings) : COURIERS.map((c) => ({ id: c.id, name: c.name, etaLabel: c.etaLabel }));
   const currency = settings?.currency ?? "ZAR";
   const pricing = settings
     ? computeStorefrontTotals(subtotal, settings, courierId, discountAmount, deliverySize?.size)
@@ -126,13 +112,7 @@ export default function CheckoutPage() {
         deliveryFeeZar: 0,
       };
   const { shipping, tax, total, shippingCalc, promoDiscount, discountedSubtotal } = pricing;
-  const selectedCourier = couriers.find((c) => c.id === courierId);
-  const deliveryProvider =
-    fulfillmentMode === "seller_self"
-      ? "the store you purchased from"
-      : fulfillmentMode === "platform_driver"
-        ? "Almost Anything"
-        : selectedCourier?.name ?? "an approved delivery partner";
+  const deliveryProvider = "Almost Anything";
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
@@ -150,7 +130,7 @@ export default function CheckoutPage() {
           shippingAddress: address,
           paymentMethod,
           courierId,
-          courierName: selectedCourier?.name,
+          courierName: "Almost Anything Delivery",
           shippingInternalCost: shippingCalc.internalCost,
           customerShippingCharge: shipping,
           promoCode: applied?.code,
@@ -224,47 +204,15 @@ export default function CheckoutPage() {
                 <Truck className="h-5 w-5" />
                 Delivery
               </h2>
-              {showCourierPicker ? (
-                <>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    Choose your delivery partner. The delivery charge is shown separately in your total.
-                  </p>
-                  <div className="mt-4 space-y-2">
-                    {couriers.map((c) => (
-                      <label
-                        key={c.id}
-                        className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3 ${courierId === c.id ? "border-brand bg-brand/5" : "border-neutral-200"}`}
-                      >
-                        <input
-                          type="radio"
-                          name="courier"
-                          value={c.id}
-                          checked={courierId === c.id}
-                          onChange={() => setCourierId(c.id)}
-                        />
-                        <div>
-                          <p className="font-semibold text-neutral-900">{c.name}</p>
-                          <p className="text-xs text-neutral-500">{c.etaLabel}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                    Delivery handled by
-                  </p>
-                  <p className="mt-1 font-semibold text-neutral-900">{deliveryProvider}</p>
-                  <p className="mt-1 text-neutral-500">
-                    {fulfillmentMode === "seller_self"
-                      ? "This is a single-store order. The store is responsible for fulfilment and delivery updates."
-                      : fulfillmentMode === "platform_driver"
-                        ? "This order contains items from multiple stores. We will coordinate collection and delivery."
-                        : "Your R100 standard or R200 large-item delivery charge is shown separately in the order summary."}
-                  </p>
-                </div>
-              )}
+              <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  Delivery handled by
+                </p>
+                <p className="mt-1 font-semibold text-neutral-900">{deliveryProvider}</p>
+                <p className="mt-1 text-neutral-500">
+                  We coordinate collection, driver allocation, tracking, and delivery. The R100 standard or R200 large-item delivery fee is shown in your order summary.
+                </p>
+              </div>
               {deliverySize?.showCustomerNote && deliverySize.customerNote ? (
                 <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
                   {deliverySize.customerNote}
@@ -328,9 +276,7 @@ export default function CheckoutPage() {
                   {deliverySize &&
                   (deliverySize.size === "large" || deliverySize.size === "bulky")
                     ? " (large item)"
-                    : showCourierPicker && selectedCourier
-                      ? ` (${selectedCourier.name})`
-                      : ""}
+                    : ""}
                 </dt>
                 <dd className={shippingCalc.displayFree ? "font-semibold text-emerald-600" : ""}>
                   {shipping === 0 ? "Free" : formatCurrency(shipping, currency)}

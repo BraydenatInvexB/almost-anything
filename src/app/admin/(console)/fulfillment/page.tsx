@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentStaff, listAdminOrders, listAdminCouriers } from "@/services/admin-service";
+import { getCurrentStaff, listAdminOrders } from "@/services/admin-service";
 import { listProcurement } from "@/lib/admin/operations-persistence";
 import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
@@ -27,9 +27,8 @@ export default async function AdminFulfillmentPage({
     : "action";
 
   const canManage = staffCan(staff, "orders.manage");
-  const [orders, couriers, procurement] = await Promise.all([
+  const [orders, procurement] = await Promise.all([
     listAdminOrders(),
-    listAdminCouriers(),
     listProcurement(),
   ]);
 
@@ -80,7 +79,7 @@ export default async function AdminFulfillmentPage({
           value={String(outForDelivery)}
           icon={<Truck className="h-4 w-4" />}
           accent="bg-neutral-950"
-          hint="With courier — confirm delivery when done"
+          hint="With Almost Anything — confirm delivery when done"
         />
       </div>
 
@@ -110,7 +109,6 @@ export default async function AdminFulfillmentPage({
       <OperationsFlowBar orders={orders} activeTab={initialTab} />
       <OperationsDesk
         orders={orders}
-        couriers={couriers}
         canManage={canManage}
         initialTab={initialTab}
       />

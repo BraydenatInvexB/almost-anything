@@ -38,7 +38,10 @@ export async function submitSellerApplication(
     seller_id: data.id,
     user_id: user.id,
     email: input.contactEmail.trim().toLowerCase(),
-    full_name: input.shopName.trim(),
+    full_name:
+      typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name.trim()
+        ? user.user_metadata.full_name.trim()
+        : input.shopName.trim(),
     role: "owner",
     status: "active",
     permissions: [],

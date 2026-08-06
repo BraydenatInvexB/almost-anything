@@ -6,6 +6,7 @@ import {
   DELIVERY_STATUS_LABELS,
   type DeliveryFulfillmentMode,
   type DeliveryJobStatus,
+  type DeliveryCollectionStop,
   type DriverProfile,
 } from "@/lib/delivery/types";
 import {
@@ -14,6 +15,7 @@ import {
   type DeliverySize,
 } from "@/lib/delivery/size";
 import type { Json } from "@/types/database";
+import { resolveCollectionStopsForOrders } from "@/services/delivery/route-manifest";
 
 export interface DeliveryJobRow {
   id: string;
@@ -39,6 +41,7 @@ export interface DeliveryJobRow {
   deliverySizeLabel: string;
   vehicleHint: string;
   mayNeedTwoPeople: boolean;
+  collectionStops: DeliveryCollectionStop[];
   createdAt: string;
   deliveredAt: string | null;
   proofRecipientName: string | null;
@@ -83,12 +86,69 @@ function mapJob(row: Record<string, unknown>): DeliveryJobRow {
       typeof meta.mayNeedTwoPeople === "boolean"
         ? meta.mayNeedTwoPeople
         : sizeInfo.mayNeedTwoPeople,
+    collectionStops: parseCollectionStops(meta.collectionStops),
     createdAt: String(row.created_at),
     deliveredAt: row.delivered_at ? String(row.delivered_at) : null,
     proofRecipientName: typeof meta.proofRecipientName === "string" ? meta.proofRecipientName : null,
     proofSignedAt: typeof meta.proofSignedAt === "string" ? meta.proofSignedAt : null,
     proofSignaturePath: typeof meta.proofSignaturePath === "string" ? meta.proofSignaturePath : null,
   };
+}
+
+function parseCollectionStops(value: unknown): DeliveryCollectionStop[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry, index) => {
+    if (!entry || typeof entry !== "object") return [];
+    const row = entry as Record<string, unknown>;
+    const items = Array.isArray(row.items)
+      ? row.items.flatMap((item) => {
+          if (!item || typeof item !== "object") return [];
+          const parsed = item as Record<string, unknown>;
+          const name = typeof parsed.name === "string" ? parsed.name : "Item";
+          return [{ name, quantity: Math.max(1, Number(parsed.quantity) || 1) }];
+        })
+      : [];
+    return [
+      {
+        id: typeof row.id === "string" ? row.id : `collection-${index}`,
+        sellerId: typeof row.sellerId === "string" ? row.sellerId : null,
+        kind: row.kind === "platform" ? "platform" : "seller",
+        shopName: typeof row.shopName === "string" ? row.shopName : "Store collection",
+        contactName: nullableString(row.contactName),
+        contactPhone: nullableString(row.contactPhone),
+        contactEmail: nullableString(row.contactEmail),
+        addressLine1: nullableString(row.addressLine1),
+        addressLine2: nullableString(row.addressLine2),
+        city: nullableString(row.city),
+        province: nullableString(row.province),
+        postalCode: nullableString(row.postalCode),
+        country: nullableString(row.country),
+        items,
+      },
+    ];
+  });
+}
+
+function nullableString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+async function hydrateCollectionStops(jobs: DeliveryJobRow[]): Promise<DeliveryJobRow[]> {
+  const missingOrderIds = jobs
+    .filter((job) => job.collectionStops.length === 0)
+    .map((job) => job.orderId);
+  if (!missingOrderIds.length) return jobs;
+  try {
+    const supabase = createServiceClient();
+    const stopsByOrder = await resolveCollectionStopsForOrders(supabase, missingOrderIds);
+    return jobs.map((job) =>
+      job.collectionStops.length
+        ? job
+        : { ...job, collectionStops: stopsByOrder.get(job.orderId) ?? [] },
+    );
+  } catch {
+    return jobs;
+  }
 }
 
 export async function listDeliveryJobs(filters?: {
@@ -116,7 +176,9 @@ export async function listDeliveryJobs(filters?: {
 
     const { data, error } = await q;
     if (error || !data) return [];
-    return data.map((row) => mapJob(row as unknown as Record<string, unknown>));
+    return hydrateCollectionStops(
+      data.map((row) => mapJob(row as unknown as Record<string, unknown>)),
+    );
   } catch {
     return [];
   }
@@ -156,7 +218,10 @@ export async function getDeliveryJob(jobId: string): Promise<DeliveryJobRow | nu
     const supabase = createServiceClient();
     const { data } = await supabase.from("delivery_jobs").select("*").eq("id", jobId).maybeSingle();
     if (!data) return null;
-    return mapJob(data as unknown as Record<string, unknown>);
+    const [job] = await hydrateCollectionStops([
+      mapJob(data as unknown as Record<string, unknown>),
+    ]);
+    return job ?? null;
   } catch {
     return null;
   }

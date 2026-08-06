@@ -192,7 +192,7 @@ export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null
   const demoShipping = summary.total > 1000 ? 0 : 99;
   const subtotal = Number((summary.total - demoShipping).toFixed(2));
   const shippingCost = demoShipping;
-  const internalShipping = summary.courierName === "Aramex" ? 89 : summary.courierName === "Fastway" ? 75 : 95;
+  const internalShipping = summary.total > 1000 ? 0 : 100;
 
   const timeline: AdminOrderDetail["timeline"] = [
     { label: "Order placed", at: summary.createdAt },
@@ -219,7 +219,7 @@ export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null
     timeline.push({
       label: "Shipped",
       at: shipped.toISOString(),
-      note: `${summary.courierName ?? "Aramex"} AWB 7741 9920 18`,
+      note: `Almost Anything delivery reference AA-7741-9920-18`,
     });
   }
   if (summary.status === "delivered") {

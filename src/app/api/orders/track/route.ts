@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         placedAt: order.createdAt,
         estimatedDelivery: eta.toISOString(),
         status: order.status,
-        carrier: "Aramex",
+        carrier: "Almost Anything Delivery",
         trackingNumber: "",
         recipient: order.shippingAddress.fullName,
         city: `${order.shippingAddress.city}, ${order.shippingAddress.country}`,

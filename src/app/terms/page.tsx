@@ -18,7 +18,7 @@ export default function TermsPage() {
         },
         {
           heading: "Delivery & shipping",
-          text: "Delivery fees may apply at checkout unless a product price already includes delivery or a free-shipping promotion is active. Available courier partners and delivery estimates are shown during checkout. Shipping costs depend on platform settings and the courier selected for your order.",
+          text: "Delivery fees may apply at checkout unless a product price already includes delivery or a free-shipping promotion is active. Almost Anything coordinates order collection and customer delivery. The applicable delivery fee and estimate are shown during checkout.",
         },
         {
           heading: "Payments",

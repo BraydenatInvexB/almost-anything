@@ -66,7 +66,7 @@ export function FinanceOverviewTab({
               value={formatCurrency(summary.grossProfit, cur)}
               bold
             />
-            <FinancePlRow label="Shipping & couriers" value={`−${formatCurrency(summary.shippingCosts, cur)}`} negative />
+            <FinancePlRow label="Shipping & delivery" value={`−${formatCurrency(summary.shippingCosts, cur)}`} negative />
             <FinancePlRow label="Marketing" value={`−${formatCurrency(summary.marketingSpend, cur)}`} negative />
             <FinancePlRow label="Payroll" value={`−${formatCurrency(summary.payroll, cur)}`} negative />
             <FinancePlRow label="Other operating" value={`−${formatCurrency(summary.otherExpenses, cur)}`} negative />

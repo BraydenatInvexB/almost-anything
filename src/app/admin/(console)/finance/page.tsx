@@ -16,7 +16,7 @@ export default async function AdminFinancePage() {
     <>
       <PageHeader
         title="Finance"
-        subtitle="Full P&L, revenue, expenses, supplier payables, refunds, courier costs, and VAT for the commerce operation."
+        subtitle="Full P&L, revenue, expenses, supplier payables, refunds, internal delivery costs, and VAT for the commerce operation."
         breadcrumbs={[
           { label: "Admin", href: "/admin" },
           { label: "Finance" },

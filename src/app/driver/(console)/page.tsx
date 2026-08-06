@@ -17,7 +17,7 @@ export default async function DriverDashboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-neutral-900">Deliveries in {driver.province}</h1>
         <p className="mt-1 max-w-2xl text-sm text-neutral-500">
-          Claim open multi-store jobs in your province, collect from the shops, and deliver to the
+          Claim open jobs in your province, follow every listed store collection, and deliver to the
           customer.
         </p>
       </div>
@@ -87,6 +87,12 @@ function JobList({
             </p>
             <p className="mt-1 text-xs text-neutral-500">
               {[job.addressLine1, job.city, job.province, job.postalCode].filter(Boolean).join(", ")}
+            </p>
+            <p className="mt-1 text-xs font-medium text-neutral-700">
+              {job.collectionStops.length} collection{job.collectionStops.length === 1 ? "" : "s"}
+              {job.collectionStops.length
+                ? ` · ${job.collectionStops.map((stop) => stop.shopName).join(" → ")}`
+                : " · Collection point pending"}
             </p>
             <p className="mt-1 truncate text-xs text-neutral-500">{job.itemSummary}</p>
             <p className="mt-2 text-sm font-bold text-neutral-900">

@@ -80,7 +80,20 @@ export const updatePayable = (id: string, patch: Parameters<typeof store.updateP
   withRepo(() => repo.updatePayable(id, patch), () => store.updatePayable(id, patch));
 
 // Marketing
-export const listCampaigns = () => withRepo(repo.listCampaigns, store.listCampaigns);
+export const listCampaigns = () =>
+  withRepo(async () => {
+    const persisted = await repo.listCampaigns();
+    // Keep newly-created storefront events usable during local migration rollout if
+    // the connected database has not received the storefront columns yet.
+    const transientStorefrontEvents = store
+      .listCampaigns()
+      .filter(
+        (campaign) =>
+          campaign.storefrontEnabled &&
+          !persisted.some((persistedCampaign) => persistedCampaign.id === campaign.id),
+      );
+    return [...transientStorefrontEvents, ...persisted];
+  }, store.listCampaigns);
 export const createCampaign = (input: Parameters<typeof store.createCampaign>[0]) =>
   withRepo(() => repo.createCampaign(input), () => store.createCampaign(input));
 export const updateCampaign = (id: string, patch: Parameters<typeof store.updateCampaign>[1]) =>
@@ -92,7 +105,11 @@ export const deleteCampaign = async (id: string) => {
   }
   try {
     await repo.deleteCampaign(id);
-  } catch {
+  } catch (error) {
+    console.error("[operations-persistence]", error);
+  } finally {
+    // A storefront event may be temporarily backed by the local store while its
+    // database migration is being deployed, so clear both stores consistently.
     store.deleteCampaign(id);
   }
 };

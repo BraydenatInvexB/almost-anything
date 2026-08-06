@@ -34,7 +34,7 @@ export const DEMO_TRACKED_ORDERS: TrackedOrder[] = [
     status: "shipped",
     placedAt: "2026-06-24T10:12:00Z",
     estimatedDelivery: "2026-06-29",
-    carrier: "Aramex",
+    carrier: "Almost Anything Delivery",
     trackingNumber: "77419920",
     items: [
       { name: "SilentPro ANC Headphones", quantity: 1, price: 4035.6, imageUrl: IMG("photo-1505740420928-5e560c06d30e") },
@@ -49,7 +49,7 @@ export const DEMO_TRACKED_ORDERS: TrackedOrder[] = [
     status: "purchased",
     placedAt: "2026-06-26T08:40:00Z",
     estimatedDelivery: "2026-07-02",
-    carrier: "The Courier Guy",
+    carrier: "Almost Anything Delivery",
     trackingNumber: "55820031",
     items: [
       { name: "AeroBook 14 Ultrabook", quantity: 1, price: 16142.4, imageUrl: IMG("photo-1496181133206-80ce9b88a853") },
@@ -63,7 +63,7 @@ export const DEMO_TRACKED_ORDERS: TrackedOrder[] = [
     status: "delivered",
     placedAt: "2026-06-18T14:05:00Z",
     estimatedDelivery: "2026-06-23",
-    carrier: "Aramex",
+    carrier: "Almost Anything Delivery",
     trackingNumber: "77401188",
     items: [
       { name: "Crema Espresso Machine", quantity: 1, price: 6014.4, imageUrl: IMG("photo-1517668808822-9ebb02f2a0e6") },

@@ -115,8 +115,8 @@ export function SellerDashboardView({
           couriers={platform.couriers}
           shipping={platform.shipping}
           preferredCourierIds={seller.preferredCouriers}
-          title="Delivery partners"
-          description="Couriers enabled on the platform for your customer orders."
+          title="Delivery fulfilment"
+          description="Almost Anything coordinates delivery for every customer order."
         />
         <PaymentGatewayFeesNotice compact />
       </div>

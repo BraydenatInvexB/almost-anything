@@ -31,6 +31,10 @@ import type { ProductVariantsConfig } from "@/types/product-variants";
 import type { SellerProfile } from "@/types/seller";
 import type { SellerCatalogProduct } from "@/types/seller-catalog";
 import type { DeliverySize } from "@/lib/delivery/size";
+import {
+  parseLocationInventory,
+  type ProductLocationInventory,
+} from "@/lib/product/location-inventory";
 
 function slugify(name: string): string {
   return `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -42,6 +46,7 @@ export type SellerProductWriteInput = {
   markupPercent: number;
   retailPrice?: number;
   stockQuantity: number;
+  stockLocations: ProductLocationInventory;
   category: string;
   imageUrls: string[];
   description?: string;
@@ -105,6 +110,7 @@ export async function createSellerProduct(
     variants: input.variants,
     enrichment: input.enrichment,
     special: input.special,
+    stockLocations: input.stockLocations,
   });
 
   const { data, error } = await sellerDb()
@@ -185,6 +191,7 @@ export async function updateSellerProduct(
     variants: input.variants,
     enrichment: input.enrichment,
     special: input.special,
+    stockLocations: input.stockLocations,
   });
 
   const { data, error } = await db
@@ -277,6 +284,7 @@ export async function importSellerStockCsv(
         markupPercent: product.markupPercent,
         retailPrice: product.retailPrice,
         stockQuantity: product.stockQuantity,
+        stockLocations: parseLocationInventory(null, product.stockQuantity),
         category: product.category,
         imageUrls: product.imageUrls,
         description: product.description,
@@ -308,17 +316,36 @@ export async function importSellerStockCsv(
 export async function updateSellerProductStock(
   sellerId: string,
   productId: string,
-  stockQuantity: number,
+  stockLocations: ProductLocationInventory,
 ) {
-  const { data, error } = await sellerDb()
+  const db = sellerDb();
+  const { data: existing, error: fetchError } = await db
+    .from("products")
+    .select("metadata")
+    .eq("id", productId)
+    .eq("seller_id", sellerId)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+  if (!existing) throw new Error("Product not found.");
+
+  const stockQuantity = Object.values(stockLocations).reduce((sum, value) => sum + value, 0);
+  const existingMeta = existing.metadata && typeof existing.metadata === "object"
+    ? existing.metadata as Record<string, unknown>
+    : {};
+  const { data, error } = await db
     .from("products")
     .update({
       stock_quantity: stockQuantity,
       stock_status: stockQuantity > 0 ? "in_stock" : "out_of_stock",
+      metadata: {
+        ...existingMeta,
+        stock_locations: stockLocations,
+        quantity: stockQuantity,
+      },
     })
     .eq("id", productId)
     .eq("seller_id", sellerId)
-    .select("id, stock_quantity")
+    .select("id, stock_quantity, metadata")
     .single();
 
   if (error) throw error;

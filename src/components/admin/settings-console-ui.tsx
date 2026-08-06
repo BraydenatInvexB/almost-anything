@@ -3,17 +3,15 @@ import {
   Store,
   Truck,
   Zap,
-  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
-export type SettingsTab = "general" | "pricing" | "shipping" | "couriers" | "automation";
+export type SettingsTab = "general" | "pricing" | "shipping" | "automation";
 
 export const SETTINGS_TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "general", label: "General", icon: <Store className="h-4 w-4" /> },
   { id: "pricing", label: "Pricing & markup", icon: <Percent className="h-4 w-4" /> },
   { id: "shipping", label: "Shipping & tax", icon: <Truck className="h-4 w-4" /> },
-  { id: "couriers", label: "Courier partners", icon: <Globe className="h-4 w-4" /> },
   { id: "automation", label: "Automation", icon: <Zap className="h-4 w-4" /> },
 ];
 

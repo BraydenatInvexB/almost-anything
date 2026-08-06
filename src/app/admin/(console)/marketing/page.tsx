@@ -9,6 +9,7 @@ import { listPromoCodes } from "@/lib/admin/operations-persistence";
 import { staffCan } from "@/config/rbac";
 import { AccessDenied } from "@/components/admin/AccessDenied";
 import { CampaignManager } from "@/components/admin/CampaignManager";
+import { StorefrontPromotionManager } from "@/components/admin/StorefrontPromotionManager";
 import { PromoCodeManager } from "@/components/admin/PromoCodeManager";
 import { EmailMarketingManager } from "@/components/admin/EmailMarketingManager";
 import { PageHeader, StatCard, Panel } from "@/components/admin/ui";
@@ -31,6 +32,8 @@ export default async function AdminMarketingPage() {
   const featured = products.filter((p) => p.is_featured).slice(0, 6);
   const deals = products.filter((p) => p.is_deal);
   const liveCampaigns = campaigns.filter((c) => c.status === "live").length;
+  const storefrontCampaigns = campaigns.filter((campaign) => campaign.storefrontEnabled);
+  const audienceCampaigns = campaigns.filter((campaign) => !campaign.storefrontEnabled);
   const activePromos = promoCodes.filter((p) => p.status === "active").length;
   const activeSubscribers = subscribers.filter((s) => s.status === "active").length;
 
@@ -50,6 +53,18 @@ export default async function AdminMarketingPage() {
         <StatCard label="Featured products" value={String(featured.length)} icon={<Star className="h-4 w-4" />} accent="bg-violet-500" />
       </div>
 
+      <Panel
+        title="Storefront promotional events"
+        description="Schedule seasonal tabs such as Father's Day or Mother's Day and choose the exact products shoppers will see."
+        className="mb-4"
+      >
+        <StorefrontPromotionManager
+          initial={storefrontCampaigns}
+          products={products}
+          canManage={staffCan(staff, "marketing.manage")}
+        />
+      </Panel>
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Panel title="Email list & broadcasts" className="lg:col-span-2">
           <div className="p-5">
@@ -64,7 +79,7 @@ export default async function AdminMarketingPage() {
         </Panel>
 
         <Panel title="Promo campaigns">
-          <CampaignManager initial={campaigns} canManage={staffCan(staff, "marketing.manage")} />
+          <CampaignManager initial={audienceCampaigns} canManage={staffCan(staff, "marketing.manage")} />
         </Panel>
       </div>
 

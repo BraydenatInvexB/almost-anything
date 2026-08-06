@@ -27,7 +27,7 @@ export function OrderDetailPanel({
 }) {
   const router = useRouter();
   const [status, setStatus] = useState(order.status);
-  const [carrier, setCarrier] = useState(order.carrier ?? "");
+  const [carrier, setCarrier] = useState("Almost Anything Delivery");
   const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -113,7 +113,7 @@ export function OrderDetailPanel({
                   </select>
                 </label>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                  Carrier
+                  Delivery provider
                   <CarrierSelect
                     value={carrier}
                     onChange={setCarrier}

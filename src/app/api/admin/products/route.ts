@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentStaff } from "@/services/admin-service";
-import { can, staffCan } from "@/config/rbac";
+import { staffCan } from "@/config/rbac";
 import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { createCustomProduct, updateCustomProduct } from "@/lib/admin/operations-persistence";
 import { SA_WAREHOUSE_DELIVERY_DAYS } from "@/config/delivery";
 import type { Database } from "@/types/database";
+import { parseLocationInventory, totalLocationStock } from "@/lib/product/location-inventory";
 
 type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
 
@@ -73,13 +74,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid payload", details: parsed.error.flatten() }, { status: 400 });
   }
 
+  const locationInventory = parseLocationInventory(parsed.data.metadata, parsed.data.quantity);
+  const locationQuantity = parsed.data.stock_origin === "sa_warehouse"
+    ? totalLocationStock(locationInventory)
+    : parsed.data.quantity;
+  const normalized = {
+    ...parsed.data,
+    quantity: locationQuantity,
+    stock_status: locationQuantity > 0 ? parsed.data.stock_status : "out_of_stock" as const,
+  };
   const retail =
     parsed.data.retail_price ??
     parsed.data.base_price * (1 + parsed.data.markup_percent / 100);
 
   if (!isSupabaseConfigured()) {
     const product = createCustomProduct({
-      ...parsed.data,
+      ...normalized,
       retail_price: Number(retail.toFixed(2)),
       currency: "ZAR",
       image_url: parsed.data.image_url ?? null,
@@ -102,7 +112,7 @@ export async function POST(request: Request) {
         base_price: parsed.data.base_price,
         retail_price: Number(retail.toFixed(2)),
         markup_percent: parsed.data.markup_percent,
-        stock_status: parsed.data.stock_status,
+        stock_status: normalized.stock_status,
         image_url: parsed.data.image_url,
         source_name: parsed.data.source_name,
         source_url: parsed.data.source_url,
@@ -114,7 +124,7 @@ export async function POST(request: Request) {
         show_in_steals: parsed.data.show_in_steals,
         show_in_fresh_drops: parsed.data.show_in_fresh_drops,
         deal_discount_percent: parsed.data.deal_discount_percent,
-        metadata: (parsed.data.metadata ?? {}) as ProductUpdate["metadata"],
+        metadata: ({ ...(parsed.data.metadata ?? {}), quantity: locationQuantity }) as ProductUpdate["metadata"],
       })
       .select()
       .single();
@@ -143,7 +153,10 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid payload", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { id, quantity, stock_origin, metadata, ...rest } = parsed.data;
+  const { id, quantity: requestedQuantity, stock_origin, metadata, ...rest } = parsed.data;
+  const quantity = stock_origin === "sa_warehouse" || (stock_origin === undefined && metadata?.stock_locations)
+    ? totalLocationStock(parseLocationInventory(metadata, requestedQuantity ?? 0))
+    : requestedQuantity;
 
   const updates = { ...rest } as ProductUpdate;
 

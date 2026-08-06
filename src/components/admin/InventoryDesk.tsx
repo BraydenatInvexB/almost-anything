@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { InventoryRecord } from "@/lib/admin/operations-types";
 import { StatusBadge, Table, Th, Td } from "@/components/admin/ui";
+import { parseLocationInventory } from "@/lib/product/location-inventory";
 
 export function InventoryDesk({
   inventory,
@@ -12,16 +12,15 @@ export function InventoryDesk({
   canManage,
 }: {
   inventory: InventoryRecord[];
-  products: { id: string; name: string; slug?: string }[];
+  products: { id: string; name: string; slug?: string; metadata?: unknown; quantity?: number }[];
   canManage: boolean;
 }) {
-  const router = useRouter();
   const [q, setQ] = useState("");
   const [originFilter, setOriginFilter] = useState<"all" | "sa_warehouse" | "overseas">("all");
-  const [adjusting, setAdjusting] = useState<InventoryRecord | null>(null);
 
   const nameMap = Object.fromEntries(products.map((p) => [p.id, p.name]));
   const slugMap = Object.fromEntries(products.map((p) => [p.id, p.slug]));
+  const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
 
   const rows = useMemo(() => {
     let list = inventory;
@@ -36,15 +35,6 @@ export function InventoryDesk({
     }
     return list;
   }, [inventory, originFilter, q, nameMap]);
-
-  async function patch(productId: string, patch: Partial<InventoryRecord>) {
-    await fetch("/api/admin/inventory", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId, ...patch }),
-    });
-    router.refresh();
-  }
 
   return (
     <div className="space-y-4">
@@ -84,6 +74,10 @@ export function InventoryDesk({
           <tbody className="divide-y divide-neutral-50">
             {rows.map((row) => {
               const low = row.quantity <= row.reorderPoint;
+              const locationInventory = parseLocationInventory(
+                productMap[row.productId]?.metadata,
+                row.quantity,
+              );
               return (
                 <tr key={row.productId} className={low ? "bg-amber-50/40" : undefined}>
                   <Td className="font-mono text-xs">{row.sku}</Td>
@@ -100,10 +94,17 @@ export function InventoryDesk({
                   </Td>
                   <Td>{row.reorderPoint}</Td>
                   <Td>
-                    <StatusBadge
-                      status={row.origin === "sa_warehouse" ? "in_stock" : "available_international"}
-                    />
-                    <p className="mt-0.5 text-xs text-neutral-400">{row.warehouse}</p>
+                    {row.origin === "sa_warehouse" ? (
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(locationInventory).filter(([, value]) => value > 0).map(([hub, value]) => (
+                          <span key={hub} className="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold uppercase text-emerald-800">
+                            {hub} {value}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <StatusBadge status="available_international" />
+                    )}
                   </Td>
                   <Td className="text-xs text-neutral-500">
                     {new Date(row.lastCountedAt).toLocaleDateString("en-ZA")}
@@ -111,27 +112,12 @@ export function InventoryDesk({
                   {canManage && (
                     <Td>
                       <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => patch(row.productId, { quantity: row.quantity + 1 })}
+                        <Link
+                          href={`/admin/products/${slugMap[row.productId] ?? row.productId}`}
                           className="text-xs font-semibold text-brand"
                         >
-                          +1
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => patch(row.productId, { quantity: row.quantity + 10 })}
-                          className="text-xs font-semibold text-brand"
-                        >
-                          +10
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAdjusting(row)}
-                          className="text-xs font-semibold text-neutral-600"
-                        >
-                          Set qty
-                        </button>
+                          Manage hub stock
+                        </Link>
                       </div>
                     </Td>
                   )}
@@ -145,78 +131,6 @@ export function InventoryDesk({
         )}
       </div>
 
-      {adjusting && canManage && (
-        <AdjustModal
-          row={adjusting}
-          productName={nameMap[adjusting.productId] ?? adjusting.productId}
-          onClose={() => setAdjusting(null)}
-          onSave={(qty, reorder) => {
-            void patch(adjusting.productId, {
-              quantity: qty,
-              reorderPoint: reorder,
-              lastCountedAt: new Date().toISOString(),
-            });
-            setAdjusting(null);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function AdjustModal({
-  row,
-  productName,
-  onClose,
-  onSave,
-}: {
-  row: InventoryRecord;
-  productName: string;
-  onClose: () => void;
-  onSave: (qty: number, reorder: number) => void;
-}) {
-  const [qty, setQty] = useState(String(row.quantity));
-  const [reorder, setReorder] = useState(String(row.reorderPoint));
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-neutral-900/30" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-        <h3 className="font-bold text-neutral-950">Adjust stock</h3>
-        <p className="text-sm text-neutral-500">{productName}</p>
-        <div className="mt-4 space-y-3">
-          <label className="block text-xs font-semibold text-neutral-600">
-            Quantity on hand
-            <input
-              type="number"
-              className="input mt-1 w-full"
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
-            />
-          </label>
-          <label className="block text-xs font-semibold text-neutral-600">
-            Reorder point
-            <input
-              type="number"
-              className="input mt-1 w-full"
-              value={reorder}
-              onChange={(e) => setReorder(e.target.value)}
-            />
-          </label>
-        </div>
-        <div className="mt-5 flex gap-2">
-          <button
-            type="button"
-            onClick={() => onSave(Number(qty), Number(reorder))}
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white"
-          >
-            Save
-          </button>
-          <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm">
-            Cancel
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

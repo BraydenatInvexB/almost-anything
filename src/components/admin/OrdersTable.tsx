@@ -2,7 +2,6 @@
 
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
-import { CarrierSelect, type CourierSelectOption } from "@/components/admin/CarrierSelect";
 import { Table, Th, Td, EmptyState } from "@/components/admin/ui";
 import { formatCurrency } from "@/lib/utils/cn";
 import type { AdminOrderSummary } from "@/services/admin-service";
@@ -39,7 +38,7 @@ interface RowState {
 function defaultRow(order: AdminOrderSummary): RowState {
   return {
     status: order.status,
-    carrier: order.courierName ?? "",
+    carrier: "Almost Anything Delivery",
     trackingNumber: "",
     saving: false,
     saved: false,
@@ -50,12 +49,10 @@ function defaultRow(order: AdminOrderSummary): RowState {
 export function OrdersTable({
   orders,
   canManage,
-  couriers,
   showNextStep = false,
 }: {
   orders: AdminOrderSummary[];
   canManage: boolean;
-  couriers: CourierSelectOption[];
   showNextStep?: boolean;
 }) {
   const [rows, setRows] = useState<Record<string, RowState>>(() =>
@@ -63,6 +60,8 @@ export function OrdersTable({
   );
 
   useEffect(() => {
+    // Server refreshes replace the order snapshot; retain unsaved row UI where possible.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRows((prev) => {
       const next: Record<string, RowState> = {};
       for (const order of orders) {
@@ -71,7 +70,7 @@ export function OrdersTable({
           ? {
               ...existing,
               status: order.status,
-              carrier: order.courierName ?? existing.carrier,
+              carrier: "Almost Anything Delivery",
             }
           : defaultRow(order);
       }
@@ -138,7 +137,7 @@ export function OrdersTable({
           <Th>Fulfillment</Th>
           <Th>Status</Th>
           {showNextStep ? <Th>Next step</Th> : null}
-          <Th>Courier</Th>
+          <Th>Delivery</Th>
           <Th>Payment</Th>
           <Th className="text-right">Total</Th>
           {canManage && <Th className="text-right">Tracking</Th>}
@@ -199,7 +198,7 @@ export function OrdersTable({
                     {getOrderNextAction(o.status)}
                   </Td>
                 ) : null}
-                <Td className="text-neutral-600">{o.courierName ?? "—"}</Td>
+                <Td className="text-neutral-600">Almost Anything</Td>
                 <Td className="text-neutral-600">{o.paymentMethod ?? "—"}</Td>
                 <Td className="text-right font-semibold">{formatCurrency(o.total, o.currency)}</Td>
                 {canManage && (
@@ -218,12 +217,11 @@ export function OrdersTable({
                   <td colSpan={showNextStep ? 11 : 10} className="px-4 py-4">
                     <div className="flex flex-wrap items-end gap-3">
                       <label className="flex flex-col gap-1 text-xs text-neutral-500">
-                        Carrier
-                        <CarrierSelect
-                          value={row.carrier}
-                          onChange={(name) => update(o.id, { carrier: name })}
-                          couriers={couriers}
-                          className="h-9 w-44 rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-neutral-400"
+                        Delivery provider
+                        <input
+                          value="Almost Anything Delivery"
+                          readOnly
+                          className="h-9 w-52 rounded-lg border border-neutral-200 bg-neutral-100 px-3 text-sm text-neutral-700"
                         />
                       </label>
                       <label className="flex flex-col gap-1 text-xs text-neutral-500">
